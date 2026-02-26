@@ -1,0 +1,30 @@
+{
+  "name": "trellis-sequencer",
+  "version": "1.0.0",
+  "description": "- React - Tone.js",
+  "main": "index.js",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "server": "npm start --workspace=server",
+    "client": "npm start --workspace=client",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eric-laudrum/trellis-sequencer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/eric-laudrum/trellis-sequencer/issues"
+  },
+  "homepage": "https://github.com/eric-laudrum/trellis-sequencer#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
