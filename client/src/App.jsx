@@ -1,22 +1,17 @@
 import { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 import io from 'socket.io-client';
 import * as Tone from 'tone';
 import TrellisGrid from './components/TrellisGrid.jsx';
+import { useSequencer } from './hooks/useSequencer.js';
 
 const socket = io('http://localhost:4000');
 
 function App() {
 
-    const playTestSound = async () =>{
-        await Tone.start();
-        const synth = new Tone.Synth().toDestination();
-        synth.triggerAttackRelease("C4", "8n");
-    };
+    const [ gridState , setGridState ] = useState(new Array(16).fill(false));
 
-    const [ gridState, setGridState ] = useState(new Array(16).fill(false));
+    const { activeStep, isPlaying, togglePlayback } = useSequencer( gridState );
 
     useEffect(() =>{
         socket.on('initial-state', (data) => setGridState(data));
@@ -40,21 +35,43 @@ function App() {
             const next = [...prev];
             next[ index ] = newState;
             return next;
-
         });
         socket.emit('pad-toggle', { index, newState });
     };
 
-    return(
+    const playTestSound = async () =>{
+        await Tone.start();
+        const synth = new Tone.Synth().toDestination();
+        synth.triggerAttackRelease("C4", "8n");
+    };
+
+
+    return (
         <div className='app-container'>
             <h1 className='main-title'>Trellis</h1>
+
             <TrellisGrid
-                gridState={ gridState }
-                onToggle={ handleToggle }
+                gridState={gridState}
+                onToggle={handleToggle}
+                activeStep={activeStep}
             />
+
+            <div className='playControls'>
+                <button
+                    className={`play-button ${isPlaying ? 'stop' : 'start'}`}
+                    onClick={ togglePlayback }
+                >
+                    { isPlaying ? 'stop' : 'play' }
+                </button>
+            </div>
+
+
             <button onClick={playTestSound}>Play Test</button>
         </div>
+
     );
+
 }
+
 
 export default App;
