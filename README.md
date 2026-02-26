@@ -1,5 +1,7 @@
 # Trellis Sequencer
 
+This project uses NPM Workspaces and Concurrently to run the front and backend simultaneously
+
 ## Tech Stack
 
 ### Core Logic & UI
@@ -17,3 +19,9 @@
   - MongoDB / PostgresSQL
 
 - Concurrently
+
+
+## Run the application
+- Navigate to the root directory
+  bash
+  npm run dev

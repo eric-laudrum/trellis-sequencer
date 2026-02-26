@@ -1,0 +1,31 @@
+{/* Grid / Pad */}
+
+.grid-container{
+    display: grid !important; /* Force grid mode */
+    grid-template-columns: repeat(4, 60px);
+    grid-template-rows: repeat(4, 60px);
+    gap: 12px;
+    padding: 20px;
+    background-color: #333;
+    border-radius: 12px;
+    width: fit-content;
+    margin: 2rem auto;
+    border: 4px solid #1a1a1a;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+
+.pad {
+    width: 60px;
+    height: 60px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #222;
+    transition: all 0.1s ease-in-out;
+}
+.pad.active {
+    background-color: #f5820a;
+    box-shadow: 0 0 3px #f5820a;
+    border: 2px solid rgba(243, 195, 143, 0.43);
+}
