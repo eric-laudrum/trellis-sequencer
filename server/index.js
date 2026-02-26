@@ -10,10 +10,32 @@ const io = new Server(server, {
         methods: ["GET", "POST"]
     }
 });
+const Y = require('yjs');
+
+// Master Lattice
+const ydoc = new Y.Doc();
+const yArray = ydoc.getArray('trellis-grid');
+
+// Initialize 16 Grid of 0
+if(yArray.length === 0){
+    yArray.insert(0, new Array(16).fill(false));
+}
 
 io.on('connection', (socket) => {
     console.log('Socket connection connected: ' + socket.id);
 
+    socket.emit('initial-state', yArray.toArray());
+
+    // Listen for a pad-toggle
+    socket.on('pad-toggle', ({ index, newState }) =>{
+        yArray.delete(index, 1);
+        yArray.insert(index, [newState]);
+    })
+
+    // Broadcast the change
+    socket.broadcast.emit('state-update', {index, newState });
+
+    // Disconnect
     socket.on('disconnect', ()=>{
         console.log('Socket disconnected');
     });
