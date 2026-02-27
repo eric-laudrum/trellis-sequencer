@@ -9,18 +9,16 @@ const TrellisGrid = ({ gridState, onToggle, activeStep }) => {
 
         <div className="grid-container">
 
-            { gridState.map(( isOn, i ) => (
+            {gridState.map((cell, i) => (
                 <button
                     key={i}
                     onClick={() => onToggle(i)}
-                    className={`pad ${isOn ? 'active' : ''} ${activeStep === i ? 'playing' : ''}`}
+                    className={`pad ${cell.isActive ? 'active' : ''} ${activeStep === i ? 'playing' : ''}`}
                 />
             ))}
         </div>
     );
 };
-
-
 
 
 export default TrellisGrid;

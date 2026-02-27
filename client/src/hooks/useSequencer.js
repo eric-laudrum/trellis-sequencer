@@ -6,17 +6,28 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
     const [ activeStep, setActiveStep ] = useState(-1);
     const [ isPlaying, setIsPlaying ] = useState(false);
     const [ bpm, setBpm ] = useState( 120 );
-    const  synth = useRef(null);
-    const gridRef= useRef( gridState );
 
-    // Update reference when gridState changes
-    useEffect(() => {
+    const player = useRef(null);
+    const gridRef = useRef( gridState );
+
+    // Update loop with latest toggles
+    useEffect(() =>{
         gridRef.current = gridState;
     }, [ gridState ]);
 
+    // Update BPM
+    useEffect(() => {
+        Tone.getTransport().bpm.value = bpm;
+    }, [bpm]);
+
+
+    const loadFile = async (file) => {
+        const url = URL.createObjectURL(file);
+        if (player.current) player.current.dispose();
+        player.current = new Tone.Player(url).toDestination();
+    };
 
     useEffect(() => {
-        synth.current = new Tone.PolySynth(Tone.Synth).toDestination();
         // Generate sequence play order
         const getSequenceOrder = () =>{
             const order = [];
@@ -31,57 +42,35 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
 
         const sequenceOrder = getSequenceOrder();
 
-        // Test notes
-        const rowNotes = ["C3", "E3", "G3", "C4"];
+        const seq = new Tone.Sequence((time, stepIdx ) =>{
+            const gridIndex = sequenceOrder[ stepIdx ];
+            setActiveStep( gridIndex );
 
-        const seq = new Tone.Sequence(
-            (time, stepIdx ) =>{
-                const gridIndex = sequenceOrder[ stepIdx ];
-                setActiveStep( gridIndex );
+            // Accessing the object property dynamically
+            const cell = gridRef.current[gridIndex];
+            if (cell?.isActive && player.current?.loaded) {
+                player.current.start(time);
+            }
 
-                // Use reference to avoid stopping sample
-                if( gridRef.current[ gridIndex ]){
-                    // Find the related note
-                    const currentRow = Math.floor(gridIndex / cols);
-                    const note = rowNotes[ rows - 1 - currentRow ] || "C4";
-
-                    synth.current.triggerAttackRelease(note, "16n", time);
-                }
-            },
-
-            Array.from({ length: rows * cols },(_, i) => i),
-                "8n"
-        );
+        }, Array.from({ length: rows * cols }, (_, i) => i), "8n");
 
         seq.start(0);
-        return () =>{
-            seq.dispose();
-            synth.current?.dispose();
-        };
-    }, [rows, cols ]); // Recreate the sequence if the dimensions change (tbd)
-    useEffect(()=>{
-        Tone.getTransport().bpm.value = bpm;
-    }, [ bpm ]);
+        return () => seq.dispose();
+    }, [rows, cols]);
 
-    const togglePlayback = useCallback (async ()=>{
-
-        if(Tone.getContext().state !== 'running'){
-            await Tone.start();
-        }
-        // Switch off
-        if( isPlaying ){
+    const togglePlayback = useCallback(async () => {
+        if (Tone.getContext().state !== 'running') await Tone.start();
+        if (isPlaying) {
             Tone.getTransport().stop();
-            Tone.getTransport().seconds = 0; // reset to 0 index
-            setIsPlaying( false );
-            setActiveStep( -1);
-        // Switch on
+            Tone.getTransport().seconds = 0;
+            setIsPlaying(false);
+            setActiveStep(-1);
         } else {
             Tone.getTransport().seconds = 0;
             Tone.getTransport().start();
             setIsPlaying(true);
-
         }
-    }, [ isPlaying ]);
+    }, [isPlaying]);
 
-    return { activeStep, isPlaying, togglePlayback, bpm, setBpm };
-}
+    return { activeStep, isPlaying, togglePlayback, bpm, setBpm, loadFile };
+};
