@@ -9,9 +9,31 @@ const socket = io('http://localhost:4000');
 
 function App() {
 
-    const [ gridState , setGridState ] = useState(new Array(16).fill(false));
+    const [gridState, setGridState] = useState(
+        Array.from({ length: 16 }, () => ({
+            isActive: false,
+            sampleId: null
+        }))
+    );
 
-    const { activeStep, isPlaying, togglePlayback, bpm, setBpm } = useSequencer( gridState );
+    const {
+        activeStep,
+        isPlaying,
+        togglePlayback,
+        bpm,
+        setBpm,
+        loadFile
+    } = useSequencer(gridState);
+
+    const handleFileChange = (evt) => {
+        const file = evt.target.files[0];
+        if( file ){
+            loadFile( file );
+        }
+    };
+
+
+
 
     useEffect(() =>{
         socket.on('initial-state', (data) => setGridState(data));
@@ -27,16 +49,23 @@ function App() {
     }, []);
 
 
-    const handleToggle = (index )=>{
-        const newState = !gridState[ index ];
-
-        // Update UI
-        setGridState(prev =>{
+    const handleToggle = (index) => {
+        setGridState(prev => {
             const next = [...prev];
-            next[ index ] = newState;
+
+            const currentIsActive = next[ index ].isActive;
+
+            // Toggle isActive
+            next[index] = {
+                ...next[index],
+                isActive: !currentIsActive
+            };
+
+            // Emit the object to the server
+            socket.emit('pad-toggle', { index, newState: next[index] });
+
             return next;
         });
-        socket.emit('pad-toggle', { index, newState });
     };
 
     const playTestSound = async () =>{
@@ -50,6 +79,11 @@ function App() {
         <div className='app-container'>
             <h1 className='main-title'>Trellis</h1>
 
+            <div className="upload-section">
+                <label>Upload Sound for Row 1: </label>
+                <input type="file" accept="audio/*" onChange={ handleFileChange }/>
+            </div>
+
             <div className='controls'>
 
                 <div className='bpm-control'>
@@ -62,6 +96,7 @@ function App() {
                         onChange={(e) => setBpm(Number(e.target.value))}
                     />
                 </div>
+
             </div>
 
             <TrellisGrid
@@ -73,9 +108,9 @@ function App() {
             <div className='playControls'>
                 <button
                     className={`play-button ${isPlaying ? 'stop' : 'start'}`}
-                    onClick={ togglePlayback }
+                    onClick={togglePlayback}
                 >
-                    { isPlaying ? 'stop' : 'play' }
+                    {isPlaying ? 'stop' : 'play'}
                 </button>
             </div>
 
