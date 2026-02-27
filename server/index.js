@@ -23,17 +23,16 @@ if(yArray.length === 0){
 
 io.on('connection', (socket) => {
     console.log('Socket connection connected: ' + socket.id);
-
     socket.emit('initial-state', yArray.toArray());
 
     // Listen for a pad-toggle
     socket.on('pad-toggle', ({ index, newState }) =>{
         yArray.delete(index, 1);
         yArray.insert(index, [newState]);
-    })
 
-    // Broadcast the change
-    socket.broadcast.emit('state-update', {index, newState });
+        // Broadcast the change
+        socket.broadcast.emit('update-state', { index, newState });
+    });
 
     // Disconnect
     socket.on('disconnect', ()=>{
