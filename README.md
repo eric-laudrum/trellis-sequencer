@@ -20,8 +20,24 @@ This project uses NPM Workspaces and Concurrently to run the front and backend s
 
 - Concurrently
 
-
 ## Run the application
 - Navigate to the root directory
   bash
   npm run dev
+
+  
+## Checklist
+Sequencer
+[X] 16 Pad grid
+[X] Click to make pad active
+[X] Active pad highlighted
+
+Controls
+  [X] Play
+  [X] Stop / Restart 
+  [] Pause (keep position)
+
+Settings
+[] BPM
+[] Volume
+[] Number of bars

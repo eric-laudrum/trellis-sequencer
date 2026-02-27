@@ -5,6 +5,7 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
 
     const [ activeStep, setActiveStep ] = useState(-1);
     const [ isPlaying, setIsPlaying ] = useState(false);
+    const [ bpm, setBpm ] = useState( 120 );
     const  synth = useRef(null);
     const gridRef= useRef( gridState );
 
@@ -58,7 +59,9 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
             synth.current?.dispose();
         };
     }, [rows, cols ]); // Recreate the sequence if the dimensions change (tbd)
-
+    useEffect(()=>{
+        Tone.getTransport().bpm.value = bpm;
+    }, [ bpm ]);
 
     const togglePlayback = useCallback (async ()=>{
 
@@ -80,5 +83,5 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
         }
     }, [ isPlaying ]);
 
-    return { activeStep, isPlaying, togglePlayback };
+    return { activeStep, isPlaying, togglePlayback, bpm, setBpm };
 }
