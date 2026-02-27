@@ -35,7 +35,7 @@ Sequencer
 Controls
   [X] Play
   [X] Stop / Restart 
-  [] Pause (keep position)
+  [X] Pause (keep position)
 
 Settings
 [] BPM
