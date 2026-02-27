@@ -3,60 +3,48 @@ import * as Tone from 'tone';
 
 export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
 
+    const [ samples, setSamples ] = useState( [] );
+    const [ selectedSampleId, setSelectedSampleId ] = useState( null );
     const [ activeStep, setActiveStep ] = useState(-1);
     const [ isPlaying, setIsPlaying ] = useState(false);
     const [ bpm, setBpm ] = useState( 120 );
+    const [ sampleStart, setSampleStart ] = useState(0);
 
-    const player = useRef(null);
+    const players = useRef({});
     const gridRef = useRef( gridState );
-
-    // Update loop with latest toggles
-    useEffect(() =>{
-        gridRef.current = gridState;
-    }, [ gridState ]);
-
-    // Update BPM
-    useEffect(() => {
-        Tone.getTransport().bpm.value = bpm;
-    }, [bpm]);
 
 
     const loadFile = async (file) => {
+        const id = crypto.randomUUID();
         const url = URL.createObjectURL(file);
-        if (player.current) player.current.dispose();
-        player.current = new Tone.Player(url).toDestination();
+        const newPlayer = new Tone.Player(url).toDestination();
+
+        players.current[id] = newPlayer;
+
+        setSamples(prev => [...prev, {
+            id,
+            name: file.name,
+            startTime: 0
+        }]);
+        setSelectedSampleId(id);
     };
 
-    useEffect(() => {
-        // Generate sequence play order
-        const getSequenceOrder = () =>{
-            const order = [];
-            // Bottom left to top right
-            for( let r = rows -1; r >= 0; r-- ) {
-                for (let c = 0; c < cols; c++ ) {
-                    order.push(r * cols + c);
-                }
-            }
-            return order;
-        };
+    const updateSampleStart = (id, val) => {
+        const num = parseFloat(val) || 0;
+        setSamples(prev => prev.map( sample =>
+            sample.id === id ? { ...sample, startTime: Number(num.toFixed(2)) } : sample
+        ));
+    };
 
-        const sequenceOrder = getSequenceOrder();
+    const captureCurrentMoment = () => {
+        if ( !selectedSampleId ) return;
 
-        const seq = new Tone.Sequence((time, stepIdx ) =>{
-            const gridIndex = sequenceOrder[ stepIdx ];
-            setActiveStep( gridIndex );
+        // Get current time in seconds
+        const currentTime = Tone.getTransport().seconds;
 
-            // Accessing the object property dynamically
-            const cell = gridRef.current[gridIndex];
-            if (cell?.isActive && player.current?.loaded) {
-                player.current.start(time);
-            }
-
-        }, Array.from({ length: rows * cols }, (_, i) => i), "8n");
-
-        seq.start(0);
-        return () => seq.dispose();
-    }, [rows, cols]);
+        // Update start time with new time
+        updateSampleStart(selectedSampleId, currentTime.toFixed(2));
+    };
 
     const togglePlayback = useCallback(async () => {
         if (Tone.getContext().state !== 'running') await Tone.start();
@@ -72,5 +60,61 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
         }
     }, [isPlaying]);
 
-    return { activeStep, isPlaying, togglePlayback, bpm, setBpm, loadFile };
+
+    // Update loop with latest toggles
+    useEffect(() =>{
+        gridRef.current = gridState;
+    }, [ gridState ]);
+
+    // Update BPM
+    useEffect(() => {
+        Tone.getTransport().bpm.value = bpm;
+    }, [bpm]);
+
+    // Generate sequence play order
+    useEffect(() => {
+        const getSequenceOrder = () =>{
+            const order = [];
+            // Bottom left to top right
+            for( let r = rows -1; r >= 0; r-- ) {
+                for (let c = 0; c < cols; c++ ) {
+                    order.push(r * cols + c);
+                }
+            }
+            return order;
+        };
+
+        const sequenceOrder = getSequenceOrder();
+
+        const seq = new Tone.Sequence((time, stepIdx) => {
+            const gridIndex = sequenceOrder[stepIdx];
+            setActiveStep(gridIndex);
+
+            const cell = gridRef.current[gridIndex];
+            const currentPlayer = players.current[selectedSampleId];
+
+            if (cell?.isActive && currentPlayer?.loaded) {
+                currentPlayer.start(time, sampleStart / 1000);
+            }
+        }, Array.from({ length: rows * cols }, (_, i) => i),
+            "8n");
+
+        seq.start(0);
+        return () => seq.dispose();
+    }, [rows, cols, sampleStart ]);
+
+
+    return {
+        activeStep,
+        isPlaying,
+        togglePlayback,
+        bpm,
+        setBpm,
+        loadFile,
+        sampleStart,
+        setSampleStart,
+        samples,
+        selectedSampleId,
+        setSelectedSampleId
+    };
 };
