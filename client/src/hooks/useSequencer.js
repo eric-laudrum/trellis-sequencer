@@ -65,16 +65,18 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
         if(Tone.getContext().state !== 'running'){
             await Tone.start();
         }
-
+        // Switch off
         if( isPlaying ){
             Tone.getTransport().stop();
             Tone.getTransport().seconds = 0; // reset to 0 index
             setIsPlaying( false );
             setActiveStep( -1);
+        // Switch on
         } else {
             Tone.getTransport().seconds = 0;
             Tone.getTransport().start();
             setIsPlaying(true);
+
         }
     }, [ isPlaying ]);
 
