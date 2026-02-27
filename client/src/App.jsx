@@ -11,7 +11,7 @@ function App() {
 
     const [ gridState , setGridState ] = useState(new Array(16).fill(false));
 
-    const { activeStep, isPlaying, togglePlayback } = useSequencer( gridState );
+    const { activeStep, isPlaying, togglePlayback, bpm, setBpm } = useSequencer( gridState );
 
     useEffect(() =>{
         socket.on('initial-state', (data) => setGridState(data));
@@ -50,6 +50,20 @@ function App() {
         <div className='app-container'>
             <h1 className='main-title'>Trellis</h1>
 
+            <div className='controls'>
+
+                <div className='bpm-control'>
+                    <label>BPM: {bpm}</label>
+                    <input
+                        type="range"
+                        min="20"
+                        max="200"
+                        value={bpm}
+                        onChange={(e) => setBpm(Number(e.target.value))}
+                    />
+                </div>
+            </div>
+
             <TrellisGrid
                 gridState={gridState}
                 onToggle={handleToggle}
@@ -66,7 +80,7 @@ function App() {
             </div>
 
 
-            <button onClick={playTestSound}>Play Test</button>
+            {/* <button onClick={playTestSound}>Play Test</button> */}
         </div>
 
     );
