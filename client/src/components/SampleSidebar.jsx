@@ -1,7 +1,7 @@
 const SampleSidebar = ({ samples, selectedId, onSelect, onUpload }) => {
     return(
 
-        <aside className="sample-sidebar">
+        <aside className="library-container">
             <h3>Library</h3>
             <input type="file"
                    accept="audio/*"
