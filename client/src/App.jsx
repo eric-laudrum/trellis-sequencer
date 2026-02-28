@@ -39,6 +39,9 @@ function App() {
     };
 
     const handleToggle = (index) => {
+
+        if( !selectedSampleId ) return;
+
         setGridState(prev => {
             const next = [...prev];
 
@@ -47,7 +50,8 @@ function App() {
             // Toggle isActive
             next[index] = {
                 ...next[index],
-                isActive: !currentIsActive
+                isActive: !currentIsActive,
+                sampleId: !currentIsActive ? selectedSampleId : null,
             };
 
             // Emit the object to the server
@@ -95,10 +99,7 @@ function App() {
                 </div>
             </div>
 
-            <div className="upload-section">
-                <label>Upload Sound for Row 1: </label>
-                <input type="file" accept="audio/*" onChange={handleFileChange}/>
-            </div>
+
 
             {/* ------------ Controls ------------*/}
             <div className='controls'>

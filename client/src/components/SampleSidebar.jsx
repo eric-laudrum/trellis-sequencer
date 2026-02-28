@@ -15,8 +15,8 @@ const SampleSidebar = ({ samples, selectedId, onSelect, onUpload }) => {
                         className={`sample-item ${selectedId === sample.id ? 'active' : ''}`}
                         onClick={() => onSelect(sample.id)}
                     >
-                        <span>{ sample.name}</span>
-                        <span>{ sample.startTime.toFixed(2)}s</span>
+                        <span className="sample-name">{ sample.name}</span>
+                        <span className="sample-time">{ sample.startTime.toFixed(2)}s</span>
                     </div>
                 ))}
             </div>
