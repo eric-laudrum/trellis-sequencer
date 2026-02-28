@@ -3,8 +3,8 @@ import './App.css'
 import io from 'socket.io-client';
 import * as Tone from 'tone';
 import TrellisGrid from './components/TrellisGrid.jsx';
+import SampleSidebar from "./components/SampleSidebar.jsx";
 import { useSequencer } from './hooks/useSequencer.js';
-
 const socket = io('http://localhost:4000');
 
 function App() {
@@ -22,7 +22,13 @@ function App() {
         togglePlayback,
         bpm,
         setBpm,
-        loadFile
+        loadFile,
+        sampleStart,
+        setSampleStart,
+        samples,
+        selectedSampleId,
+        setSelectedSampleId,
+
     } = useSequencer(gridState);
 
     const handleFileChange = (evt) => {
@@ -32,24 +38,10 @@ function App() {
         }
     };
 
-
-
-
-    useEffect(() =>{
-        socket.on('initial-state', (data) => setGridState(data));
-
-        socket.on('update-state', ({ index, newState }) =>
-            setGridState(prev =>{
-                const next = [...prev];
-                next[ index ] = newState;
-                return next;
-            })
-        );
-        return () => socket.off();
-    }, []);
-
-
     const handleToggle = (index) => {
+
+        if( !selectedSampleId ) return;
+
         setGridState(prev => {
             const next = [...prev];
 
@@ -58,7 +50,8 @@ function App() {
             // Toggle isActive
             next[index] = {
                 ...next[index],
-                isActive: !currentIsActive
+                isActive: !currentIsActive,
+                sampleId: !currentIsActive ? selectedSampleId : null,
             };
 
             // Emit the object to the server
@@ -74,28 +67,73 @@ function App() {
         synth.triggerAttackRelease("C4", "8n");
     };
 
+    // Set Grid
+    useEffect(() =>{
+        socket.on('initial-state', (data) => setGridState(data));
+
+        socket.on('update-state', ({ index, newState }) =>
+            setGridState(prev =>{
+                const next = [...prev];
+                next[ index ] = newState;
+                return next;
+            })
+        );
+        return () => socket.off();
+    }, []);
 
     return (
         <div className='app-container'>
+
             <h1 className='main-title'>Trellis</h1>
 
-            <div className="upload-section">
-                <label>Upload Sound for Row 1: </label>
-                <input type="file" accept="audio/*" onChange={ handleFileChange }/>
+            <div className="layout-wrapper">
+                <SampleSidebar
+                    samples={ samples }
+                    selectedId={ selectedSampleId }
+                    onSelect={ setSelectedSampleId }
+                    onUpload={handleFileChange}
+                />
+
+                <div className="sequencer-main">
+                    {/* BPM, Start Time Editor, and TrellisGrid go here */}
+                </div>
             </div>
 
+
+
+            {/* ------------ Controls ------------*/}
             <div className='controls'>
 
+                {/* ------ BPM ------*/}
                 <div className='bpm-control'>
                     <label>BPM: {bpm}</label>
                     <input
                         type="range"
-                        min="20"
+                        min="1"
                         max="200"
                         value={bpm}
                         onChange={(e) => setBpm(Number(e.target.value))}
                     />
                 </div>
+
+                {/* ------ Start Time ------*/}
+                <div className='start-time-control'>
+                    <input
+                        type="number"
+                        step="0.01"
+                        value={(sampleStart / 1000).toFixed(2)}
+                        onChange={(e) => setSampleStart(Number(e.target.value) * 1000)}
+                    />
+                    <input
+                        type="range"
+                        min="0"
+                        max="20000"
+                        step="1"
+                        value={sampleStart}
+                        onChange={(e) => setSampleStart(Number(e.target.value))}
+                    />
+                </div>
+
 
             </div>
 
