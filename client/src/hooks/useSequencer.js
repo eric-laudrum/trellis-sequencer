@@ -36,6 +36,13 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
         ));
     };
 
+    const changeStartTime = ( msValue ) =>{
+        setSampleStart( msValue );
+        if( selectedSampleId ){
+            updateSampleStart( selectedSampleId, msValue / 1000 );
+        }
+    };
+
     const captureCurrentMoment = () => {
         if ( !selectedSampleId ) return;
 
@@ -43,7 +50,8 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
         const currentTime = Tone.getTransport().seconds;
 
         // Update start time with new time
-        updateSampleStart(selectedSampleId, currentTime.toFixed(2));
+        changeStartTime( currentTime * 1000 );
+
     };
 
     const togglePlayback = useCallback(async () => {
@@ -91,18 +99,32 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
             setActiveStep(gridIndex);
 
             const cell = gridRef.current[gridIndex];
-            const currentPlayer = players.current[selectedSampleId];
+            const padSampleId = cell?.sampleId;
 
-            if (cell?.isActive && currentPlayer?.loaded) {
-                currentPlayer.start(time, sampleStart / 1000);
+            const playerToPlay = players.current[ padSampleId ];
+            const sampleData = samples.find( sample => sample.id === padSampleId );
+
+
+            // const currentPlayer = players.current[selectedSampleId];
+
+            if (cell?.isActive && playerToPlay?.loaded) {
+                const offset = sampleData ? sampleData.startTime : 0;
+                playerToPlay.start(time, offset )
             }
         }, Array.from({ length: rows * cols }, (_, i) => i),
             "8n");
 
         seq.start(0);
         return () => seq.dispose();
-    }, [rows, cols, sampleStart ]);
+    }, [rows, cols, samples ]);
 
+    // Update slider to active pad's start time
+    useEffect(() => {
+        const activeSample = samples.find(s => s.id === selectedSampleId);
+        if (activeSample) {
+            setSampleStart(activeSample.startTime * 1000);
+        }
+    }, [selectedSampleId, samples]);
 
     return {
         activeStep,
@@ -112,7 +134,8 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
         setBpm,
         loadFile,
         sampleStart,
-        setSampleStart,
+        setSampleStart: changeStartTime,
+        captureCurrentMoment,
         samples,
         selectedSampleId,
         setSelectedSampleId
