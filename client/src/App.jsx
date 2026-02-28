@@ -84,9 +84,47 @@ function App() {
     return (
         <div className='app-container'>
 
-            <h1 className='main-title'>Trellis</h1>
+            <h1 className='main-title'>TRELLIS</h1>
 
-            <div className="layout-wrapper">
+            <div className="seq-header">
+                {/* ------------ Controls ------------*/}
+                <div className='controls'>
+
+                    {/* ------ BPM ------*/}
+                    <div className='bpm-control'>
+                        <label>BPM: {bpm}</label>
+                        <input
+                            type="range"
+                            min="1"
+                            max="200"
+                            value={bpm}
+                            onChange={(e) => setBpm(Number(e.target.value))}
+                        />
+                    </div>
+
+                    {/* ------ Start Time ------*/}
+                    <div className='start-time-control'>
+                        <input
+                            type="number"
+                            step="0.01"
+                            value={(sampleStart / 1000).toFixed(2)}
+                            onChange={(e) => setSampleStart(Number(e.target.value) * 1000)}
+                        />
+                        <input
+                            type="range"
+                            min="0"
+                            max="20000"
+                            step="1"
+                            value={sampleStart}
+                            onChange={(e) => setSampleStart(Number(e.target.value))}
+                        />
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div className="seq-main">
                 <SampleSidebar
                     samples={ samples }
                     selectedId={ selectedSampleId }
@@ -94,56 +132,15 @@ function App() {
                     onUpload={handleFileChange}
                 />
 
-                <div className="sequencer-main">
-                    {/* BPM, Start Time Editor, and TrellisGrid go here */}
-                </div>
+                <TrellisGrid
+                    gridState={gridState}
+                    onToggle={handleToggle}
+                    activeStep={activeStep}
+                />
             </div>
 
 
-
-            {/* ------------ Controls ------------*/}
-            <div className='controls'>
-
-                {/* ------ BPM ------*/}
-                <div className='bpm-control'>
-                    <label>BPM: {bpm}</label>
-                    <input
-                        type="range"
-                        min="1"
-                        max="200"
-                        value={bpm}
-                        onChange={(e) => setBpm(Number(e.target.value))}
-                    />
-                </div>
-
-                {/* ------ Start Time ------*/}
-                <div className='start-time-control'>
-                    <input
-                        type="number"
-                        step="0.01"
-                        value={(sampleStart / 1000).toFixed(2)}
-                        onChange={(e) => setSampleStart(Number(e.target.value) * 1000)}
-                    />
-                    <input
-                        type="range"
-                        min="0"
-                        max="20000"
-                        step="1"
-                        value={sampleStart}
-                        onChange={(e) => setSampleStart(Number(e.target.value))}
-                    />
-                </div>
-
-
-            </div>
-
-            <TrellisGrid
-                gridState={gridState}
-                onToggle={handleToggle}
-                activeStep={activeStep}
-            />
-
-            <div className='playControls'>
+            <div className='play-controls'>
                 <button
                     className={`play-button ${isPlaying ? 'stop' : 'start'}`}
                     onClick={togglePlayback}
