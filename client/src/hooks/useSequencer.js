@@ -9,6 +9,7 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
     const [ isPlaying, setIsPlaying ] = useState(false);
     const [ bpm, setBpm ] = useState( 120 );
     const [ sampleStart, setSampleStart ] = useState(0);
+    const [ lastTriggerTime, setLastTriggerTime ] = useState( 0 );
 
     const players = useRef({});
     const gridRef = useRef( gridState );
@@ -109,12 +110,10 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
             const playerToPlay = players.current[ padSampleId ];
             const sampleData = samples.find( sample => sample.id === padSampleId );
 
-
-            // const currentPlayer = players.current[selectedSampleId];
-
             if (cell?.isActive && playerToPlay?.loaded) {
                 const offset = sampleData ? sampleData.startTime : 0;
-                playerToPlay.start(time, offset )
+                playerToPlay.start(time, offset);
+                setLastTriggerTime(Tone.getTransport().seconds);
             }
         }, Array.from({ length: rows * cols }, (_, i) => i),
             "8n");
@@ -143,6 +142,7 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
         captureCurrentMoment,
         samples,
         selectedSampleId,
-        setSelectedSampleId
+        setSelectedSampleId,
+        lastTriggerTime,
     };
 };
