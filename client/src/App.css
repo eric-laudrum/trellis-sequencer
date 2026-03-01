@@ -43,7 +43,35 @@ body {
   align-items: start;
   justify-content: start;
 
+  border: 1px solid grey;
 }
+
+.sample-settings{
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  border-radius: 10px;
+  padding: 5px;
+
+}
+
+.sample-setting{
+  display: flex;
+  margin: 5px;
+  border-radius: 10px;
+  background-color: rgba(68, 68, 68, 0.14);
+  padding: 5px;
+  align-content: start;
+  justify-content: space-between;
+
+}
+
+.number-input{
+  border: 1px solid rgba(0, 0, 0, 0.34);
+  width: 50px;
+  padding: 5px;
+}
+
 .seq-main{
   display: flex;
   flex-direction: row;
@@ -57,10 +85,14 @@ body {
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.37);
   margin: 5px;
+  max-width: 500px;
+  min-width: 100px;
 }
 
 .sample-list{
   background-color: rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  margin: 5px;
   min-height: 30vh;
 }
 
@@ -69,6 +101,12 @@ body {
   border-radius: 5px;
   margin: 5px;
   background-color: rgba(255, 255, 255, 0.05);
+}
+.sample-item:nth-child(even){
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 5px;
+  margin: 5px;
+  background-color: rgba(255, 255, 255, 0.25);
 }
 
 .sample-item.active{
@@ -85,8 +123,8 @@ body {
 }
 
 h1.main-title {
-  font-size: 3.2em;
-  line-height: 1.1;
+  font-size: 3.0em;
+  line-height: 0.1;
   text-align: left;
   font-weight: 10;
   color: rgba(255, 255, 255, 0.37);
