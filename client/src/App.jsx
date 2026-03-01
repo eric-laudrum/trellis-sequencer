@@ -88,23 +88,30 @@ function App() {
 
             <div className="seq-header">
                 {/* ------------ Controls ------------*/}
-                <div className='controls'>
+                <div className='sample-settings'>
 
                     {/* ------ BPM ------*/}
-                    <div className='bpm-control'>
+                    <div className='sample-setting' id='bpm-control'>
                         <label>BPM: {bpm}</label>
+                        <input className='number-input'
+                            type="number"
+                            step="0.01"
+                            value={ bpm.toFixed(2)}
+                            onChange={(e) => setBpm(Number(e.target.value))}
+                        />
                         <input
                             type="range"
                             min="1"
                             max="200"
-                            value={bpm}
+                            value={ bpm }
                             onChange={(e) => setBpm(Number(e.target.value))}
                         />
                     </div>
 
                     {/* ------ Start Time ------*/}
-                    <div className='start-time-control'>
-                        <input
+                    <div className='sample-setting' id='start-time-control'>
+                        <label>START TIME</label>
+                        <input className='number-input'
                             type="number"
                             step="0.01"
                             value={(sampleStart / 1000).toFixed(2)}
