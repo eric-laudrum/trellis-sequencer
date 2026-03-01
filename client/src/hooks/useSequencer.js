@@ -13,18 +13,23 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
     const players = useRef({});
     const gridRef = useRef( gridState );
 
-
     const loadFile = async (file) => {
         const id = crypto.randomUUID();
         const url = URL.createObjectURL(file);
+
+        // Load file into a buffer
         const newPlayer = new Tone.Player(url).toDestination();
+
+        // Wait to load
+        await newPlayer.load(url);
 
         players.current[id] = newPlayer;
 
         setSamples(prev => [...prev, {
             id,
             name: file.name,
-            startTime: 0
+            startTime: 0,
+            buffer: newPlayer.buffer
         }]);
         setSelectedSampleId(id);
     };

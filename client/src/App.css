@@ -167,4 +167,10 @@ button:focus-visible {
   .main-title{
     text-align: left;
   }
+
+
+
+  .waveform-container{
+    position: relative;
+  }
 }
