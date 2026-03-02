@@ -23,6 +23,7 @@ function App() {
         activeStep,
         isPlaying,
         togglePlayback,
+        stopAll,
         bpm,
         setBpm,
         sampleStart,
@@ -205,11 +206,20 @@ function App() {
 
 
             <div className='play-controls'>
+                {/* PLAY / PAUSE Button */}
                 <button
-                    className={`play-button ${isPlaying ? 'stop' : 'start'}`}
+                    className={`play-button ${isPlaying ? 'pause' : 'start'}`}
                     onClick={togglePlayback}
                 >
-                    {isPlaying ? 'stop' : '▶'}
+                    {isPlaying ? '||' : '▶'}
+                </button>
+
+                {/* STOP Button */}
+                <button
+                    className="stop-button"
+                    onClick={stopAll}
+                >
+                    STOP
                 </button>
             </div>
 

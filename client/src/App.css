@@ -293,3 +293,24 @@ div.nudge-container {
 }
 
 
+.play-button{
+
+  background: #333;
+  color: orange;
+  border: 1px solid orange;
+  border-radius: 10px;
+  padding: 10px 20px 10px 25px;
+  font-size: 3em;
+  cursor: pointer;
+  transition: transform 0.05s;
+}
+
+.play-button:active {
+  background: orange;
+  border: 1px solid black;
+  color: black;
+  transform: scale(0.95);
+}
+
+
+

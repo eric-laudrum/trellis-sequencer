@@ -64,6 +64,23 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
         }
     };
 
+    const stopAll = () =>{
+        Tone.getTransport().stop();
+        Tone.getTransport().seconds = 0;
+
+        // Hard stop all pads playing
+        Object.values( players.current ).forEach( player =>{
+            player.stop();
+        });
+
+        setIsPlaying( false);
+        setActiveStep( -1 );
+    }
+
+    const togglePause = () =>{
+        setIsPlaying( prev => !prev );
+    }
+
     const playSampleSolo = ( id ) =>{
         triggerSample(id, Tone.now());
     };
@@ -197,6 +214,11 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
             const cell = gridRef.current[gridIndex];
             const padSampleId = cell?.sampleId;
 
+            // Only trigger if isPlaying is true
+            if (isPlaying && cell?.isActive && padSampleId) {
+                triggerSample(padSampleId, time);
+            }
+
             const playerToPlay = players.current[ padSampleId ];
             const sampleData = samples.find( sample => sample.id === padSampleId );
 
@@ -232,6 +254,7 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
         selectedSampleId,
         setSelectedSampleId,
         lastTriggerTime,
+        stopAll,
         setChokeGroup,
         tapBpm,
         loadFile,
