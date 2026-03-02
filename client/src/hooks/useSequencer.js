@@ -38,13 +38,14 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
 
     const triggerSample = ( sampleId, time ) =>{
         const player = players.current[ sampleId ];
-        const sampleData = sample.find( sample => sample.id === sampleId );
+        const currentSamples = sampleRef.current;
+        const sampleData = currentSamples.find( sample => sample.id === sampleId );
 
         if( player && player.loaded && sampleData ){
 
             // Choke Groups
             if( sampleData.chokeGroup !== null ){
-                samples.forEach( sample =>{
+                currentSamples.forEach( sample =>{
                     if (sample.chokeGroup === sampleData.chokeGroup && sample.id !== sampleId){
                         const otherPlayer = players.current[ sample.id];
 
@@ -139,7 +140,12 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
         });
     };
 
+    const setChokeGroup = ( id, groupId ) =>{
+        setSamples( prev => prev.map( sample =>
+            sample.id === id ? { ...sample, chokeGroup : groupId === "none" ? null: parseInt(groupId )}: sample ));
+    }
     const tapTimes = useRef([]);
+    const sampleRef = useRef([]);
 
     const togglePlayback = useCallback(async () => {
         if (Tone.getContext().state !== 'running') await Tone.start();
@@ -155,6 +161,9 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
         }
     }, [isPlaying]);
 
+    useEffect(() =>{
+        sampleRef.current = samples;
+    }, [samples ]);
 
     // Update loop with latest toggles
     useEffect(() =>{
@@ -223,7 +232,7 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
         selectedSampleId,
         setSelectedSampleId,
         lastTriggerTime,
-
+        setChokeGroup,
         tapBpm,
         loadFile,
         playSampleSolo,

@@ -1,4 +1,4 @@
-const SampleSidebar = ({ samples, selectedId, onSelect, onUpload, onPlaySolo }) => {
+const SampleSidebar = ({ samples, selectedId, onSelect, onUpload, onPlaySolo, onSetChokeGroup }) => {
     return(
 
         <aside className="sample-sidebar">
@@ -10,6 +10,7 @@ const SampleSidebar = ({ samples, selectedId, onSelect, onUpload, onPlaySolo }) 
 
             <div className="sample-list">
                 { samples.map((sample, index) => (
+
                     <div
                         key={sample.id}
                         className={`sample-item ${selectedId === sample.id ? 'active' : ''}`}
@@ -30,6 +31,24 @@ const SampleSidebar = ({ samples, selectedId, onSelect, onUpload, onPlaySolo }) 
                         >
                             ▶
                         </button>
+
+                        <div className="choke-selector">
+                            <label>CHOKE</label>
+                            <select
+                                value={sample.chokeGroup ?? "none"}
+                                onChange={(e) => {
+                                    e.stopPropagation();
+                                    onSetChokeGroup(sample.id, e.target.value);
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <option value="none">Off</option>
+                                <option value="1">Group 1</option>
+                                <option value="2">Group 2</option>
+                                <option value="3">Group 3</option>
+                                <option value="4">Group 4</option>
+                            </select>
+                        </div>
 
 
                     </div>
