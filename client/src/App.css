@@ -71,6 +71,7 @@ body {
   justify-content: start;
   border-radius: 10px;
   padding: 5px;
+  border: 3px dashed  rgba(255, 255, 255, 0.05);;
 
 }
 
@@ -78,10 +79,23 @@ body {
   display: flex;
   margin: 5px;
   border-radius: 10px;
+  height: 2em;
   background-color: rgba(68, 68, 68, 0.14);
   padding: 5px;
   align-content: start;
   justify-content: space-between;
+  align-items: center;
+  border: 0 solid green;
+
+}
+
+
+#bpm-control{
+
+
+}
+
+#start-time-control{
 
 }
 
@@ -171,6 +185,49 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+.tap-btn {
+  background: #333;
+  color: orange;
+  border: 1px solid orange;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: transform 0.05s;
+}
+
+.tap-btn:active {
+  background: orange;
+  border: 1px solid black;
+  color: black;
+  transform: scale(0.95);
+
+}
+
+.tap-btn:hover{
+  box-shadow: 0  0 5px 1px orange;
+  border: 1px solid black;
+}
+
+
+
+.inline-input{
+  border: 2px solid blue;
+  min-width: 50px;
+  max-width: 50px;
+  padding: 10px;
+}
+
+.editable-value{
+  align-content: center;
+}
+
+span.value-display{
+
+  border-radius: 10px;
+  min-width: 50px;
+  max-width: 50px;
+}
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
@@ -178,69 +235,82 @@ button:focus-visible {
   }
   a:hover {
     color: #747bff;
+
   }
   button {
     background-color: #f9f9f9;
+
   }
-
-  .main-title{
-    text-align: left;
-  }
+}
 
 
 
-
-  .value-display {
-    cursor: pointer;
-    font-weight: bold;
-    padding: 2px 5px;
-    border-bottom: 1px dashed #666;
-  }
-  .inline-input {
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid #fff;
-    color: inherit;
-    font-family: inherit;
-    font-size: inherit;
-    font-weight: bold;
-    width: 50px;
-    outline: none;
-    text-align: center;
-  }
-
-  .nudge-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .nudge-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    color: white;
-    width: 25px;
-    height: 25px;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .nudge-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
+.main-title{
+  text-align: left;
+}
 
 
 
 
+.value-display {
+  cursor: pointer;
+  font-weight: bold;
+  padding: 10px;
+  border-bottom: 1px solid rgba(102, 102, 102, 0.42);
+}
+.inline-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #fff;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: bold;
+  width: 50px;
+  outline: none;
+  text-align: center;
+}
 
-  .start-marker {
-    z-index: 2;
-  }
-
-  .playhead-marker {
-    z-index: 3;
-    box-shadow: 0 0 5px white;
-  }
-
+div.nudge-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
 
 }
+
+
+
+
+
+.start-marker {
+  z-index: 2;
+}
+
+.playhead-marker {
+  z-index: 3;
+  box-shadow: 0 0 5px white;
+}
+
+
+.play-button{
+
+  background: #333;
+  color: orange;
+  border: 1px solid orange;
+  border-radius: 10px;
+  padding: 10px 20px 10px 25px;
+  font-size: 3em;
+  cursor: pointer;
+  transition: transform 0.05s;
+}
+
+.play-button:active {
+  background: orange;
+  border: 1px solid black;
+  color: black;
+  transform: scale(0.95);
+}
+
+
+
