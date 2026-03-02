@@ -35,6 +35,21 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
         setSelectedSampleId(id);
     };
 
+    const playSampleSolo = ( id ) =>{
+        const player = players.current[ id ];
+        const sampleData = samples.find(sample => sample.id === id);
+
+        if( player && player.loaded ){
+            player.stop();
+            const offset = sampleData ? sampleData.startTime : 0;
+
+            const now = Tone.now();
+            player.start( now, offset );
+
+            setLastTriggerTime( now );
+        }
+    };
+
     const updateSampleStart = (id, val) => {
         const num = parseFloat(val) || 0;
         setSamples(prev => prev.map( sample =>
@@ -137,6 +152,7 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
         bpm,
         setBpm,
         loadFile,
+        playSampleSolo,
         sampleStart,
         setSampleStart: changeStartTime,
         captureCurrentMoment,

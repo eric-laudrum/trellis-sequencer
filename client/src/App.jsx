@@ -31,6 +31,8 @@ function App() {
         samples,
         selectedSampleId,
         setSelectedSampleId,
+        playSampleSolo,
+        lastTriggerTime,
 
     } = useSequencer(gridState);
 
@@ -158,6 +160,7 @@ function App() {
                             startTime={ sampleStart }
                             onUpdateStart={ setSampleStart }
                             isPlaying={ isPlaying }
+                            lastTriggerTime={lastTriggerTime}
                         />
                     )}
 
@@ -171,6 +174,7 @@ function App() {
                     selectedId={selectedSampleId}
                     onSelect={setSelectedSampleId}
                     onUpload={handleFileChange}
+                    onPlaySolo={playSampleSolo}
                 />
 
                 <TrellisGrid
