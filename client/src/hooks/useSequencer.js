@@ -30,24 +30,41 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
             id,
             name: file.name,
             startTime: 0,
-            buffer: newPlayer.buffer
+            buffer: newPlayer.buffer,
+            chokeGroup: null
         }]);
         setSelectedSampleId(id);
     };
 
-    const playSampleSolo = ( id ) =>{
-        const player = players.current[ id ];
-        const sampleData = samples.find(sample => sample.id === id);
+    const triggerSample = ( sampleId, time ) =>{
+        const player = players.current[ sampleId ];
+        const sampleData = sample.find( sample => sample.id === sampleId );
 
-        if( player && player.loaded ){
-            player.stop();
-            const offset = sampleData ? sampleData.startTime : 0;
+        if( player && player.loaded && sampleData ){
 
-            const now = Tone.now();
-            player.start( now, offset );
+            // Choke Groups
+            if( sampleData.chokeGroup !== null ){
+                samples.forEach( sample =>{
+                    if (sample.chokeGroup === sampleData.chokeGroup && sample.id !== sampleId){
+                        const otherPlayer = players.current[ sample.id];
 
-            setLastTriggerTime( now );
+                        if( otherPlayer ){
+                            otherPlayer.stop( time );
+                        }
+                    }
+                });
+            }
+
+            const offset = sampleData.startTime || 0;
+            player.start( time, offset );
+
+            // Update time for playhead
+            setLastTriggerTime( isPlaying ? Tone.getTransport().seconds : Tone.now());
         }
+    };
+
+    const playSampleSolo = ( id ) =>{
+        triggerSample(id, Tone.now());
     };
 
     const updateSampleStart = (id, val) => {
@@ -74,8 +91,6 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
         changeStartTime( currentTime * 1000 );
 
     };
-
-    const tapTimes = useRef([]);
 
     const tapBpm = () =>{
         const now = Tone.now();
@@ -120,11 +135,11 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
     const halfBpm = () =>{
         setBpm( prev =>{
             const halved = prev / 2;
-            return Math.min( halved, 30 ); // Min 30bpm
+            return Math.max( halved, 30 ); // Min 30bpm
         });
+    };
 
-
-    }
+    const tapTimes = useRef([]);
 
     const togglePlayback = useCallback(async () => {
         if (Tone.getContext().state !== 'running') await Tone.start();
@@ -176,10 +191,11 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
             const playerToPlay = players.current[ padSampleId ];
             const sampleData = samples.find( sample => sample.id === padSampleId );
 
-            if (cell?.isActive && playerToPlay?.loaded) {
-                const offset = sampleData ? sampleData.startTime : 0;
-                playerToPlay.start(time, offset);
-                setLastTriggerTime(Tone.getTransport().seconds);
+            if (cell?.isActive && padSampleId && playerToPlay?.loaded) {
+                //const offset = sampleData ? sampleData.startTime : 0;
+                //playerToPlay.start(time, offset);
+                //setLastTriggerTime(Tone.getTransport().seconds);
+                triggerSample(padSampleId, time);
             }
         }, Array.from({ length: rows * cols }, (_, i) => i),
             "8n");
