@@ -75,6 +75,57 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
 
     };
 
+    const tapTimes = useRef([]);
+
+    const tapBpm = () =>{
+        const now = Tone.now();
+        tapTimes.current.push(now);
+
+        // Use last 4 taps
+        if( tapTimes.current.length > 4 ){
+            tapTimes.current.shift();
+        }
+
+        if( tapTimes.current.length > 1 ){
+            const intervals = [];
+
+            for( let i=1; i < tapTimes.current.length; i++ ){
+                intervals.push(tapTimes.current[i] - tapTimes.current[i -1 ] );
+            }
+
+            const averageInterval = intervals.reduce((a, b ) => a + b) / intervals.length;
+
+            const newBpm = Math.round(60 / averageInterval);
+
+            if( newBpm > 30 && newBpm < 300 ){
+                setBpm(newBpm);
+            }
+        }
+        // Reset if user times out
+        setTimeout(() =>{
+            if( Tone.now() - tapTimes.current[ tapTimes.current.length - 1] > 2){
+                tapTimes.current =  [];
+
+            }
+        }, 2000);
+    };
+
+    const doubleBpm = () =>{
+        setBpm( prev =>{
+            const doubled = prev * 2;
+            return Math.min( doubled, 300 ); // Max 300bpm
+        });
+    };
+
+    const halfBpm = () =>{
+        setBpm( prev =>{
+            const halved = prev / 2;
+            return Math.min( halved, 30 ); // Min 30bpm
+        });
+
+
+    }
+
     const togglePlayback = useCallback(async () => {
         if (Tone.getContext().state !== 'running') await Tone.start();
         if (isPlaying) {
@@ -151,14 +202,18 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
         togglePlayback,
         bpm,
         setBpm,
-        loadFile,
-        playSampleSolo,
         sampleStart,
-        setSampleStart: changeStartTime,
-        captureCurrentMoment,
         samples,
         selectedSampleId,
         setSelectedSampleId,
         lastTriggerTime,
+
+        tapBpm,
+        loadFile,
+        playSampleSolo,
+        setSampleStart: changeStartTime,
+        captureCurrentMoment,
+        doubleBpm,
+        halfBpm,
     };
 };

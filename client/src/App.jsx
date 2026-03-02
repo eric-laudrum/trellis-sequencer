@@ -25,14 +25,17 @@ function App() {
         togglePlayback,
         bpm,
         setBpm,
-        loadFile,
         sampleStart,
-        setSampleStart,
         samples,
         selectedSampleId,
         setSelectedSampleId,
-        playSampleSolo,
         lastTriggerTime,
+        doubleBpm,
+        halfBpm,
+        tapBpm,
+        playSampleSolo,
+        setSampleStart,
+        loadFile,
 
     } = useSequencer(gridState);
 
@@ -108,20 +111,34 @@ function App() {
                     {/* ------ BPM ------*/}
                     <div className='sample-setting' id='bpm-control'>
                         <label>BPM</label>
-                        <div className="editable-value">
-                            {isEditingBpm ? (
-                                <input
-                                    autoFocus
-                                    className="inline-input"
-                                    type="number"
-                                    value={bpm}
-                                    onChange={(e) => setBpm(Number(e.target.value))}
-                                    onBlur={() => setIsEditingBpm(false)}
-                                    onKeyDown={(e) => e.key === 'Enter' && setIsEditingBpm(false)}
-                                />
-                            ) : (
-                                <span className="value-display" onClick={() => setIsEditingBpm(true)}>{bpm}</span>
-                            )}
+                        <div className="bpm-controls-wrapper" style={{display: 'flex', gap: '10px'}}>
+
+                            <button className="settings-btn"
+                                    onClick={halfBpm}>/2
+                            </button>
+
+                            <div className="editable-value">
+                                {isEditingBpm ? (
+                                    <input
+                                        autoFocus
+                                        className="inline-input"
+                                        type="number"
+                                        value={bpm}
+                                        onChange={(e) => setBpm(Number(e.target.value))}
+                                        onBlur={() => setIsEditingBpm(false)}
+                                    />
+                                ) : (
+                                    <span className="value-display" onClick={() => setIsEditingBpm(true)}>{bpm}</span>
+                                )}
+                            </div>
+
+                            <button className="settings-btn"
+                                    onClick={doubleBpm}>x2
+                            </button>
+
+                            <button className="tap-btn" onClick={tapBpm}>
+                                TAP
+                            </button>
                         </div>
                     </div>
 
@@ -129,7 +146,7 @@ function App() {
                     <div className='sample-setting' id='start-time-control'>
                         <label>START TIME</label>
                         <div className="nudge-container">
-                            <button className="nudge-btn" onClick={() => nudgeStart(-10)}>-</button>
+                            <button className="settings-btn" onClick={() => nudgeStart(-10)}>-</button>
 
                             <div className="editable-value">
                                 {isEditingStart ? (
@@ -150,7 +167,7 @@ function App() {
                                 )}
                             </div>
 
-                            <button className="nudge-btn" onClick={() => nudgeStart(10)}>+</button>
+                            <button className="settings-btn" onClick={() => nudgeStart(10)}>+</button>
                         </div>
                     </div>
 
@@ -190,7 +207,7 @@ function App() {
                     className={`play-button ${isPlaying ? 'stop' : 'start'}`}
                     onClick={togglePlayback}
                 >
-                    {isPlaying ? 'stop' : 'play'}
+                    {isPlaying ? 'stop' : '▶'}
                 </button>
             </div>
 
