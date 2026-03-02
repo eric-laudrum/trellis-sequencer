@@ -1,235 +1,33 @@
-import { useState, useEffect } from 'react'
-import './App.css'
+import React, { useState } from 'react'
 import io from 'socket.io-client';
-import * as Tone from 'tone';
+
 
 import TrellisGrid from './components/TrellisGrid.jsx';
 import SampleSidebar from "./components/SampleSidebar.jsx";
 import WaveformEditor from "./components/WaveformEditor.jsx";
+import Lobby from "./components/Lobby.jsx";
 
-import { useSequencer } from './hooks/useSequencer.js';
+import './App.css'
+import StudioRoom from "./components/StudioRoom.jsx";
+
 const socket = io('http://localhost:4000');
 
 function App() {
+    const [ roomName, setRoomName ] = useState(null);
 
-    const [gridState, setGridState] = useState(
-        Array.from({ length: 16 }, () => ({
-            isActive: false,
-            sampleId: null
-        }))
-    );
-
-    const {
-        activeStep,
-        isPlaying,
-        togglePlayback,
-        stopAll,
-        bpm,
-        setBpm,
-        sampleStart,
-        samples,
-        selectedSampleId,
-        setSelectedSampleId,
-        lastTriggerTime,
-        setChokeGroup,
-        doubleBpm,
-        halfBpm,
-        tapBpm,
-        playSampleSolo,
-        setSampleStart,
-        loadFile,
-
-    } = useSequencer(gridState);
-
-    const [ isEditingBpm, setIsEditingBpm ] = useState( false );
-    const [ isEditingStart, setIsEditingStart ] = useState( false );
-
-    const nudgeStart = ( amount ) =>{
-        const nextValue = Math.max( 0, Math.min( 20000, sampleStart + amount ));
-        setSampleStart( nextValue );
-    };
-
-    const handleFileChange = (evt) => {
-        const file = evt.target.files[0];
-        if( file ){
-            loadFile( file );
-        }
-    };
-
-    const handleToggle = (index) => {
-
-        if( !selectedSampleId ) return;
-
-        setGridState(prev => {
-            const next = [...prev];
-
-            const currentIsActive = next[ index ].isActive;
-
-            // Toggle isActive
-            next[index] = {
-                ...next[index],
-                isActive: !currentIsActive,
-                sampleId: !currentIsActive ? selectedSampleId : null,
-            };
-
-            // Emit the object to the server
-            socket.emit('pad-toggle', { index, newState: next[index] });
-
-            return next;
-        });
-    };
-
-    const currentSample = samples.find( sample => sample.id === selectedSampleId );
-
-    const playTestSound = async () =>{
-        await Tone.start();
-        const synth = new Tone.Synth().toDestination();
-        synth.triggerAttackRelease("C4", "8n");
-    };
-
-    // Set Grid
-    useEffect(() =>{
-        socket.on('initial-state', (data) => setGridState(data));
-
-        socket.on('update-state', ({ index, newState }) =>
-            setGridState(prev =>{
-                const next = [...prev];
-                next[ index ] = newState;
-                return next;
-            })
-        );
-        return () => socket.off();
-    }, []);
+    // Start in the Lobby
+    if(!roomName){
+        return <Lobby onJoin={(name) => setRoomName(name)}/>;
+    }
 
     return (
-        <div className='app-container'>
-
-            <h1 className='main-title'>TRELLIS</h1>
-
-            <div className="seq-header">
-                {/* ------------ Controls ------------*/}
-                <div className='sample-settings'>
-
-                    {/* ------ BPM ------*/}
-                    <div className='sample-setting' id='bpm-control'>
-                        <label>BPM</label>
-                        <div className="bpm-controls-wrapper" style={{display: 'flex', gap: '10px'}}>
-
-                            <button className="settings-btn"
-                                    onClick={halfBpm}>/2
-                            </button>
-
-                            <div className="editable-value">
-                                {isEditingBpm ? (
-                                    <input
-                                        autoFocus
-                                        className="inline-input"
-                                        type="number"
-                                        value={bpm}
-                                        onChange={(e) => setBpm(Number(e.target.value))}
-                                        onBlur={() => setIsEditingBpm(false)}
-                                    />
-                                ) : (
-                                    <span className="value-display" onClick={() => setIsEditingBpm(true)}>{bpm}</span>
-                                )}
-                            </div>
-
-                            <button className="settings-btn"
-                                    onClick={doubleBpm}>x2
-                            </button>
-
-                            <button className="tap-btn" onClick={tapBpm}>
-                                TAP
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* ------ Start Time ------*/}
-                    <div className='sample-setting' id='start-time-control'>
-                        <label>START TIME</label>
-                        <div className="nudge-container">
-                            <button className="settings-btn" onClick={() => nudgeStart(-10)}>-</button>
-
-                            <div className="editable-value">
-                                {isEditingStart ? (
-                                    <input
-                                        autoFocus
-                                        className="inline-input"
-                                        type="number"
-                                        step="0.01"
-                                        value={(sampleStart / 1000).toFixed(2)}
-                                        onChange={(e) => setSampleStart(Number(e.target.value) * 1000)}
-                                        onBlur={() => setIsEditingStart(false)}
-                                        onKeyDown={(e) => e.key === 'Enter' && setIsEditingStart(false)}
-                                    />
-                                ) : (
-                                    <span className="value-display" onClick={() => setIsEditingStart(true)}>
-                                        {(sampleStart / 1000).toFixed(2)}s
-                                    </span>
-                                )}
-                            </div>
-
-                            <button className="settings-btn" onClick={() => nudgeStart(10)}>+</button>
-                        </div>
-                    </div>
-
-                    {currentSample && (
-                        <WaveformEditor
-                            buffer={ currentSample.buffer }
-                            startTime={ sampleStart }
-                            onUpdateStart={ setSampleStart }
-                            isPlaying={ isPlaying }
-                            lastTriggerTime={lastTriggerTime}
-                        />
-                    )}
-
-                </div>
-
-            </div>
-
-            <div className="seq-main">
-                <SampleSidebar
-                    samples={samples}
-                    onSetChokeGroup={ setChokeGroup }
-                    selectedId={ selectedSampleId }
-                    onSelect={setSelectedSampleId}
-                    onUpload={handleFileChange}
-                    onPlaySolo={playSampleSolo}
-                />
-
-                <TrellisGrid
-                    gridState={gridState}
-                    onToggle={handleToggle}
-                    activeStep={activeStep}
-                />
-            </div>
-
-
-            <div className='play-controls'>
-                {/* PLAY / PAUSE Button */}
-                <button
-                    className={`play-button ${isPlaying ? 'pause' : 'start'}`}
-                    onClick={togglePlayback}
-                >
-                    {isPlaying ? '||' : '▶'}
-                </button>
-
-                {/* STOP Button */}
-                <button
-                    className="stop-button"
-                    onClick={stopAll}
-                >
-                    STOP
-                </button>
-            </div>
-
-
-            {/* <button onClick={playTestSound}>Play Test</button> */}
-        </div>
+        <StudioRoom
+            roomName={roomName}
+            socket={socket}
+            onLeave={() => setRoomName(null)}
+        />
 
     );
-
 }
-
 
 export default App;
