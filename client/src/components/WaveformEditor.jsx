@@ -44,33 +44,45 @@ const WaveformEditor = ({ buffer, startTime, onUpdateStart, isPlaying, lastTrigg
     useEffect(() => {
         let animId;
         const updatePlayhead = () => {
+
+
+            // Get current time from clocks:
+            // Transport (Sequencer Clock)
             const transportTime = Tone.getTransport().seconds;
+            // Context (Manual Play Clock)
+            const contextTime = Tone.now();
 
-            // Only animate if playing
-            if (isPlaying && buffer && lastTriggerTime > 0) {
+            // Select clock based on sound origin
+            const currentTime = isPlaying ? transportTime : contextTime;
 
-                const timeElapsed = now - lastTriggerTime;
-                const adjustedElapsed = Math.max(0, timeElapsed);
+            const timeElapsed = currentTime - lastTriggerTime;
+            const isCurrentlyPlaying = buffer && timeElapsed >= 0 && timeElapsed <= buffer.duration;
 
-                // Convert time to seconds
+            if (buffer && lastTriggerTime > 0 && (isPlaying || isCurrentlyPlaying)) {
                 const startInSeconds = startTime / 1000;
-                const currentPosition = startInSeconds + timeElapsed;
+                const currentPosition = startInSeconds + Math.max(0, timeElapsed);
 
-
-                // Convert to percentage of the total buffer
+                // Get progress as ratio
                 const progress = Math.min(currentPosition / buffer.duration, 1);
-
                 setPlayheadPosition(progress * 100);
+
+                // Reset if finished and looping
+                if (progress >= 1 && !isPlaying) {
+                    const initialPercent = ( startTime / ( buffer.duration * 1000 )) * 100;
+                    setPlayheadPosition(initialPercent);
+                }
             } else {
-                // Return playhead to start time
-                const initialPercent = (startTime / (buffer.duration * 1000)) * 100;
+                const initialPercent = ( startTime / ( buffer.duration * 1000 )) * 100;
                 setPlayheadPosition(initialPercent);
             }
+
             animId = requestAnimationFrame(updatePlayhead);
         };
 
         updatePlayhead();
+
         return () => cancelAnimationFrame(animId);
+
     }, [isPlaying, buffer, lastTriggerTime, startTime]);
 
 
@@ -106,9 +118,13 @@ const WaveformEditor = ({ buffer, startTime, onUpdateStart, isPlaying, lastTrigg
                 style={{
                     left: `${playheadPosition}%`,
                     backgroundColor: 'white',
-                    opacity: isPlaying ? 1 : 0,
+                    opacity: (isPlaying || playheadPosition > (startTime / (buffer.duration * 10)) + 0.5) ? 1 : 0,
                     boxShadow: '0 0 5px white',
-                    zIndex: 11
+                    zIndex: 11,
+                    width: '2px',
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0
                 }}
             />
 
