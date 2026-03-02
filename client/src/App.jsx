@@ -30,6 +30,7 @@ function App() {
         selectedSampleId,
         setSelectedSampleId,
         lastTriggerTime,
+        setChokeGroup,
         doubleBpm,
         halfBpm,
         tapBpm,
@@ -188,7 +189,8 @@ function App() {
             <div className="seq-main">
                 <SampleSidebar
                     samples={samples}
-                    selectedId={selectedSampleId}
+                    onSetChokeGroup={ setChokeGroup }
+                    selectedId={ selectedSampleId }
                     onSelect={setSelectedSampleId}
                     onUpload={handleFileChange}
                     onPlaySolo={playSampleSolo}
