@@ -9,24 +9,45 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
     const [ isPlaying, setIsPlaying ] = useState(false);
     const [ bpm, setBpm ] = useState( 120 );
     const [ sampleStart, setSampleStart ] = useState(0);
+    const [ lastTriggerTime, setLastTriggerTime ] = useState( 0 );
 
     const players = useRef({});
     const gridRef = useRef( gridState );
 
-
     const loadFile = async (file) => {
         const id = crypto.randomUUID();
         const url = URL.createObjectURL(file);
+
+        // Load file into a buffer
         const newPlayer = new Tone.Player(url).toDestination();
+
+        // Wait to load
+        await newPlayer.load(url);
 
         players.current[id] = newPlayer;
 
         setSamples(prev => [...prev, {
             id,
             name: file.name,
-            startTime: 0
+            startTime: 0,
+            buffer: newPlayer.buffer
         }]);
         setSelectedSampleId(id);
+    };
+
+    const playSampleSolo = ( id ) =>{
+        const player = players.current[ id ];
+        const sampleData = samples.find(sample => sample.id === id);
+
+        if( player && player.loaded ){
+            player.stop();
+            const offset = sampleData ? sampleData.startTime : 0;
+
+            const now = Tone.now();
+            player.start( now, offset );
+
+            setLastTriggerTime( now );
+        }
     };
 
     const updateSampleStart = (id, val) => {
@@ -104,12 +125,10 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
             const playerToPlay = players.current[ padSampleId ];
             const sampleData = samples.find( sample => sample.id === padSampleId );
 
-
-            // const currentPlayer = players.current[selectedSampleId];
-
             if (cell?.isActive && playerToPlay?.loaded) {
                 const offset = sampleData ? sampleData.startTime : 0;
-                playerToPlay.start(time, offset )
+                playerToPlay.start(time, offset);
+                setLastTriggerTime(Tone.getTransport().seconds);
             }
         }, Array.from({ length: rows * cols }, (_, i) => i),
             "8n");
@@ -133,11 +152,13 @@ export const useSequencer = ( gridState, rows = 4, cols = 4 ) => {
         bpm,
         setBpm,
         loadFile,
+        playSampleSolo,
         sampleStart,
         setSampleStart: changeStartTime,
         captureCurrentMoment,
         samples,
         selectedSampleId,
-        setSelectedSampleId
+        setSelectedSampleId,
+        lastTriggerTime,
     };
 };

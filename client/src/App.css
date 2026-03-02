@@ -24,6 +24,25 @@ body {
   min-height: 100vh;
 }
 
+.waveform-container {
+  position: relative;
+  width: 600px;
+  height: 150px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  overflow: hidden;
+  margin: 10px auto;
+}
+
+.marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  pointer-events: none; /* Let clicks pass through to canvas */
+  transition: opacity 0.2s;
+}
+
 .app-container{
   display: flex;
   flex-direction: column;
@@ -79,7 +98,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.37);
 }
 
-.library-container{
+.sample-sidebar{
   display: flex;
   flex-direction: column;
   border-radius: 8px;
@@ -167,4 +186,61 @@ button:focus-visible {
   .main-title{
     text-align: left;
   }
+
+
+
+
+  .value-display {
+    cursor: pointer;
+    font-weight: bold;
+    padding: 2px 5px;
+    border-bottom: 1px dashed #666;
+  }
+  .inline-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #fff;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: bold;
+    width: 50px;
+    outline: none;
+    text-align: center;
+  }
+
+  .nudge-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nudge-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 25px;
+    height: 25px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .nudge-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+
+
+
+
+  .start-marker {
+    z-index: 2;
+  }
+
+  .playhead-marker {
+    z-index: 3;
+    box-shadow: 0 0 5px white;
+  }
+
+
 }
