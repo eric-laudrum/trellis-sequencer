@@ -22,16 +22,19 @@ body {
   display: flex;
   place-items: center;
   min-height: 100vh;
+  padding: 0 20px;
+  width: 100%;
 }
 
 .app-container {
   display: flex;
   flex-direction: column;
-  width: 100%;
+  width: 1000px;
   padding: 0 20px;
   background: #141414;
   border-radius: 12px;
   box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  border: 2px solid white;
 }
 
 /* --- Typography --- */
@@ -81,6 +84,26 @@ h1.main-title {
   padding: 8px 12px;
   border-radius: 8px;
   height: 2.5em;
+}
+
+.sample-options{
+  display: flex;
+  flex-direction: row;
+}
+
+.choke-selector{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 5px;
+}
+
+.group-select{
+  margin-left: 5px;
+  border-radius: 8px;
+  padding: 5px;
+  text-align: center;
+  width: 60px;
 }
 
 .bpm-controls-wrapper,
@@ -162,10 +185,19 @@ button:hover {
 /* --- Sidebar & Lists --- */
 .sample-sidebar {
   flex: 1;
-  max-width: 300px;
+  max-width: 500px;
   border: 1px solid var(--border-muted);
   border-radius: 8px;
   padding: 5px;
+}
+
+.sample-name{
+  display: inline-block;
+  max-width: 15ch;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
 }
 
 .sample-list {
@@ -175,11 +207,17 @@ button:hover {
 }
 
 .sample-item {
-  padding: 10px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
   margin: 4px;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 4px;
   border: 1px solid transparent;
+  max-height: 0.75em;
+
 }
 
 .sample-item.active {
