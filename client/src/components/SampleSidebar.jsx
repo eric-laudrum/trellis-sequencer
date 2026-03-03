@@ -19,11 +19,11 @@ const SampleSidebar = ({ samples, selectedId, onSelect, onUpload, onPlaySolo, on
 
                         <div className="sample-info">
                             <span className="sample-name">{sample.name}</span>
-                            <span className="sample-time">{sample.startTime.toFixed(2)}s</span>
                         </div>
 
 
                         <div className="sample-options">
+                            <span className="sample-time">{sample.startTime.toFixed(2)}s</span>
 
                             <div className="choke-selector">
                                 <select className="group-select"

@@ -14,6 +14,13 @@ const io = new Server(server, {
     }
 });
 
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+});
+
 const getRoomListData = () =>{
     return Object.keys(rooms).map(roomName =>{
         const room = io.sockets.adapter.rooms.get(roomName);

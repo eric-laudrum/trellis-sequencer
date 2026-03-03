@@ -34,7 +34,7 @@ body {
   background: #141414;
   border-radius: 12px;
   box-shadow: 0 0 20px rgba(0,0,0,0.5);
-  border: 2px solid white;
+  border: 2px solid black;
 }
 
 /* --- Typography --- */
@@ -193,11 +193,16 @@ button:hover {
 
 .sample-name{
   display: inline-block;
-  max-width: 15ch;
+  max-width: 30ch;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: middle;
+}
+
+.sample-time{
+  align-content: center;
+  margin: 5px;
 }
 
 .sample-list {

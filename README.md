@@ -41,3 +41,6 @@ Settings
 [] BPM
 [] Volume
 [] Number of bars
+
+
+### npm install -g ngrok
