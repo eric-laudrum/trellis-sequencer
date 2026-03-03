@@ -1,16 +1,23 @@
-const SampleSidebar = ({ samples, selectedId, onSelect, onUpload, onPlaySolo, onSetChokeGroup }) => {
+const SampleSidebar = ({ samples =[], selectedId, onSelect, onUpload, onPlaySolo, onSetChokeGroup }) => {
     return(
 
         <aside className="sample-sidebar">
             <h3>Library</h3>
-            <input type="file"
-                   accept="audio/*"
-                   onChange={ onUpload }
-                   />
+
+            <div className="upload-wrapper">
+                <input type="file"
+                       accept="audio/*"
+                       onChange={onUpload}
+                />
+                <label htmlFor="file-upload" className="upload-btn">
+                    + UPLOAD SAMPLE
+                </label>
+
+            </div>
+
 
             <div className="sample-list">
-                { samples.map((sample, index) => (
-
+                {samples.map((sample, index) => (
                     <div
                         key={sample.id}
                         className={`sample-item ${selectedId === sample.id ? 'active' : ''}`}
@@ -23,7 +30,7 @@ const SampleSidebar = ({ samples, selectedId, onSelect, onUpload, onPlaySolo, on
 
 
                         <div className="sample-options">
-                            <span className="sample-time">{sample.startTime.toFixed(2)}s</span>
+                            <span className="sample-time">{( sample.startTime || 0).toFixed(2)}s</span>
 
                             <div className="choke-selector">
                                 <select className="group-select"

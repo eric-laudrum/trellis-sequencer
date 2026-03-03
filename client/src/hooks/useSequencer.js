@@ -93,8 +93,21 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     const addNewPlayer = async (id, url, name) => {
         const newPlayer = new Tone.Player(url).toDestination();
         await newPlayer.load(url);
+
         players.current[id] = newPlayer;
-        setSamples(prev => [...prev, { id, name, url, buffer: newPlayer.buffer }]);
+
+        // Check buffer exists before adding to the state
+        if(newPlayer.buffer ){
+            players.current[id] = newPlayer;
+            setSamples( prev=> [...prev, {
+                id,
+                name,
+                url,
+                buffer: newPlayer.buffer,
+                startTime: 0,
+                chokeGroup: "none"
+            }]);
+        }
     };
 
 

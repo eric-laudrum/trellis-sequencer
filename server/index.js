@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const { Server } = require('socket.io');
-
+const cors = require('cors');
 const app = express();
 const server = http.createServer(app);
 
@@ -14,7 +14,16 @@ const rooms = {};
 // File upload
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
-const upload = multer({ dest: 'uploads/' });
+
+// Multer storage
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, 'uploads/'),
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
 
 app.use(cors({
     origin: function(origin, callback){
@@ -28,6 +37,8 @@ app.use(cors({
     },
     credentials: true
 }));
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Api routes
 app.post('/upload-sample', upload.single('file'), (req, res) => {
