@@ -49,3 +49,7 @@ Settings
   npm run server
   ngrok http 4000
 
+### multer
+  bash
+  npm install multer --workspace=server
+

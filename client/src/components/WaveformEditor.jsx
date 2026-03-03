@@ -48,7 +48,7 @@ const WaveformEditor = ({ buffer, startTime, onUpdateStart, isPlaying, lastTrigg
 
             // Get current time from clocks:
             // Transport (Sequencer Clock)
-            const transportTime = Tone.getTransport().seconds;
+            const transportTime = Tone.Transport().seconds;
             // Context (Manual Play Clock)
             const contextTime = Tone.now();
 

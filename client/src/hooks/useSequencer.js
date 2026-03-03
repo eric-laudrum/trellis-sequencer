@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import * as Tone from 'tone';
 
-export const useSequencer = (gridState, socket, rows = 4, cols = 4) => {
+export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) => {
     const [samples, setSamples] = useState([]);
     const [selectedSampleId, setSelectedSampleId] = useState(null);
     const [activeStep, setActiveStep] = useState(-1);
@@ -13,52 +13,136 @@ export const useSequencer = (gridState, socket, rows = 4, cols = 4) => {
 
     const players = useRef({});
     const gridRef = useRef(gridState);
-    const tapTimes = useRef([]);
     const sampleRef = useRef([]);
 
     // Socket listeners
     useEffect(() => {
-        if (!socket) return;
+        if (!socket){
+            console.warn("useSequencer: Socket not found")
+            return;
+        }
 
         socket.on('update-transport', ({ isPlaying: remoteIsPlaying }) => {
             if (remoteIsPlaying) {
-                Tone.Transport.start();
+                Tone.getTransport().start();
                 setIsPlaying(true);
             } else {
-                Tone.Transport.stop();
-                Tone.Transport.seconds = 0;
+                Tone.getTransport().stop();
+                Tone.getTransport().seconds = 0;
                 setIsPlaying(false);
                 setActiveStep(-1);
             }
         });
 
         socket.on('update-bpm', (newBpm) => {
-            setBpm(newBpm);
+            if (newBpm !== bpm) setBpm(newBpm);
         });
+
+        socket.on('download-sample', async ({ id, url, name }) => {
+            await addNewPlayer(id, url, name);
+        });
+
 
         return () => {
             socket.off('update-transport');
             socket.off('update-bpm');
+            socket.off('download-sample');
         };
-    }, [socket]);
+    }, [socket, bpm]);
+
+    useEffect(() => {
+        if (Math.abs(Tone.getTransport().bpm.value - bpm) > 0.1) {
+            Tone.getTransport().bpm.value = bpm;
+        }
+    }, [bpm]);
+
+    const loadFile = async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const serverUrl = window.location.hostname === 'localhost'
+            ? 'http://localhost:4000'
+            : window.location.origin;
+
+        try {
+            const response = await fetch(`${serverUrl}/upload-sample`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) throw new Error("Upload failed status: " + response.status);
+
+            const { url, name } = await response.json();
+            const id = crypto.randomUUID();
+
+            await addNewPlayer(id, url, name);
+
+            socket.emit('share-sample', {
+                roomId: roomName,
+                sampleData: { id, url, name }
+            });
+        } catch (err) {
+            console.error("Upload error:", err);
+        }
+    };
+
+    const addNewPlayer = async (id, url, name) => {
+        const newPlayer = new Tone.Player(url).toDestination();
+        await newPlayer.load(url);
+        players.current[id] = newPlayer;
+        setSamples(prev => [...prev, { id, name, url, buffer: newPlayer.buffer }]);
+    };
+
+
+    // Sequencer Engine
+    useEffect(() => {
+        sampleRef.current = samples;
+        gridRef.current = gridState;
+    }, [samples, gridState]);
+
+    useEffect(() => {
+        const order = [];
+        for (let r = rows - 1; r >= 0; r--) {
+            for (let c = 0; c < cols; c++) order.push(r * cols + c);
+        }
+
+        const seq = new Tone.Sequence((time, stepIdx) => {
+            const gridIndex = order[stepIdx];
+            setActiveStep(gridIndex);
+
+            const cell = gridRef.current[gridIndex];
+            if (isPlaying && cell?.isActive && cell.sampleId) {
+                const player = players.current[cell.sampleId];
+                if (player?.loaded) {
+                    player.start(time);
+                }
+            }
+        }, Array.from({ length: rows * cols }, (_, i) => i), "8n");
+
+        seq.start(0);
+        return () => seq.dispose();
+    }, [rows, cols, isPlaying]);
+
 
     // Handlers
+
+    const updateBpmGlobal = (val) => {
+        const clamped = Math.max(30, Math.min(300, val));
+        setBpm(clamped);
+        socket.emit('bpm-change', clamped);
+    };
+
     const togglePlayback = useCallback(async () => {
         if (Tone.getContext().state !== 'running') await Tone.start();
-
         const nextState = !isPlaying;
 
-        // Update Local
-        if (nextState) {
-            Tone.Transport.start();
-        } else {
-            Tone.Transport.stop();
-            Tone.Transport.seconds = 0;
+        if (nextState) Tone.getTransport().start();
+        else {
+            Tone.getTransport().stop();
+            Tone.getTransport().seconds = 0;
             setActiveStep(-1);
         }
         setIsPlaying(nextState);
-
-        // Update Global
         socket.emit('transport-toggle', { isPlaying: nextState });
     }, [isPlaying, socket]);
 
@@ -91,15 +175,15 @@ export const useSequencer = (gridState, socket, rows = 4, cols = 4) => {
         }
     };
 
-    const loadFile = async (file) => {
-        const id = crypto.randomUUID();
-        const url = URL.createObjectURL(file);
-        const newPlayer = new Tone.Player(url).toDestination();
-        await newPlayer.load(url);
-        players.current[id] = newPlayer;
-        setSamples(prev => [...prev, { id, name: file.name, startTime: 0, buffer: newPlayer.buffer, chokeGroup: null }]);
-        setSelectedSampleId(id);
-    };
+
+
+    // Files from other users
+    useEffect(() => {
+        socket.on('download-sample', async ({ id, url, name }) => {
+            await addNewPlayer(id, url, name);
+        });
+    }, [socket]);
+
 
     // Update Refs
     useEffect(() => { sampleRef.current = samples; }, [samples]);
@@ -119,35 +203,31 @@ export const useSequencer = (gridState, socket, rows = 4, cols = 4) => {
 
         const seq = new Tone.Sequence((time, stepIdx) => {
             const gridIndex = order[stepIdx];
+
+            // Update highlight locally
             setActiveStep(gridIndex);
 
             const cell = gridRef.current[gridIndex];
-            if (cell?.isActive && cell.sampleId) {
+
+            if (isPlaying && cell?.isActive && cell.sampleId) {
                 triggerSample(cell.sampleId, time);
             }
         }, Array.from({ length: rows * cols }, (_, i) => i), "8n");
 
         seq.start(0);
         return () => seq.dispose();
-    }, [rows, cols]);
+    }, [rows, cols, isPlaying]);
 
-    // BPM Math (Broadcasting)
-    const updateBpmGlobal = (val) => {
-        const clamped = Math.max(30, Math.min(300, val));
-        setBpm(clamped);
-        socket.emit('bpm-change', clamped);
-    };
 
     return {
-        activeStep, isPlaying, togglePlayback, stopAll,
-        bpm, setBpm: updateBpmGlobal,
-        sampleStart, samples, selectedSampleId, setSelectedSampleId,
-        lastTriggerTime, setChokeGroup: (id, g) => setSamples(p => p.map(s => s.id === id ? {...s, chokeGroup: g === "none" ? null : parseInt(g)} : s)),
-
-        tapBpm: () => {},
+        activeStep, isPlaying, togglePlayback, bpm, samples,
+        setBpm: updateBpmGlobal,
+        selectedSampleId, setSelectedSampleId,
+        loadFile,
         doubleBpm: () => updateBpmGlobal(bpm * 2),
         halfBpm: () => updateBpmGlobal(bpm / 2),
-        loadFile, playSampleSolo: (id) => triggerSample(id, Tone.now()),
-        setSampleStart: (ms) => { setSampleStart(ms); if(selectedSampleId) setSamples(p => p.map(s => s.id === selectedSampleId ? {...s, startTime: ms/1000} : s)) }
+        stopAll: () => {},
+        setSampleStart: () => {},
+        playSampleSolo: (id) => { players.current[id]?.start(); }
     };
 };
