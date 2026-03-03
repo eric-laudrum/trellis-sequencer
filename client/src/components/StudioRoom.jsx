@@ -33,7 +33,7 @@ export default function StudioRoom({roomName, socket, onLeave }){
         setSampleStart,
         loadFile,
 
-    } = useSequencer(gridState);
+    } = useSequencer(gridState, socket, roomName);
 
     const [ isEditingBpm, setIsEditingBpm ] = useState( false );
     const [ isEditingStart, setIsEditingStart ] = useState( false );
@@ -42,9 +42,14 @@ export default function StudioRoom({roomName, socket, onLeave }){
     // Sync with server
     useEffect(() => {
         socket.emit('join-room', roomName);
-        socket.on('initial-state', (data) => setGridState(data));
 
-        socket.on('update-state', ({index, newState }) => {
+        socket.on('initial-state', (data) => {
+            // split grid and bpm
+            if (data.grid) setGridState(data.grid);
+            if (data.bpm) setBpm(data.bpm);
+        });
+
+        socket.on('update-state', ({ index, newState }) => {
             setGridState(prev => {
                 const next = [...prev];
                 next[index] = newState;
@@ -56,24 +61,8 @@ export default function StudioRoom({roomName, socket, onLeave }){
             socket.off('initial-state');
             socket.off('update-state');
         };
-    }, [roomName, socket]);
+    }, [roomName, socket, setBpm ]);
 
-    // Sync listeners
-    useEffect(() => {
-        socket.on('update-transport', ({ isPlaying }) => {
-            if (isPlaying) Tone.Transport.start();
-            else Tone.Transport.stop();
-        });
-
-        socket.on('update-bpm', (newBpm) => {
-            setBpm(newBpm);
-        });
-
-        return () => {
-            socket.off('update-transport');
-            socket.off('update-bpm');
-        };
-    }, [socket, setBpm]);
 
     const handleTogglePlayback = () => {
         const nextState = !isPlaying;
