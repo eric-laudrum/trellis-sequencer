@@ -58,6 +58,34 @@ export default function StudioRoom({roomName, socket, onLeave }){
         };
     }, [roomName, socket]);
 
+    // Sync listeners
+    useEffect(() => {
+        socket.on('update-transport', ({ isPlaying }) => {
+            if (isPlaying) Tone.Transport.start();
+            else Tone.Transport.stop();
+        });
+
+        socket.on('update-bpm', (newBpm) => {
+            setBpm(newBpm);
+        });
+
+        return () => {
+            socket.off('update-transport');
+            socket.off('update-bpm');
+        };
+    }, [socket, setBpm]);
+
+    const handleTogglePlayback = () => {
+        const nextState = !isPlaying;
+        togglePlayback(); // Local change
+        socket.emit('transport-toggle', { isPlaying: nextState }); // Global change
+    };
+
+    const handleBpmChange = (newVal) => {
+        setBpm(newVal);
+        socket.emit('bpm-change', newVal);
+    };
+
     const handleToggle = (index) => {
         if (!selectedSampleId) return;
 
@@ -101,7 +129,10 @@ export default function StudioRoom({roomName, socket, onLeave }){
                     <div className='sample-setting' id='bpm-control'>
                         <label>BPM</label>
                         <div className="bpm-controls-wrapper">
-                            <button className="settings-btn" onClick={halfBpm}>/2</button>
+                            <button
+                                className="settings-btn"
+                                onClick={() => handleBpmChange(bpm * 2)}>x2
+                            </button>
                             <div className="editable-value">
                                 {isEditingBpm ? (
                                     <input
@@ -109,14 +140,17 @@ export default function StudioRoom({roomName, socket, onLeave }){
                                         className="inline-input"
                                         type="number"
                                         value={bpm}
-                                        onChange={(e) => setBpm(Number(e.target.value))}
+                                        onChange={(e) => handleBpmChange(Number(e.target.value))}
                                         onBlur={() => setIsEditingBpm(false)}
                                     />
                                 ) : (
                                     <span className="value-display" onClick={() => setIsEditingBpm(true)}>{bpm}</span>
                                 )}
                             </div>
-                            <button className="settings-btn" onClick={doubleBpm}>x2</button>
+                            <button
+                                className="settings-btn"
+                                onClick={() => handleBpmChange(bpm / 2)}>/2
+                            </button>
                             <button className="tap-btn" onClick={tapBpm}>TAP</button>
                         </div>
                     </div>
@@ -178,7 +212,7 @@ export default function StudioRoom({roomName, socket, onLeave }){
             <div className='play-controls'>
                 <button
                     className={`play-button ${isPlaying ? 'pause' : 'start'}`}
-                    onClick={togglePlayback}
+                    onClick={handleTogglePlayback}
                 >
                     {isPlaying ? '||' : '▶'}
                 </button>
