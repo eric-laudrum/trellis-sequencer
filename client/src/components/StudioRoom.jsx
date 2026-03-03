@@ -199,13 +199,17 @@ export default function StudioRoom({roomName, socket, onLeave }){
             </div>
 
             <div className='play-controls'>
+
                 <button
                     className={`play-button ${isPlaying ? 'pause' : 'start'}`}
                     onClick={handleTogglePlayback}
                 >
-                    {isPlaying ? '||' : '▶'}
+                    {isPlaying ? '⏸︎' : '▶'}
                 </button>
-                <button className="stop-button" onClick={stopAll}>STOP</button>
+
+                <button className="stop-button"
+                        onClick={stopAll}
+                >⏹</button>
             </div>
         </div>
     );
