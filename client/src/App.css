@@ -1,37 +1,258 @@
+/* --- Global & Layout --- */
+:root {
+  --primary: orange;
+  --bg-dark: #1a1a1a;
+  --bg-darker: #111;
+  --border-muted: rgba(255, 255, 255, 0.2);
+  font-family: 'Futura', 'Inter', system-ui, sans-serif;
+  color-scheme: dark;
+}
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
-  font-family: 'Futura', sans-serif;
-
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
 }
 
 body {
   margin: 0;
+  background-color: #0f0f0f;
+  color: #eee;
   display: flex;
   place-items: center;
-  min-width: 320px;
   min-height: 100vh;
+  padding: 0 20px;
+  width: 100%;
 }
 
-.waveform-container {
-  position: relative;
-  width: 600px;
-  height: 150px;
-  background: #1a1a1a;
+.app-container {
+  display: flex;
+  flex-direction: column;
+  width: 1000px;
+  padding: 0 20px;
+  background: #141414;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  border: 2px solid black;
+}
+
+/* --- Typography --- */
+h1.main-title {
+  font-size: 3.0em;
+  line-height: 0.1;
+  text-align: left;
+  font-weight: 100;
+  color: var(--border-muted);
+  margin-bottom: 40px;
+}
+
+/* --- Studio/Sequencer Sections --- */
+.seq-header {
+  padding: 15px;
+  border-radius: 10px;
+  display: flex;
+  gap: 20px;
   border: 1px solid #333;
+  background: var(--bg-darker);
+  margin-bottom: 10px;
+}
+
+.seq-main {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-muted);
+}
+
+/* --- Sample Settings & Controls --- */
+.sample-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+  border: 1px dashed var(--border-muted);
+  border-radius: 10px;
+}
+
+.sample-setting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 8px 12px;
+  border-radius: 8px;
+  height: 2.5em;
+}
+
+.sample-options{
+  display: flex;
+  flex-direction: row;
+}
+
+.choke-selector{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 5px;
+}
+
+.group-select{
+  margin-left: 5px;
+  border-radius: 8px;
+  padding: 5px;
+  text-align: center;
+  width: 60px;
+}
+
+.bpm-controls-wrapper,
+.nudge-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #000;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #333;
+}
+
+/* --- Play Controls ---- */
+.play-controls{
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  padding: 10px;
+}
+
+/* --- Buttons --- */
+button {
+  border-radius: 6px;
+  border: 1px solid #444;
+  padding: 0.6em 1.2em;
+  background-color: var(--bg-dark);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+button:hover {
+  border-color: var(--primary);
+}
+
+.settings-btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  min-width: 35px;
+  color: var(--primary);
+}
+
+.tap-btn,
+.play-button,
+.stop-button {
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.tap-btn:active,
+.play-button,
+.stop-button :active {
+  background: var(--primary);
+  color: black;
+  transform: scale(0.95);
+}
+
+.play-button,
+.stop-button {
+  height: 2em;
+  width: 2em;
+  font-size: 2.5em;
+  padding: 10px;
+  margin: 10px;
+  border-radius: 12px;
+}
+
+/* --- Inputs & Editable Values --- */
+.value-display {
+  cursor: pointer;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(255, 165, 0, 0.3);
+  min-width: 45px;
+  text-align: center;
+}
+
+.inline-input {
+  background: #222;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  font-weight: bold;
+  width: 50px;
+  padding: 4px;
+  text-align: center;
+  outline: none;
+  border-radius: 4px;
+}
+
+/* --- Sidebar & Lists --- */
+.sample-sidebar {
+  flex: 1;
+  max-width: 500px;
+  border: 1px solid var(--border-muted);
+  border-radius: 8px;
+  padding: 5px;
+}
+
+.sample-name{
+  display: inline-block;
+  max-width: 30ch;
+  white-space: nowrap;
   overflow: hidden;
-  margin: 10px auto;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.sample-time{
+  align-content: center;
+  margin: 5px;
+}
+
+.sample-list {
+  background: rgba(0, 0, 0, 0.2);
+  min-height: 300px;
+  border-radius: 6px;
+}
+
+.sample-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  margin: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+  border: 1px solid transparent;
+  max-height: 0.75em;
+
+}
+
+.sample-item.active {
+  border: 1px solid var(--primary);
+  background: rgba(255, 165, 0, 0.1);
+}
+
+/* --- Waveform Visualizer --- */
+.waveform-container {
+  width: 100%;
+  max-width: 600px;
+  height: 120px;
+  background: #050505;
+  border: 1px solid #333;
+  margin: 10px 0;
+  position: relative;
 }
 
 .marker {
@@ -39,278 +260,41 @@ body {
   top: 0;
   bottom: 0;
   width: 2px;
-  pointer-events: none; /* Let clicks pass through to canvas */
-  transition: opacity 0.2s;
 }
 
-.app-container{
+.start-marker { background: var(--primary); z-index: 2; }
+.playhead-marker { background: white; z-index: 3; box-shadow: 0 0 8px white; }
+
+/* --- Lobby UI --- */
+.room-item {
   display: flex;
-  flex-direction: column;
-  flex-grow: 0;
-  width: 100%;
-  border-radius: 8px;
-  padding: 0 20px;
-  border: 3px solid rgba(0, 0, 0, 0.27);
-  box-shadow: 0 0 5px 10px #444444;
-}
-
-.seq-header{
-  border: 1px solid rgba(255, 255, 255, 0.37);
-  padding: 5px;
-  border-radius: 10px;
-  display: flex;
-  align-items: start;
-  justify-content: start;
-
-  border: 1px solid grey;
-}
-
-.sample-settings{
-  display: flex;
-  flex-direction: column;
-  justify-content: start;
-  border-radius: 10px;
-  padding: 5px;
-  border: 3px dashed  rgba(255, 255, 255, 0.05);;
-
-}
-
-.sample-setting{
-  display: flex;
-  margin: 5px;
-  border-radius: 10px;
-  height: 2em;
-  background-color: rgba(68, 68, 68, 0.14);
-  padding: 5px;
-  align-content: start;
   justify-content: space-between;
   align-items: center;
-  border: 0 solid green;
-
-}
-
-
-#bpm-control{
-
-
-}
-
-#start-time-control{
-
-}
-
-.number-input{
-  border: 1px solid rgba(0, 0, 0, 0.34);
-  width: 50px;
-  padding: 5px;
-}
-
-.seq-main{
-  display: flex;
-  flex-direction: row;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.37);
-}
-
-.sample-sidebar{
-  display: flex;
-  flex-direction: column;
+  background: var(--bg-darker);
+  padding: 15px 20px;
+  margin-bottom: 10px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.37);
-  margin: 5px;
-  max-width: 500px;
-  min-width: 100px;
+  border: 1px solid #333;
 }
 
-.sample-list{
-  background-color: rgba(255, 255, 255, 0.09);
-  border-radius: 10px;
-  margin: 5px;
-  min-height: 30vh;
-}
-
-.sample-item{
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 5px;
-  margin: 5px;
-  background-color: rgba(255, 255, 255, 0.05);
-}
-.sample-item:nth-child(even){
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 5px;
-  margin: 5px;
-  background-color: rgba(255, 255, 255, 0.25);
-}
-
-.sample-item.active{
-  border: 1px solid orange;
-  box-shadow: 0 0 4px 2px rgba(255, 165, 0, 0.32);
-  border-radius: 5px;
-  margin: 5px;
-  background-color: rgba(255, 255, 255, 0.10);
-}
-
-
-.play-controls{
-  padding: 5px;
-}
-
-h1.main-title {
-  font-size: 3.0em;
-  line-height: 0.1;
-  text-align: left;
-  font-weight: 10;
-  color: rgba(255, 255, 255, 0.37);
-
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-
-button:hover {
-  border-color: #646cff;
-}
-
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-.tap-btn {
-  background: #333;
-  color: orange;
-  border: 1px solid orange;
-  border-radius: 4px;
-  padding: 2px 8px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: transform 0.05s;
-}
-
-.tap-btn:active {
-  background: orange;
-  border: 1px solid black;
-  color: black;
-  transform: scale(0.95);
-
-}
-
-.tap-btn:hover{
-  box-shadow: 0  0 5px 1px orange;
-  border: 1px solid black;
-}
-
-
-
-.inline-input{
-  border: 2px solid blue;
-  min-width: 50px;
-  max-width: 50px;
-  padding: 10px;
-}
-
-.editable-value{
-  align-content: center;
-}
-
-span.value-display{
-
-  border-radius: 10px;
-  min-width: 50px;
-  max-width: 50px;
-}
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-
-  }
-  button {
-    background-color: #f9f9f9;
-
-  }
-}
-
-
-
-.main-title{
-  text-align: left;
-}
-
-
-
-
-.value-display {
-  cursor: pointer;
+.room-name {
+  color: var(--primary);
   font-weight: bold;
-  padding: 10px;
-  border-bottom: 1px solid rgba(102, 102, 102, 0.42);
+  font-size: 1.1rem;
 }
-.inline-input {
-  background: transparent;
+
+.room-count {
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.join-btn {
+  background: var(--primary);
+  color: #000;
+  font-weight: bold;
   border: none;
-  border-bottom: 1px solid #fff;
-  color: inherit;
-  font-family: inherit;
-  font-size: inherit;
-  font-weight: bold;
-  width: 50px;
-  outline: none;
-  text-align: center;
 }
 
-div.nudge-container {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-
+.join-btn:hover {
+  background: white;
 }
-
-
-
-
-
-.start-marker {
-  z-index: 2;
-}
-
-.playhead-marker {
-  z-index: 3;
-  box-shadow: 0 0 5px white;
-}
-
-
-.play-button{
-
-  background: #333;
-  color: orange;
-  border: 1px solid orange;
-  border-radius: 10px;
-  padding: 10px 20px 10px 25px;
-  font-size: 3em;
-  cursor: pointer;
-  transition: transform 0.05s;
-}
-
-.play-button:active {
-  background: orange;
-  border: 1px solid black;
-  color: black;
-  transform: scale(0.95);
-}
-
-
-
