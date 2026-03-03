@@ -18,7 +18,10 @@ This project uses NPM Workspaces and Concurrently to run the front and backend s
 - Database / storage
   - MongoDB / PostgresSQL
 
+
 - Concurrently
+- CORS
+- 
 
 ## Run the application
 - Navigate to the root directory

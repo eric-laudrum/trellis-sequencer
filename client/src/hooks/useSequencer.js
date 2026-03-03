@@ -14,6 +14,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     const players = useRef({});
     const gridRef = useRef(gridState);
     const sampleRef = useRef([]);
+    const transport = Tone.getContext().transport;
 
     // Socket listeners
     useEffect(() => {
@@ -24,18 +25,21 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
 
         socket.on('update-transport', ({ isPlaying: remoteIsPlaying }) => {
             if (remoteIsPlaying) {
-                Tone.getTransport().start();
+                transport.start();
                 setIsPlaying(true);
             } else {
-                Tone.getTransport().stop();
-                Tone.getTransport().seconds = 0;
+                transport.stop();
+                transport.seconds = 0;
                 setIsPlaying(false);
                 setActiveStep(-1);
             }
         });
 
         socket.on('update-bpm', (newBpm) => {
-            if (newBpm !== bpm) setBpm(newBpm);
+            if (transport.bpm.value !== newBpm) {
+                transport.bpm.value = newBpm;
+                setBpm(newBpm);
+            }
         });
 
         socket.on('download-sample', async ({ id, url, name }) => {
@@ -48,13 +52,13 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
             socket.off('update-bpm');
             socket.off('download-sample');
         };
-    }, [socket, bpm]);
+    }, [socket, transport]);
 
     useEffect(() => {
-        if (Math.abs(Tone.getTransport().bpm.value - bpm) > 0.1) {
-            Tone.getTransport().bpm.value = bpm;
+        if (Math.abs(transport.bpm.value - bpm) > 0.1) {
+            transport.bpm.value = bpm;
         }
-    }, [bpm]);
+    }, [bpm, transport]);
 
     const loadFile = async (file) => {
         const formData = new FormData();
@@ -136,10 +140,10 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         if (Tone.getContext().state !== 'running') await Tone.start();
         const nextState = !isPlaying;
 
-        if (nextState) Tone.getTransport().start();
+        if (nextState) transport.start();
         else {
-            Tone.getTransport().stop();
-            Tone.getTransport().seconds = 0;
+            transport.stop();
+            transport.seconds = 0;
             setActiveStep(-1);
         }
         setIsPlaying(nextState);
@@ -147,9 +151,15 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     }, [isPlaying, socket]);
 
     const stopAll = () => {
-        Tone.Transport.stop();
-        Tone.Transport.seconds = 0;
-        Object.values(players.current).forEach(p => p.stop());
+        // Stop the transport
+        transport.stop();
+
+        transport.seconds = 0;
+
+        Object.values(players.current).forEach(player => {
+            player.stop();
+            player.seek(0);
+        });
         setIsPlaying(false);
         setActiveStep(-1);
         socket.emit('transport-toggle', { isPlaying: false });
@@ -164,14 +174,14 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         if (player?.loaded && sampleData) {
             // Choke Logic
             if (sampleData.chokeGroup !== null) {
-                currentSamples.forEach(s => {
-                    if (s.chokeGroup === sampleData.chokeGroup && s.id !== sampleId) {
-                        players.current[s.id]?.stop(time);
+                currentSamples.forEach(sample => {
+                    if (sample.chokeGroup === sampleData.chokeGroup && sample.id !== sampleId) {
+                        players.current[sample.id]?.stop(time);
                     }
                 });
             }
             player.start(time, sampleData.startTime || 0);
-            setLastTriggerTime(Tone.Transport.seconds);
+            setLastTriggerTime(transport.seconds);
         }
     };
 
@@ -220,14 +230,19 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
 
 
     return {
-        activeStep, isPlaying, togglePlayback, bpm, samples,
+        activeStep,
+        isPlaying,
+        togglePlayback,
+        bpm,
+        samples,
         setBpm: updateBpmGlobal,
-        selectedSampleId, setSelectedSampleId,
+        selectedSampleId,
+        setSelectedSampleId,
         loadFile,
         doubleBpm: () => updateBpmGlobal(bpm * 2),
         halfBpm: () => updateBpmGlobal(bpm / 2),
-        stopAll: () => {},
-        setSampleStart: () => {},
+        stopAll,
+        setSampleStart,
         playSampleSolo: (id) => { players.current[id]?.start(); }
     };
 };

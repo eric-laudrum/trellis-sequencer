@@ -16,6 +16,19 @@ const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 const upload = multer({ dest: 'uploads/' });
 
+app.use(cors({
+    origin: function(origin, callback){
+        if(!origin ||
+            origin.startsWith('http://localhost') ||
+            origin.includes('ngrok-free.app')) {
+            callback(null, true);
+        } else{
+            callback(new Error('Error: Not allowed by CORS'));
+        }
+    },
+    credentials: true
+}));
+
 // Api routes
 app.post('/upload-sample', upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
