@@ -28,15 +28,21 @@ const upload = multer({ storage: storage });
 app.use(cors({
     origin: function(origin, callback){
         if(!origin ||
-            origin.startsWith('http://localhost') ||
-            origin.includes('ngrok-free.app')) {
+            origin.includes('localhost:5173') ||
+            origin.includes('localhost:4000') ||
+            origin.includes('ngrok-free.app') ||
+        origin.includes('ngrok-free.dev')) {
             callback(null, true);
         } else{
+            console.log("Blocked by CORS. Origin was:", origin);
             callback(new Error('Error: Not allowed by CORS'));
         }
     },
     credentials: true
 }));
+
+
+app.use(express.static(path.join(__dirname, '../client/dist')));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -55,7 +61,7 @@ app.post('/upload-sample', upload.single('file'), (req, res) => {
 // Socket IO logic
 const io = new Server(server, {
     cors: {
-        origin: "*", // Allow connection from any ngrok/localhost source for testing
+        origin: "*", // Allow connection from any ngrok/localhost source for development
         methods: ["GET", "POST"]
     }
 });

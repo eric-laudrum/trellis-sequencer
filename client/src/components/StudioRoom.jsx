@@ -76,7 +76,11 @@ export default function StudioRoom({roomName, socket, onLeave }){
     };
 
     const handleToggle = (index) => {
-        if (!selectedSampleId) return;
+        console.log("Clicked pad:", index, "Selected Sample:", selectedSampleId);
+        if (!selectedSampleId){
+            alert("Select a sample from the library");
+            return;
+        }
 
         setGridState(prev => {
             const next = [...prev];

@@ -47,13 +47,9 @@ const WaveformEditor = ({ buffer, startTime, onUpdateStart, isPlaying, lastTrigg
 
 
             // Get current time from clocks:
-            // Transport (Sequencer Clock)
-            const transportTime = Tone.Transport().seconds;
-            // Context (Manual Play Clock)
-            const contextTime = Tone.now();
 
             // Select clock based on sound origin
-            const currentTime = isPlaying ? transportTime : contextTime;
+            const currentTime = Tone.getContext().transport.seconds;
 
             const timeElapsed = currentTime - lastTriggerTime;
             const isCurrentlyPlaying = buffer && timeElapsed >= 0 && timeElapsed <= buffer.duration;

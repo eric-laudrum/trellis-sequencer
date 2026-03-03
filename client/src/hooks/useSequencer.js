@@ -94,8 +94,6 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         const newPlayer = new Tone.Player(url).toDestination();
         await newPlayer.load(url);
 
-        players.current[id] = newPlayer;
-
         // Check buffer exists before adding to the state
         if(newPlayer.buffer ){
             players.current[id] = newPlayer;
@@ -214,7 +212,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
 
     // Sync BPM
     useEffect(() => {
-        Tone.Transport.bpm.value = bpm;
+        transport.bpm.value = bpm;
     }, [bpm]);
 
     // Sequence Generator
@@ -249,6 +247,12 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         bpm,
         samples,
         setBpm: updateBpmGlobal,
+        setChokeGroup: (sampleId, group) =>{
+            setSamples(prev => prev.maps(sample =>
+                sample.id === sampleId ? {
+                    ...sample, chokeGroup: group === 'none' ? null: group}:sample
+            ));
+        },
         selectedSampleId,
         setSelectedSampleId,
         loadFile,
