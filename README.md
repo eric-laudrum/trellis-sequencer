@@ -42,5 +42,10 @@ Settings
 [] Volume
 [] Number of bars
 
+### ngrok
+  bash
+  npm install -g ngrok
 
-### npm install -g ngrok
+  npm run server
+  ngrok http 4000
+

@@ -9,7 +9,12 @@ const rooms = {};
 
 const io = new Server(server, {
     cors:{
-        origin: ["http://localhost:5173", "http://localhost:3000"], // backup in case ports shift
+        origin: [
+            "http://localhost:5173",
+            "https://stella-nonexpectant-nondeficiently.ngrok-free.dev",
+            "http://localhost:3000"
+
+        ], // backup in case ports shift
         methods: ["GET", "POST"]
     }
 });
@@ -36,6 +41,22 @@ io.on('connection', (socket) => {
 
     socket.on('get-rooms', () =>{
         socket.emit('room-list', getRoomListData());
+    });
+
+    socket.on('transport-toggle', ({ isPlaying }) => {
+        const room = socket.currentRoom;
+        if (room) {
+            // Broadcast to everyone ELSE in the room
+            socket.to(room).emit('update-transport', { isPlaying });
+        }
+    });
+
+    socket.on('bpm-change', (newBpm) => {
+        const room = socket.currentRoom;
+        if (room && rooms[room]) {
+            rooms[room].bpm = newBpm;
+            socket.to(room).emit('update-bpm', newBpm);
+        }
     });
 
     // socket.emit('initial-state', yArray.toArray());

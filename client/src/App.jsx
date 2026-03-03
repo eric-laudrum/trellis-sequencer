@@ -10,7 +10,7 @@ import Lobby from "./components/Lobby.jsx";
 import './App.css'
 import StudioRoom from "./components/StudioRoom.jsx";
 
-const socket = io('http://localhost:4000');
+const socket = io();
 
 function App() {
     const [ roomName, setRoomName ] = useState(null);
