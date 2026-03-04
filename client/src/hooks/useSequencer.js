@@ -39,6 +39,16 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         const sampleData = sampleRef.current.find(s => s.id === sampleId);
 
         if (player?.loaded && sampleData) {
+
+            if (sampleData.chokeGroup && sampleData.chokeGroup !== 'none') {
+                sampleRef.current.forEach(otherSample => {
+                    // Choke other players in same group
+                    if (otherSample.chokeGroup === sampleData.chokeGroup) {
+                        players.current[otherSample.id]?.stop(time);
+                    }
+                });
+            }
+
             const offset = (sampleData.startTime || 0) / 1000;
             player.start(time, offset);
 
