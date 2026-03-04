@@ -97,6 +97,20 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
             return;
         }
 
+        socket.on('initial-state', async (data) => {
+            if (data.samples && data.samples.length > 0) {
+
+                // Load every sample the room already has
+                for (const s of data.samples) {
+
+                    // Prevent duplicate loading
+                    if (!players.current[s.id]) {
+                        await addNewPlayer(s.id, s.url, s.name);
+                    }
+                }
+            }
+        });
+
         socket.on('update-transport', ({ isPlaying: remoteIsPlaying }) => {
             if (remoteIsPlaying) {
                 transport.start();
@@ -122,6 +136,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
 
 
         return () => {
+            socket.off('initial-state')
             socket.off('update-transport');
             socket.off('update-bpm');
             socket.off('download-sample');
@@ -165,8 +180,13 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     };
 
     const addNewPlayer = async (id, url, name) => {
-        const newPlayer = new Tone.Player(url).toDestination();
-        await newPlayer.load(url);
+
+        const relativeUrl = url.includes('/uploads/')
+            ? window.location.origin + '/uploads/' + url.split('/').pop()
+            : url;
+
+        const newPlayer = new Tone.Player(relativeUrl).toDestination();
+        await newPlayer.load(relativeUrl);
 
         // Check buffer exists before adding to the state
         if(newPlayer.buffer ){

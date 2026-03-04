@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
-const lobbySocket = io('http://localhost:4000');
+const lobbySocket = io();
 
 export default function Lobby({onJoin }){
     const [ rooms, setRooms ] = useState([]);
