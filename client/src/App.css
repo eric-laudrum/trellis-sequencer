@@ -1,0 +1,321 @@
+/* --- Global & Layout --- */
+:root {
+  --primary: orange;
+  --bg-dark: #1a1a1a;
+  --bg-darker: #111;
+  --border-muted: rgba(255, 255, 255, 0.2);
+  font-family: 'Futura', 'Inter', system-ui, sans-serif;
+  color-scheme: dark;
+}
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+body {
+  margin: 0;
+  background-color: #0f0f0f;
+  color: #eee;
+  display: flex;
+  place-items: center;
+  min-height: 100vh;
+  padding: 0 20px;
+  width: 100%;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  width: 1000px;
+  padding: 0 20px;
+  background: #141414;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  border: 2px solid black;
+}
+
+/* --- Typography --- */
+h1.main-title {
+  font-size: 3.0em;
+  line-height: 0.1;
+  text-align: left;
+  font-weight: 100;
+  color: var(--border-muted);
+  margin-bottom: 40px;
+}
+
+/* --- Studio/Sequencer Sections --- */
+.seq-header {
+  padding: 15px;
+  border-radius: 10px;
+  display: flex;
+  gap: 20px;
+  border: 1px solid #333;
+  background: var(--bg-darker);
+  margin-bottom: 10px;
+}
+
+.seq-main {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-muted);
+}
+
+/* --- Sample Settings & Controls --- */
+.sample-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+  border: 1px dashed var(--border-muted);
+  border-radius: 10px;
+}
+
+.sample-setting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 8px 12px;
+  border-radius: 8px;
+  height: 2.5em;
+}
+
+.sample-options{
+  display: flex;
+  flex-direction: row;
+}
+
+.choke-selector{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 5px;
+}
+
+.group-select{
+  margin-left: 5px;
+  border-radius: 8px;
+  padding: 5px;
+  text-align: center;
+  width: 60px;
+}
+
+.bpm-controls-wrapper,
+.nudge-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #000;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #333;
+}
+
+/* --- Play Controls ---- */
+.play-controls{
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  padding: 10px;
+}
+
+/* --- Buttons --- */
+button {
+  border-radius: 6px;
+  border: 1px solid #444;
+  padding: 0.6em 1.2em;
+  background-color: var(--bg-dark);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+button:hover {
+  border-color: var(--primary);
+}
+
+.settings-btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  min-width: 35px;
+  color: var(--primary);
+}
+
+.tap-btn,
+.play-button,
+.stop-button {
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.tap-btn:active,
+.play-button,
+.stop-button :active {
+  background: var(--primary);
+  color: black;
+  transform: scale(0.95);
+}
+
+.play-button,
+.stop-button {
+  height: 2em;
+  width: 2em;
+  font-size: 2.5em;
+  padding: 10px;
+  margin: 10px;
+  border-radius: 12px;
+}
+
+/* --- Inputs & Editable Values --- */
+.value-display {
+  cursor: pointer;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(255, 165, 0, 0.3);
+  min-width: 45px;
+  text-align: center;
+}
+
+.inline-input {
+  background: #222;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  font-weight: bold;
+  width: 50px;
+  padding: 4px;
+  text-align: center;
+  outline: none;
+  border-radius: 4px;
+}
+
+/* --- Sidebar & Lists --- */
+.sample-sidebar {
+  flex: 1;
+  max-width: 500px;
+  border: 1px solid var(--border-muted);
+  border-radius: 8px;
+  padding: 5px;
+}
+
+.sample-name{
+  display: inline-block;
+  max-width: 30ch;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.sample-time{
+  align-content: center;
+  margin: 5px;
+}
+
+.sample-list {
+  background: rgba(0, 0, 0, 0.2);
+  min-height: 300px;
+  border-radius: 6px;
+}
+
+.sample-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  margin: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+  border: 1px solid transparent;
+  max-height: 0.75em;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+}
+
+.sample-item:hover {
+  background: rgba(241, 173, 54, 0.1);
+  border-color: rgba(241, 173, 54, 0.5);
+}
+
+.sample-item.active {
+  border: 1px solid var(--primary);
+  background: rgba(255, 165, 0, 0.1);
+}
+
+/* --- Waveform Visualizer --- */
+.waveform-container {
+  display: block;
+  width: 600px;
+  height: 120px;
+  background: #000 !important;
+  border: 1px solid #444;
+  margin: 10px 0;
+  position: relative;
+  overflow: hidden;
+  cursor: ew-resize;
+}
+
+.waveform-container canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.start-line, .playhead-line {
+  position: absolute;
+  top: 0 !important;
+  bottom: 0 !important;
+  height: 100% !important;
+  width: 2px;
+  pointer-events: none;
+}
+
+.marker {
+  display: none;
+
+}
+
+/* --- Lobby UI --- */
+.room-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-darker);
+  padding: 15px 20px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.room-name {
+  color: var(--primary);
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.room-count {
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.join-btn {
+  background: var(--primary);
+  color: #000;
+  font-weight: bold;
+  border: none;
+}
+
+.join-btn:hover {
+  background: white;
+}
