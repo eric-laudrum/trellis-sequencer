@@ -213,29 +213,39 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         // Prevent duplicate samples
         if (players.current[id]) return;
 
-        const relativeUrl = url.includes('/uploads/')
-            ? window.location.origin + '/uploads/' + url.split('/').pop()
-            : url;
+        // Select appropriate backend location
+        const backendBase = window.location.hostname === 'localhost'
+            ? 'http://localhost:4000'
+            : window.location.origin;
 
-        const newPlayer = new Tone.Player(relativeUrl).toDestination();
-        await newPlayer.load(relativeUrl);
+        const fileName = url.split('/').pop();
+        const cleanUrl = `${backendBase}/uploads/${fileName}`;
 
-        // Check buffer exists before adding to the state
-        if(newPlayer.buffer ){
+        // Debug
+        console.log("Attempting to load audio from:", cleanUrl);
+
+        try {
+            const newPlayer = new Tone.Player().toDestination();
+            // Use the Promise-based load method
+            await newPlayer.load(cleanUrl);
+
             players.current[id] = newPlayer;
-            setSamples( prev=>{
+            setSamples(prev => {
                 if (prev.find(s => s.id === id)) return prev;
-
                 return [...prev, {
                     id,
                     name,
-                    url: relativeUrl,
+                    url: cleanUrl,
                     buffer: newPlayer.buffer,
                     startTime: 0,
                     chokeGroup: "none"
-            }];
-        });
-    }
+                }];
+            });
+        } catch (err) {
+            console.error("Tone.js could not load the file. Verify the url in browser: ", cleanUrl);
+            console.error("Detailed Error:", err);
+        }
+    };
 
 
     // Sequencer Engine
@@ -243,8 +253,6 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         sampleRef.current = samples;
         gridRef.current = gridState;
     }, [samples, gridState]);
-
-
 
 
     // Handlers
