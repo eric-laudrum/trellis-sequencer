@@ -8,13 +8,19 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     const [activeStep, setActiveStep] = useState(-1);
     const [isPlaying, setIsPlaying] = useState(false);
     const [bpm, setBpm] = useState(120);
-    const [sampleStart, setSampleStart] = useState(0);
     const [lastTriggerTime, setLastTriggerTime] = useState(0);
 
     const players = useRef({});
     const gridRef = useRef(gridState);
     const sampleRef = useRef([]);
     const transport = Tone.getContext().transport;
+
+
+    const setSampleStart = (sampleId, newStart) => {
+        setSamples(prev => prev.map(s =>
+            s.id === sampleId ? { ...s, startTime: newStart } : s
+        ));
+    };
 
     // Socket listeners
     useEffect(() => {
@@ -180,7 +186,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     const triggerSample = (sampleId, time) => {
         const player = players.current[sampleId];
         const currentSamples = sampleRef.current;
-        const sampleData = currentSamples.find(s => s.id === sampleId);
+        const sampleData = sampleRef.current.find(s => s.id === sampleId);
 
         if (player?.loaded && sampleData) {
             // Choke Logic
@@ -190,9 +196,12 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
                         players.current[sample.id]?.stop(time);
                     }
                 });
+
+                const offset = (sampleData.startTime || 0) / 1000;
+                player.start(time, offset);
+
+                setLastTriggerTime(Tone.now());
             }
-            player.start(time, sampleData.startTime || 0);
-            setLastTriggerTime(transport.seconds);
         }
     };
 
@@ -248,7 +257,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         samples,
         setBpm: updateBpmGlobal,
         setChokeGroup: (sampleId, group) =>{
-            setSamples(prev => prev.maps(sample =>
+            setSamples(prev => prev.map(sample =>
                 sample.id === sampleId ? {
                     ...sample, chokeGroup: group === 'none' ? null: group}:sample
             ));

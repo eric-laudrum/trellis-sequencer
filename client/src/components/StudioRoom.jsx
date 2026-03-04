@@ -109,6 +109,7 @@ export default function StudioRoom({roomName, socket, onLeave }){
 
     const currentSample = samples.find(s => s.id === selectedSampleId);
 
+
     return (
         <div className='app-container'>
             <div className="room-nav">
@@ -176,9 +177,9 @@ export default function StudioRoom({roomName, socket, onLeave }){
 
                     {currentSample && (
                         <WaveformEditor
-                            buffer={currentSample.buffer}
-                            startTime={sampleStart}
-                            onUpdateStart={setSampleStart}
+                            buffer={currentSample?.buffer}
+                            startTime={currentSample?.startTime || 0}
+                            onUpdateStart={(newTime) => setSampleStart(selectedSampleId, newTime)}
                             isPlaying={isPlaying}
                             lastTriggerTime={lastTriggerTime}
                         />

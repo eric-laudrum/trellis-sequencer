@@ -46,17 +46,14 @@ const WaveformEditor = ({ buffer, startTime, onUpdateStart, isPlaying, lastTrigg
         const updatePlayhead = () => {
 
 
-            // Get current time from clocks:
-
-            // Select clock based on sound origin
-            const currentTime = Tone.getContext().transport.seconds;
-
+            const currentTime = Tone.now();
             const timeElapsed = currentTime - lastTriggerTime;
+
             const isCurrentlyPlaying = buffer && timeElapsed >= 0 && timeElapsed <= buffer.duration;
 
-            if (buffer && lastTriggerTime > 0 && (isPlaying || isCurrentlyPlaying)) {
+            if (buffer && lastTriggerTime > 0 && timeElapsed <= buffer.duration) {
                 const startInSeconds = startTime / 1000;
-                const currentPosition = startInSeconds + Math.max(0, timeElapsed);
+                const currentPosition = startInSeconds + timeElapsed;
 
                 // Get progress as ratio
                 const progress = Math.min(currentPosition / buffer.duration, 1);
@@ -68,7 +65,7 @@ const WaveformEditor = ({ buffer, startTime, onUpdateStart, isPlaying, lastTrigg
                     setPlayheadPosition(initialPercent);
                 }
             } else {
-                const initialPercent = ( startTime / ( buffer.duration * 1000 )) * 100;
+                const initialPercent = buffer ? (startTime / (buffer.duration * 1000)) * 100 : 0;
                 setPlayheadPosition(initialPercent);
             }
 
@@ -83,12 +80,17 @@ const WaveformEditor = ({ buffer, startTime, onUpdateStart, isPlaying, lastTrigg
 
 
     const handleMouse = (e) => {
-        if (!buffer) return;
+        if (!buffer || !canvasRef.current) return;
+
+        // Only allow click and drag
+        if (e.type === 'mousemove' && e.buttons !== 1) return;
+
         const rect = canvasRef.current.getBoundingClientRect();
         const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
         const percentage = x / rect.width;
-        const newTimeInSeconds = percentage * buffer.duration;
-        onUpdateStart(newTimeInSeconds * 1000);
+        const newTimeInMs = percentage * (buffer.duration * 1000);
+
+        onUpdateStart(newTimeInMs);
     };
 
     return(
@@ -99,13 +101,23 @@ const WaveformEditor = ({ buffer, startTime, onUpdateStart, isPlaying, lastTrigg
                 width={600}
                 height={150}
                 onMouseDown={handleMouse}
+                onMouseMove={handleMouse}
+                style={{ cursor: 'crosshair' }}
             />
 
             {/* Red Start Line */}
             <div className="marker"
                  style={{
-                     left: `${Math.min(100, Math.max(0, (startTime / (buffer.duration * 1000)) * 100))}%`,
-                     backgroundColor: 'red',
+                     left: `${playheadPosition}%`,
+                     backgroundColor: 'white',
+                     display: (Tone.now() - lastTriggerTime < buffer?.duration) ? 'block' : 'none',
+                     boxShadow: '0 0 8px white',
+                     zIndex: 11,
+                     width: '2px',
+                     position: 'absolute',
+                     top: 0,
+                     bottom: 0,
+                     pointerEvents: 'none' // Stop playhead from blocking mouse clicks
                  }}
             />
 
