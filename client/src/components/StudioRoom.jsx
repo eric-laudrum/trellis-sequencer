@@ -19,11 +19,11 @@ export default function StudioRoom({roomName, socket, onLeave }){
         stopAll,
         bpm,
         setBpm,
-        sampleStart,
         samples,
         selectedSampleId,
         setSelectedSampleId,
         lastTriggerTime,
+        lastTriggerRef,
 
         setChokeGroup,
         doubleBpm,
@@ -153,25 +153,17 @@ export default function StudioRoom({roomName, socket, onLeave }){
                     <div className='sample-setting' id='start-time-control'>
                         <label>START TIME</label>
                         <div className="nudge-container">
-                            <button className="settings-btn" onClick={() => nudgeStart(-10)}>-</button>
+                            <button className="settings-btn"
+                                    onClick={() => setSampleStart(selectedSampleId, (currentSample?.startTime || 0) - 10)}>-
+                            </button>
                             <div className="editable-value">
-                                {isEditingStart ? (
-                                    <input
-                                        autoFocus
-                                        className="inline-input"
-                                        type="number"
-                                        step="0.01"
-                                        value={(sampleStart / 1000).toFixed(2)}
-                                        onChange={(e) => setSampleStart(Number(e.target.value) * 1000)}
-                                        onBlur={() => setIsEditingStart(false)}
-                                    />
-                                ) : (
-                                    <span className="value-display" onClick={() => setIsEditingStart(true)}>
-                                        {(sampleStart / 1000).toFixed(2)}s
-                                    </span>
-                                )}
+                                <span className="value-display">
+                                    {((currentSample?.startTime || 0) / 1000).toFixed(2)}s
+                                </span>
                             </div>
-                            <button className="settings-btn" onClick={() => nudgeStart(10)}>+</button>
+                            <button className="settings-btn"
+                                    onClick={() => setSampleStart(selectedSampleId, (currentSample?.startTime || 0) + 10)}>+
+                            </button>
                         </div>
                     </div>
 
@@ -182,6 +174,7 @@ export default function StudioRoom({roomName, socket, onLeave }){
                             onUpdateStart={(newTime) => setSampleStart(selectedSampleId, newTime)}
                             isPlaying={isPlaying}
                             lastTriggerTime={lastTriggerTime}
+                            lastTriggerRef={lastTriggerRef}
                         />
                     )}
                 </div>

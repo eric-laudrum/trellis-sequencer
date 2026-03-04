@@ -8,12 +8,14 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     const [activeStep, setActiveStep] = useState(-1);
     const [isPlaying, setIsPlaying] = useState(false);
     const [bpm, setBpm] = useState(120);
+
     const [lastTriggerTime, setLastTriggerTime] = useState(0);
+    const lastTriggerRef = useRef(0);
 
     const players = useRef({});
     const gridRef = useRef(gridState);
     const sampleRef = useRef([]);
-    const transport = Tone.getContext().transport;
+    const transport = Tone.getTransport();
 
 
     const setSampleStart = (sampleId, newStart) => {
@@ -21,6 +23,50 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
             s.id === sampleId ? { ...s, startTime: newStart } : s
         ));
     };
+
+    const setChokeGroup = (sampleId, group) => {
+        setSamples(prev => prev.map(sample =>
+            sample.id === sampleId
+                ? { ...sample, chokeGroup: group === 'none' ? null : group }
+                : sample
+        ));
+    };
+
+    // Core Logic
+    const triggerSample = useCallback((sampleId, time) => {
+        const player = players.current[sampleId];
+        const sampleData = sampleRef.current.find(s => s.id === sampleId);
+
+        if (player?.loaded && sampleData) {
+            const offset = (sampleData.startTime || 0) / 1000;
+            player.start(time, offset);
+
+            // Sync triggers
+            lastTriggerRef.current = time;
+            setLastTriggerTime(time);
+        }
+    }, []);
+
+
+    const playSampleSolo = (id) => {
+        const player = players.current[id];
+        const sampleData = sampleRef.current.find(s => s.id === id);
+        if (player?.loaded) {
+            const now = Tone.now();
+            player.start(now, (sampleData.startTime || 0) / 1000);
+            lastTriggerRef.current = now;
+            setLastTriggerTime(now);
+        }
+    };
+
+
+
+
+
+
+
+
+
 
     // Socket listeners
     useEffect(() => {
@@ -121,28 +167,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         gridRef.current = gridState;
     }, [samples, gridState]);
 
-    useEffect(() => {
-        const order = [];
-        for (let r = rows - 1; r >= 0; r--) {
-            for (let c = 0; c < cols; c++) order.push(r * cols + c);
-        }
 
-        const seq = new Tone.Sequence((time, stepIdx) => {
-            const gridIndex = order[stepIdx];
-            setActiveStep(gridIndex);
-
-            const cell = gridRef.current[gridIndex];
-            if (isPlaying && cell?.isActive && cell.sampleId) {
-                const player = players.current[cell.sampleId];
-                if (player?.loaded) {
-                    player.start(time);
-                }
-            }
-        }, Array.from({ length: rows * cols }, (_, i) => i), "8n");
-
-        seq.start(0);
-        return () => seq.dispose();
-    }, [rows, cols, isPlaying]);
 
 
     // Handlers
@@ -182,29 +207,6 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         socket.emit('transport-toggle', { isPlaying: false });
     };
 
-    // Core Logic
-    const triggerSample = (sampleId, time) => {
-        const player = players.current[sampleId];
-        const currentSamples = sampleRef.current;
-        const sampleData = sampleRef.current.find(s => s.id === sampleId);
-
-        if (player?.loaded && sampleData) {
-            // Choke Logic
-            if (sampleData.chokeGroup !== null) {
-                currentSamples.forEach(sample => {
-                    if (sample.chokeGroup === sampleData.chokeGroup && sample.id !== sampleId) {
-                        players.current[sample.id]?.stop(time);
-                    }
-                });
-
-                const offset = (sampleData.startTime || 0) / 1000;
-                player.start(time, offset);
-
-                setLastTriggerTime(Tone.now());
-            }
-        }
-    };
-
 
 
     // Files from other users
@@ -234,19 +236,21 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         const seq = new Tone.Sequence((time, stepIdx) => {
             const gridIndex = order[stepIdx];
 
-            // Update highlight locally
-            setActiveStep(gridIndex);
+            // Draw highlight on the 16-pad grid
+            Tone.Draw.schedule(() => {
+                setActiveStep(gridIndex);
+            }, time);
 
             const cell = gridRef.current[gridIndex];
-
-            if (isPlaying && cell?.isActive && cell.sampleId) {
+            if (cell?.isActive && cell.sampleId) {
                 triggerSample(cell.sampleId, time);
             }
         }, Array.from({ length: rows * cols }, (_, i) => i), "8n");
 
         seq.start(0);
         return () => seq.dispose();
-    }, [rows, cols, isPlaying]);
+    }, [rows, cols, isPlaying, triggerSample]);
+
 
 
     return {
@@ -256,19 +260,27 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         bpm,
         samples,
         setBpm: updateBpmGlobal,
-        setChokeGroup: (sampleId, group) =>{
-            setSamples(prev => prev.map(sample =>
-                sample.id === sampleId ? {
-                    ...sample, chokeGroup: group === 'none' ? null: group}:sample
-            ));
-        },
+        setChokeGroup,
         selectedSampleId,
         setSelectedSampleId,
+        lastTriggerTime,
+        lastTriggerRef,
         loadFile,
         doubleBpm: () => updateBpmGlobal(bpm * 2),
         halfBpm: () => updateBpmGlobal(bpm / 2),
         stopAll,
         setSampleStart,
-        playSampleSolo: (id) => { players.current[id]?.start(); }
+        playSampleSolo: (id) => {
+            const player = players.current[id];
+            const sampleData = sampleRef.current.find(sample => sample.id === id);
+
+            if (player?.loaded && sampleData) {
+                const now = Tone.now();
+                player.start(now, (sampleData.startTime || 0) / 1000);
+
+                lastTriggerRef.current = now;
+                setLastTriggerTime(now);
+            }
+        },
     };
 };
