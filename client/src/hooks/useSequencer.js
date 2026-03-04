@@ -17,6 +17,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     const sampleRef = useRef([]);
     const transport = Tone.getTransport();
     const tapTimes = useRef([]);
+    const tapTimeoutRef = useRef(null);
 
     const setSampleStart = (sampleId, newStart) => {
         setSamples(prev => prev.map(s =>
@@ -38,6 +39,16 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         const sampleData = sampleRef.current.find(s => s.id === sampleId);
 
         if (player?.loaded && sampleData) {
+
+            if (sampleData.chokeGroup && sampleData.chokeGroup !== 'none') {
+                sampleRef.current.forEach(otherSample => {
+                    // Choke other players in same group
+                    if (otherSample.chokeGroup === sampleData.chokeGroup) {
+                        players.current[otherSample.id]?.stop(time);
+                    }
+                });
+            }
+
             const offset = (sampleData.startTime || 0) / 1000;
             player.start(time, offset);
 
@@ -75,15 +86,22 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
 
             const avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
             const calculatedBpm = Math.round(60000 / avgInterval);
+            const clamped = Math.max(30, Math.min(300, calculatedBpm));
 
             // This is the line that actually updates the state and server
-            updateBpmGlobal(calculatedBpm);
+
+
+            setBpm(clamped);
+            transport.bpm.value = clamped;
+
+            // Debounce the socket emit
+            if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
+
+            tapTimeoutRef.current = setTimeout(() => {
+                socket.emit('bpm-change', clamped);
+            }, 500);
         }
     };
-
-
-
-
 
 
 
@@ -96,6 +114,20 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
             console.warn("useSequencer: Socket not found")
             return;
         }
+
+        socket.on('initial-state', async (data) => {
+            if (data.samples && data.samples.length > 0) {
+
+                // Load every sample the room already has
+                for (const s of data.samples) {
+
+                    // Prevent duplicate loading
+                    if (!players.current[s.id]) {
+                        await addNewPlayer(s.id, s.url, s.name);
+                    }
+                }
+            }
+        });
 
         socket.on('update-transport', ({ isPlaying: remoteIsPlaying }) => {
             if (remoteIsPlaying) {
@@ -110,21 +142,44 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         });
 
         socket.on('update-bpm', (newBpm) => {
-            if (transport.bpm.value !== newBpm) {
-                transport.bpm.value = newBpm;
-                setBpm(newBpm);
-            }
+            setBpm(prev => {
+                if (Math.abs(prev - newBpm) > 0.1) {
+                    transport.bpm.value = newBpm;
+                    return newBpm;
+                }
+                return prev;
+            });
         });
 
-        socket.on('download-sample', async ({ id, url, name }) => {
+        const handleDownload = async ({ id, url, name }) => {
             await addNewPlayer(id, url, name);
+        };
+        socket.on('download-sample', handleDownload);
+
+        socket.on('kill-audio-instantly', () => {
+            // Stop the clock locally
+            transport.stop();
+            transport.seconds = 0;
+            setActiveStep(-1);
+            setIsPlaying(false);
+
+            // Kill all active audio buffers
+            Object.values(players.current).forEach(player => {
+                player.stop();
+            });
+
+            // Reset visual triggers
+            lastTriggerRef.current = 0;
+            setLastTriggerTime(0);
         });
 
 
         return () => {
+            socket.off('initial-state');
             socket.off('update-transport');
             socket.off('update-bpm');
-            socket.off('download-sample');
+            socket.off('download-sample', handleDownload);
+            socket.off('kill-audio-instantly');
         };
     }, [socket, transport]);
 
@@ -165,20 +220,40 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     };
 
     const addNewPlayer = async (id, url, name) => {
-        const newPlayer = new Tone.Player(url).toDestination();
-        await newPlayer.load(url);
+        // Prevent duplicate samples
+        if (players.current[id]) return;
 
-        // Check buffer exists before adding to the state
-        if(newPlayer.buffer ){
+        // Select appropriate backend location
+        const backendBase = window.location.hostname === 'localhost'
+            ? 'http://localhost:4000'
+            : window.location.origin;
+
+        const fileName = url.split('/').pop();
+        const cleanUrl = `${backendBase}/uploads/${fileName}`;
+
+        // Debug
+        console.log("Attempting to load audio from:", cleanUrl);
+
+        try {
+            const newPlayer = new Tone.Player().toDestination();
+            // Use the Promise-based load method
+            await newPlayer.load(cleanUrl);
+
             players.current[id] = newPlayer;
-            setSamples( prev=> [...prev, {
-                id,
-                name,
-                url,
-                buffer: newPlayer.buffer,
-                startTime: 0,
-                chokeGroup: "none"
-            }]);
+            setSamples(prev => {
+                if (prev.find(s => s.id === id)) return prev;
+                return [...prev, {
+                    id,
+                    name,
+                    url: cleanUrl,
+                    buffer: newPlayer.buffer,
+                    startTime: 0,
+                    chokeGroup: "none"
+                }];
+            });
+        } catch (err) {
+            console.error("Tone.js could not load the file. Verify the url in browser: ", cleanUrl);
+            console.error("Detailed Error:", err);
         }
     };
 
@@ -188,8 +263,6 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         sampleRef.current = samples;
         gridRef.current = gridState;
     }, [samples, gridState]);
-
-
 
 
     // Handlers
@@ -220,11 +293,9 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         transport.stop();
         transport.seconds = 0;
 
-
         // Reset triggers
         lastTriggerRef.current = 0;
         setLastTriggerTime(0);
-
 
         Object.values(players.current).forEach(player => {
             player.stop();
@@ -233,17 +304,14 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
 
         setIsPlaying(false);
         setActiveStep(-1);
+
+        socket.emit('stop-all-audio');
         socket.emit('transport-toggle', { isPlaying: false });
+
     };
 
 
 
-    // Files from other users
-    useEffect(() => {
-        socket.on('download-sample', async ({ id, url, name }) => {
-            await addNewPlayer(id, url, name);
-        });
-    }, [socket]);
 
 
     // Update Refs

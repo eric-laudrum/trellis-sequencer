@@ -41,7 +41,6 @@ app.use(cors({
     credentials: true
 }));
 
-
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -50,8 +49,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.post('/upload-sample', upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
+    const host = req.get('host');
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-    const host = req.headers['x-forwarded-host'] || req.get('host');
     const fileUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
 
     console.log("File uploaded, URL created:", fileUrl);
@@ -91,14 +90,16 @@ io.on('connection', (socket) => {
         if (!rooms[roomName]) {
             rooms[roomName] = {
                 grid: Array.from({ length: 16 }, () => ({ isActive: false, sampleId: null })),
-                bpm: 120
+                bpm: 120,
+                samples: [],
             };
         }
 
         // Send room state and bpm to the new user
         socket.emit('initial-state', {
             grid: rooms[roomName].grid,
-            bpm: rooms[roomName].bpm
+            bpm: rooms[roomName].bpm,
+            samples: rooms[roomName].samples
         });
 
         io.emit('room-list', getRoomListData());
@@ -123,11 +124,22 @@ io.on('connection', (socket) => {
         if (room && rooms[room]) {
             rooms[room].bpm = newBpm;
             socket.to(room).emit('update-bpm', newBpm);
-        }
+        }n
     });
 
     socket.on('share-sample', ({ roomId, sampleData }) => {
+        if (rooms[roomId]) {
+            rooms[roomId].samples.push(sampleData);
+        }
         socket.to(roomId).emit('download-sample', sampleData);
+    });
+
+    socket.on('stop-all-audio', () => {
+        const room = socket.currentRoom;
+        if (room) {
+            // Tell everyone in the room to kill their audio
+            socket.to(room).emit('kill-audio-instantly');
+        }
     });
 
     socket.on('disconnect', () => {
