@@ -124,7 +124,7 @@ io.on('connection', (socket) => {
         if (room && rooms[room]) {
             rooms[room].bpm = newBpm;
             socket.to(room).emit('update-bpm', newBpm);
-        }
+        }n
     });
 
     socket.on('share-sample', ({ roomId, sampleData }) => {

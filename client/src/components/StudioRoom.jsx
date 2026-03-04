@@ -38,7 +38,12 @@ export default function StudioRoom({roomName, socket, onLeave }){
 
     const [ isEditingBpm, setIsEditingBpm ] = useState( false );
     const [ isEditingStart, setIsEditingStart ] = useState( false );
+    const [ tempBpm, setTempBpm ] = useState(bpm);
 
+    // BPM
+    useEffect(() => {
+        setTempBpm(bpm);
+    }, [bpm]);
 
     // Sync with server
     useEffect(() => {
@@ -65,6 +70,20 @@ export default function StudioRoom({roomName, socket, onLeave }){
     }, [roomName, socket, setBpm ]);
 
 
+    const handleInputChange = (e) => {
+        setTempBpm(e.target.value);
+    };
+
+    const commitBpm = () => {
+        const newVal = Number(tempBpm);
+        if (!isNaN(newVal)) {
+            handleBpmChange(newVal); // This triggers the global setBpm and socket.emit
+        }
+        setIsEditingBpm(false);
+    };
+
+
+
     const handleTogglePlayback = () => {
         const nextState = !isPlaying;
         togglePlayback(); // Local change
@@ -72,8 +91,9 @@ export default function StudioRoom({roomName, socket, onLeave }){
     };
 
     const handleBpmChange = (newVal) => {
-        setBpm(newVal);
-        socket.emit('bpm-change', newVal);
+        const clamped = Math.max(30, Math.min(300, newVal));
+        setBpm(clamped);
+        socket.emit('bpm-change', clamped);
     };
 
     const handleToggle = (index) => {
@@ -137,9 +157,10 @@ export default function StudioRoom({roomName, socket, onLeave }){
                                         autoFocus
                                         className="inline-input"
                                         type="number"
-                                        value={bpm}
-                                        onChange={(e) => handleBpmChange(Number(e.target.value))}
-                                        onBlur={() => setIsEditingBpm(false)}
+                                        value={tempBpm}
+                                        onChange={handleInputChange}
+                                        onBlur={commitBpm}
+                                        onKeyDown={(e) => e.key === "Enter" && commitBpm()}
                                     />
                                 ) : (
                                     <span className="value-display" onClick={() => setIsEditingBpm(true)}>{bpm}</span>

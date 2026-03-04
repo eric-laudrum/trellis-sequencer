@@ -17,6 +17,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     const sampleRef = useRef([]);
     const transport = Tone.getTransport();
     const tapTimes = useRef([]);
+    const tapTimeoutRef = useRef(null);
 
     const setSampleStart = (sampleId, newStart) => {
         setSamples(prev => prev.map(s =>
@@ -75,15 +76,22 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
 
             const avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
             const calculatedBpm = Math.round(60000 / avgInterval);
+            const clamped = Math.max(30, Math.min(300, calculatedBpm));
 
             // This is the line that actually updates the state and server
-            updateBpmGlobal(calculatedBpm);
+
+
+            setBpm(clamped);
+            transport.bpm.value = clamped;
+
+            // Debounce the socket emit
+            if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
+
+            tapTimeoutRef.current = setTimeout(() => {
+                socket.emit('bpm-change', clamped);
+            }, 500);
         }
     };
-
-
-
-
 
 
 
@@ -124,10 +132,13 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         });
 
         socket.on('update-bpm', (newBpm) => {
-            if (transport.bpm.value !== newBpm) {
-                transport.bpm.value = newBpm;
-                setBpm(newBpm);
-            }
+            setBpm(prev => {
+                if (Math.abs(prev - newBpm) > 0.1) {
+                    transport.bpm.value = newBpm;
+                    return newBpm;
+                }
+                return prev;
+            });
         });
 
         socket.on('download-sample', async ({ id, url, name }) => {
