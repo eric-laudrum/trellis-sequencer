@@ -1,5 +1,5 @@
 # Dependencies
-node_modules/
+**/node_modules/
 .pnp
 .pnp.js
 
@@ -34,3 +34,5 @@ logs/
 
 # Testing
 coverage/
+
+server/uploads/
