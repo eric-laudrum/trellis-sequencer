@@ -141,9 +141,10 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
             });
         });
 
-        socket.on('download-sample', async ({ id, url, name }) => {
+        const handleDownload = async ({ id, url, name }) => {
             await addNewPlayer(id, url, name);
-        });
+        };
+        socket.on('download-sample', handleDownload);
 
         socket.on('kill-audio-instantly', () => {
             // Stop the clock locally
@@ -167,7 +168,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
             socket.off('initial-state');
             socket.off('update-transport');
             socket.off('update-bpm');
-            socket.off('download-sample');
+            socket.off('download-sample', handleDownload);
             socket.off('kill-audio-instantly');
         };
     }, [socket, transport]);
@@ -209,6 +210,8 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     };
 
     const addNewPlayer = async (id, url, name) => {
+        // Prevent duplicate samples
+        if (players.current[id]) return;
 
         const relativeUrl = url.includes('/uploads/')
             ? window.location.origin + '/uploads/' + url.split('/').pop()
@@ -220,16 +223,19 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         // Check buffer exists before adding to the state
         if(newPlayer.buffer ){
             players.current[id] = newPlayer;
-            setSamples( prev=> [...prev, {
-                id,
-                name,
-                url,
-                buffer: newPlayer.buffer,
-                startTime: 0,
-                chokeGroup: "none"
-            }]);
-        }
-    };
+            setSamples( prev=>{
+                if (prev.find(s => s.id === id)) return prev;
+
+                return [...prev, {
+                    id,
+                    name,
+                    url: relativeUrl,
+                    buffer: newPlayer.buffer,
+                    startTime: 0,
+                    chokeGroup: "none"
+            }];
+        });
+    }
 
 
     // Sequencer Engine
@@ -288,12 +294,6 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
 
 
 
-    // Files from other users
-    useEffect(() => {
-        socket.on('download-sample', async ({ id, url, name }) => {
-            await addNewPlayer(id, url, name);
-        });
-    }, [socket]);
 
 
     // Update Refs
