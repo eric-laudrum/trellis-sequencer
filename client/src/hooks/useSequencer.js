@@ -195,13 +195,19 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     const stopAll = () => {
         // Stop the transport
         transport.stop();
-
         transport.seconds = 0;
+
+
+        // Reset triggers
+        lastTriggerRef.current = 0;
+        setLastTriggerTime(0);
+
 
         Object.values(players.current).forEach(player => {
             player.stop();
             player.seek(0);
         });
+
         setIsPlaying(false);
         setActiveStep(-1);
         socket.emit('transport-toggle', { isPlaying: false });
@@ -276,6 +282,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
 
             if (player?.loaded && sampleData) {
                 const now = Tone.now();
+
                 player.start(now, (sampleData.startTime || 0) / 1000);
 
                 lastTriggerRef.current = now;

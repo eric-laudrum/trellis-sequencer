@@ -123,10 +123,13 @@ export default function StudioRoom({roomName, socket, onLeave }){
                     <div className='sample-setting' id='bpm-control'>
                         <label>BPM</label>
                         <div className="bpm-controls-wrapper">
+
+                            {/*  BPM /2 */}
                             <button
                                 className="settings-btn"
-                                onClick={() => handleBpmChange(bpm * 2)}>x2
+                                onClick={() => handleBpmChange(bpm / 2)}>/2
                             </button>
+
                             <div className="editable-value">
                                 {isEditingBpm ? (
                                     <input
@@ -141,10 +144,13 @@ export default function StudioRoom({roomName, socket, onLeave }){
                                     <span className="value-display" onClick={() => setIsEditingBpm(true)}>{bpm}</span>
                                 )}
                             </div>
+
+                            {/*  BPM x2 */}
                             <button
                                 className="settings-btn"
-                                onClick={() => handleBpmChange(bpm / 2)}>/2
+                                onClick={() => handleBpmChange(bpm * 2)}>x2
                             </button>
+
                             <button className="tap-btn" onClick={tapBpm}>TAP</button>
                         </div>
                     </div>

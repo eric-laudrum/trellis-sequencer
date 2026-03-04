@@ -52,7 +52,7 @@ const SampleSidebar = ({ samples =[], selectedId, onSelect, onUpload, onPlaySolo
                             <button
                                 className="solo-play-btn"
                                 onClick={(e) => {
-                                    e.stopPropagation(); // Prevents selecting the sample
+                                    e.stopPropagation();
                                     onPlaySolo(sample.id);
                                 }}
                             >

@@ -56,16 +56,20 @@ const WaveformEditor = ({ buffer, startTime, onUpdateStart, isPlaying, lastTrigg
             const now = Tone.now();
             const elapsed = now - lastTriggerTime;
 
-            // if (elapsed > 0 && elapsed < 0.1) console.log("Playhead triggered at:", lastTriggerTime);
+            const isWithinSample = buffer && triggerTime > 0 && elapsed >= 0 && elapsed <= buffer.duration;
 
-            if (buffer && lastTriggerTime > 0 && elapsed <= buffer.duration) {
+            if (isWithinSample) {
                 const totalPercent = ((startTime / 1000) + elapsed) / buffer.duration;
                 const visiblePercent = (totalPercent - zoomRange.start) / (zoomRange.end - zoomRange.start);
 
-                // Force visibility
-                setPlayheadPos(visiblePercent * 100);
+                // Only update if it's actually on screen
+                if (visiblePercent >= 0 && visiblePercent <= 1) {
+                    setPlayheadPos(visiblePercent * 100);
+                } else {
+                    setPlayheadPos(-1);
+                }
             } else {
-                setPlayheadPos(-1); // Hide if not in range
+                setPlayheadPos(-1);
             }
             animId = requestAnimationFrame(loop);
         };
@@ -185,6 +189,8 @@ const WaveformEditor = ({ buffer, startTime, onUpdateStart, isPlaying, lastTrigg
                     boxShadow: '0 0 10px white'
                 }} />
             )}
+
+
 
         </div>
     );
