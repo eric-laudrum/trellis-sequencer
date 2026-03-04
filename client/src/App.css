@@ -9,10 +9,13 @@
 }
 
 #root {
+  width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
+
   text-align: center;
+  display: flex;
+  justify-content: center;
 }
 
 body {
@@ -20,21 +23,30 @@ body {
   background-color: #0f0f0f;
   color: #eee;
   display: flex;
-  place-items: center;
+  justify-content: center;
+  align-items: center;
+
   min-height: 100vh;
-  padding: 0 20px;
   width: 100%;
+
+  overflow-x: hidden;
+
+  border: 2px solid red;
 }
 
 .app-container {
   display: flex;
   flex-direction: column;
-  width: 1000px;
-  padding: 0 20px;
+  width: 90%;
+  max-width: 1200px;
+
+  padding: 20px;
   background: #141414;
   border-radius: 12px;
   box-shadow: 0 0 20px rgba(0,0,0,0.5);
   border: 2px solid black;
+
+  border: 2px solid blue;
 }
 
 /* --- Typography --- */
@@ -64,6 +76,8 @@ h1.main-title {
   padding: 10px;
   border-radius: 10px;
   border: 1px solid var(--border-muted);
+
+  border: 2px solid green;
 }
 
 /* --- Sample Settings & Controls --- */
@@ -104,6 +118,7 @@ h1.main-title {
   padding: 5px;
   text-align: center;
   width: 60px;
+  border: 2px solid yellow;
 }
 
 .bpm-controls-wrapper,
@@ -182,6 +197,7 @@ button:hover {
   border-bottom: 1px solid rgba(255, 165, 0, 0.3);
   min-width: 45px;
   text-align: center;
+  border: 2px solid purple;
 }
 
 .inline-input {
@@ -203,6 +219,7 @@ button:hover {
   border: 1px solid var(--border-muted);
   border-radius: 8px;
   padding: 5px;
+  border: 2px solid yellow;
 }
 
 .sample-name{
@@ -262,6 +279,8 @@ button:hover {
   position: relative;
   overflow: hidden;
   cursor: ew-resize;
+
+  border: 2px solid pink;
 }
 
 .waveform-container canvas {
