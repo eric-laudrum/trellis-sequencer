@@ -145,12 +145,30 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
             await addNewPlayer(id, url, name);
         });
 
+        socket.on('kill-audio-instantly', () => {
+            // Stop the clock locally
+            transport.stop();
+            transport.seconds = 0;
+            setActiveStep(-1);
+            setIsPlaying(false);
+
+            // Kill all active audio buffers
+            Object.values(players.current).forEach(player => {
+                player.stop();
+            });
+
+            // Reset visual triggers
+            lastTriggerRef.current = 0;
+            setLastTriggerTime(0);
+        });
+
 
         return () => {
-            socket.off('initial-state')
+            socket.off('initial-state');
             socket.off('update-transport');
             socket.off('update-bpm');
             socket.off('download-sample');
+            socket.off('kill-audio-instantly');
         };
     }, [socket, transport]);
 
@@ -251,11 +269,9 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         transport.stop();
         transport.seconds = 0;
 
-
         // Reset triggers
         lastTriggerRef.current = 0;
         setLastTriggerTime(0);
-
 
         Object.values(players.current).forEach(player => {
             player.stop();
@@ -264,7 +280,10 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
 
         setIsPlaying(false);
         setActiveStep(-1);
+
+        socket.emit('stop-all-audio');
         socket.emit('transport-toggle', { isPlaying: false });
+
     };
 
 

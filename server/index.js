@@ -134,6 +134,14 @@ io.on('connection', (socket) => {
         socket.to(roomId).emit('download-sample', sampleData);
     });
 
+    socket.on('stop-all-audio', () => {
+        const room = socket.currentRoom;
+        if (room) {
+            // Tell everyone in the room to kill their audio
+            socket.to(room).emit('kill-audio-instantly');
+        }
+    });
+
     socket.on('disconnect', () => {
         io.emit('room-list', getRoomListData());
     });
