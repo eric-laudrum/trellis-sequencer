@@ -16,7 +16,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     const gridRef = useRef(gridState);
     const sampleRef = useRef([]);
     const transport = Tone.getTransport();
-
+    const tapTimes = useRef([]);
 
     const setSampleStart = (sampleId, newStart) => {
         setSamples(prev => prev.map(s =>
@@ -56,6 +56,28 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
             player.start(now, (sampleData.startTime || 0) / 1000);
             lastTriggerRef.current = now;
             setLastTriggerTime(now);
+        }
+    };
+
+    const tapBpm = () =>{
+        const now = Date.now();
+
+        // Last 4 taps
+        const newTapTimes = [...tapTimes.current, now].slice(-4);
+        tapTimes.current = newTapTimes;
+
+
+        if (newTapTimes.length > 1) {
+            const intervals = [];
+            for (let i = 1; i < newTapTimes.length; i++) {
+                intervals.push(newTapTimes[i] - newTapTimes[i - 1]);
+            }
+
+            const avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
+            const calculatedBpm = Math.round(60000 / avgInterval);
+
+            // This is the line that actually updates the state and server
+            updateBpmGlobal(calculatedBpm);
         }
     };
 
@@ -175,7 +197,8 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     const updateBpmGlobal = (val) => {
         const clamped = Math.max(30, Math.min(300, val));
         setBpm(clamped);
-        socket.emit('bpm-change', clamped);
+        transport.bpm.value = clamped;
+        socket.emit('bpm-change', clamped); // Tell the room
     };
 
     const togglePlayback = useCallback(async () => {
@@ -271,6 +294,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         setSelectedSampleId,
         lastTriggerTime,
         lastTriggerRef,
+        tapBpm,
         loadFile,
         doubleBpm: () => updateBpmGlobal(bpm * 2),
         halfBpm: () => updateBpmGlobal(bpm / 2),

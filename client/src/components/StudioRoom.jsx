@@ -19,6 +19,7 @@ export default function StudioRoom({roomName, socket, onLeave }){
         stopAll,
         bpm,
         setBpm,
+
         samples,
         selectedSampleId,
         setSelectedSampleId,
