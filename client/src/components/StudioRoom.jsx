@@ -91,6 +91,38 @@ export default function StudioRoom({roomName, socket, onLeave }){
         setNumBars(newBars);
     };
 
+
+    const deleteBar = (barIdx) =>{
+        // Prevent deleting last bar
+        if(numBars <= 1) return;
+
+        const stepsPerBar = 16;
+        const startIndex = barIdx * stepsPerBar;
+
+        // New grid without deleted bar
+        const newGrid = [...gridState];
+        newGrid.splice(startIndex, stepsPerBar);
+
+        // Update local state
+        const newNumBars = numBars - 1;
+
+        setGridState(newGrid);
+        setNumBars(newNumBars);
+
+        // If bar deleted was in view - move back 1
+        if (viewingBar >= newNumBars) {
+            setViewingBar(Math.max(0, numBars - 1));
+        }
+
+        // Sync the room
+        socket.emit('update-entire-grid', {
+            grid: newGrid,
+            numBars: newNumBars
+        });
+    };
+
+
+
     // BPM
     useEffect(() => {
         setTempBpm(bpm);
@@ -185,7 +217,7 @@ export default function StudioRoom({roomName, socket, onLeave }){
 
     return (
         <div className='app-container'>
-            <div className="room-nav">
+            <div className="room-header">
                 <button className="settings-btn" onClick={onLeave}>← EXIT STUDIO</button>
                 <h1 className='main-title'>STUDIO: {roomName}</h1>
             </div>
@@ -294,19 +326,34 @@ export default function StudioRoom({roomName, socket, onLeave }){
                     <div className="bar-controls-row">
                         <div className="bar-navigation">
                             {Array.from({length: numBars}).map((_, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => {
-                                        setFollowPlayhead(false);
-                                        setViewedBar(i);
-                                    }}
-                                    className={`bar-btn 
+                                <div key={i} className="bar-btn-wrapper">
+                                    <button
+                                        onClick={() => handleBarClick(i)}
+                                        className={`bar-btn 
                                         ${displayBar === i ? 'viewing' : ''} 
                                         ${currentBarIdx === i ? 'playing' : ''}`}
-                                >
-                                    {i + 1}
-                                </button>
+                                    >
+                                        {i + 1}
+                                    </button>
+
+                                    {/* Delete button only shows if there's more than one bar */}
+                                    {numBars > 1 && (
+                                        <button
+                                            className="delete-bar-btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // Prevent jumping to the deleted bar
+                                                deleteBar(i);
+                                            }}
+                                        >
+                                            ×
+                                        </button>
+                                    )}
+                                </div>
                             ))}
+
+                            <button className="add-bar-btn" onClick={addBar}>
+                                +
+                            </button>
                         </div>
 
                         <button
@@ -341,9 +388,7 @@ export default function StudioRoom({roomName, socket, onLeave }){
                         </button>
                     </div>
 
-                    <button className="add-bar-btn" onClick={addBar}>
-                        + ADD BAR
-                    </button>
+
                 </div>
             </div>
         </div>
