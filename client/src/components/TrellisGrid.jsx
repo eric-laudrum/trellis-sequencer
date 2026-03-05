@@ -3,22 +3,24 @@ import './TrellisGrid.css'
 
 const TrellisGrid = ({ gridState, onToggle, activeStep }) => {
 
-    console.log( "on step ", activeStep);
+    const physicalPadCount = 16;
 
-    return(
+    return (
+        <div className="grid-viewport">
+            {gridState.map((cell, i) => {
 
-        <div className="grid-container">
+                const isPlaying = (activeStep % physicalPadCount) === i;
 
-            {gridState.map((cell, i) => (
-                <button
-                    key={i}
-                    onClick={() => onToggle(i)}
-                    className={`pad ${cell.isActive ? 'active' : ''} ${activeStep === i ? 'playing' : ''}`}
-                />
-            ))}
+                return (
+                    <button
+                        key={i}
+                        onClick={() => onToggle(i)}
+                        className={`pad ${cell.isActive ? 'active' : ''} ${isPlaying ? 'playing' : ''}`}
+                    />
+                );
+            })}
         </div>
     );
 };
-
 
 export default TrellisGrid;

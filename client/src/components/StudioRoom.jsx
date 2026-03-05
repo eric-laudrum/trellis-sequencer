@@ -14,6 +14,9 @@ export default function StudioRoom({roomName, socket, onLeave }){
 
     const {
         activeStep,
+        numBars,
+        setNumBars,
+        currentBarIdx,
         isPlaying,
         togglePlayback,
         stopAll,
@@ -40,6 +43,53 @@ export default function StudioRoom({roomName, socket, onLeave }){
     const [ isEditingBpm, setIsEditingBpm ] = useState( false );
     const [ isEditingStart, setIsEditingStart ] = useState( false );
     const [ tempBpm, setTempBpm ] = useState(bpm);
+    const [viewedBar, setViewedBar] = useState(0);
+    const [followPlayhead, setFollowPlayhead] = useState(true);
+
+    const displayBar = Math.max(0, viewedBar);
+    const startIndex = displayBar * 16;
+
+    const visiblePads = gridState.slice(startIndex, startIndex + 16).length === 16
+        ? gridState.slice(startIndex, startIndex + 16)
+        : gridState.slice(0, 16);
+
+
+    // When a user manually clicks a bar button
+    const handleBarClick = (index) => {
+        setFollowPlayhead(false); // Stop the jumping
+        setViewedBar(index);
+    };
+
+    // Auto-follow logic
+    useEffect(() => {
+        if (followPlayhead) {
+            setViewedBar(currentBarIdx);
+        }
+    }, [currentBarIdx, followPlayhead]);
+
+    // Add a bar
+    const addBar = () => {
+
+        // Calculate the new total length
+        const newBars = numBars + 1;
+
+        // Create the new pads
+        const extraPads = Array.from({ length: 16 }, () => ({
+            isActive: false,
+            sampleId: null
+        }));
+
+        setGridState(prev => {
+            const newState = [...prev, ...extraPads];
+            // Tell the server about grid size change
+            socket.emit('update-entire-grid', {
+                grid: newState,
+                numBars: newBars
+            });
+            return newState;
+        });
+        setNumBars(newBars);
+    };
 
     // BPM
     useEffect(() => {
@@ -54,6 +104,7 @@ export default function StudioRoom({roomName, socket, onLeave }){
             // split grid and bpm
             if (data.grid) setGridState(data.grid);
             if (data.bpm) setBpm(data.bpm);
+            if (data.grid) setNumBars(data.grid.length / 16);
         });
 
         socket.on('update-state', ({ index, newState }) => {
@@ -63,6 +114,7 @@ export default function StudioRoom({roomName, socket, onLeave }){
                 return next;
             });
         });
+
 
         return () => {
             socket.off('initial-state');
@@ -98,15 +150,14 @@ export default function StudioRoom({roomName, socket, onLeave }){
     };
 
     const handleToggle = (index) => {
-        console.log("Clicked pad:", index, "Selected Sample:", selectedSampleId);
-        if (!selectedSampleId){
+        if (!selectedSampleId) {
             alert("Select a sample from the library");
             return;
         }
 
         setGridState(prev => {
             const next = [...prev];
-            const currentIsActive = next[index].isActive;
+            const currentIsActive = next[index]?.isActive;
 
             next[index] = {
                 ...next[index],
@@ -221,7 +272,7 @@ export default function StudioRoom({roomName, socket, onLeave }){
                             onUpdateStart={(newTime) => setSampleStart(selectedSampleId, newTime)}
                             onUpdateEnd={(newTime) => setSampleEnd(selectedSampleId, newTime)} // Pass handler
                             isPlaying={isPlaying}
-                            lastTriggerTime={ lastTriggerTime}
+                            lastTriggerTime={lastTriggerTime}
                             lastTriggerRef={lastTriggerRef}
                         />
                     )}
@@ -237,25 +288,63 @@ export default function StudioRoom({roomName, socket, onLeave }){
                     onUpload={handleFileChange}
                     onPlaySolo={playSampleSolo}
                 />
-                <TrellisGrid
-                    gridState={gridState}
-                    onToggle={handleToggle}
-                    activeStep={activeStep}
-                />
-            </div>
 
-            <div className='play-controls'>
+                <div className="sequencer-column">
+                    {/* Bar Navigation & Controls */}
+                    <div className="bar-controls-row">
+                        <div className="bar-navigation">
+                            {Array.from({length: numBars}).map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => {
+                                        setFollowPlayhead(false);
+                                        setViewedBar(i);
+                                    }}
+                                    className={`bar-btn 
+                                        ${displayBar === i ? 'viewing' : ''} 
+                                        ${currentBarIdx === i ? 'playing' : ''}`}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+                        </div>
 
-                <button
-                    className={`play-button ${isPlaying ? 'pause' : 'start'}`}
-                    onClick={handleTogglePlayback}
-                >
-                    {isPlaying ? '⏸︎' : '▶'}
-                </button>
+                        <button
+                            className={`follow-btn ${followPlayhead ? 'on' : ''}`}
+                            onClick={() => setFollowPlayhead(!followPlayhead)}
+                        >
+                            FOLLOW
+                        </button>
+                    </div>
 
-                <button className="stop-button"
-                        onClick={stopAll}
-                >⏹</button>
+                    {/* Sequencer Grid */}
+                    <div className="grid-container">
+                        <TrellisGrid
+                            gridState={visiblePads}
+                            activeStep={currentBarIdx === displayBar ? activeStep % 16 : -1}
+                            onToggle={(localIdx) => handleToggle(localIdx + startIndex)}
+                        />
+                    </div>
+
+                    <div className='play-controls'>
+
+                        <button
+                            className={`play-button ${isPlaying ? 'pause' : 'start'}`}
+                            onClick={handleTogglePlayback}
+                        >
+                            {isPlaying ? '⏸︎' : '▶'}
+                        </button>
+
+                        <button className="stop-button"
+                                onClick={stopAll}
+                        >⏹
+                        </button>
+                    </div>
+
+                    <button className="add-bar-btn" onClick={addBar}>
+                        + ADD BAR
+                    </button>
+                </div>
             </div>
         </div>
     );

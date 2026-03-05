@@ -8,7 +8,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     const [activeStep, setActiveStep] = useState(-1);
     const [isPlaying, setIsPlaying] = useState(false);
     const [bpm, setBpm] = useState(120);
-
+    const [numBars, setNumBars] = useState(1);
     const [lastTriggerTime, setLastTriggerTime] = useState(0);
     const lastTriggerRef = useRef(0);
 
@@ -18,6 +18,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     const transport = Tone.getTransport();
     const tapTimes = useRef([]);
     const tapTimeoutRef = useRef(null);
+
 
     const setSampleStart = (sampleId, newStart) => {
         setSamples(prev => prev.map(s =>
@@ -337,29 +338,46 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
 
     // Sequence Generator
     useEffect(() => {
-        const order = [];
-        for (let r = rows - 1; r >= 0; r--) {
-            for (let c = 0; c < cols; c++) order.push(r * cols + c);
-        }
+
+        // Total number of steps
+        const stepsPerBar = rows * cols;
+        const totalSteps = stepsPerBar * numBars;
+
 
         const seq = new Tone.Sequence((time, stepIdx) => {
-            const gridIndex = order[stepIdx];
+            const currentStepInBar = stepIdx % stepsPerBar;
 
-            // Draw highlight on the 16-pad grid
+            // Calculate grid coords
+            const col = currentStepInBar % cols;
+            const standardRow = Math.floor(currentStepInBar / cols);
+
+            // Flip around to order bottom left to top right
+            const flippedRow = (rows - 1) - standardRow;
+            const gridIndex = (flippedRow * cols) + col;
+
+
+            // Sync highlights
             Tone.Draw.schedule(() => {
                 setActiveStep(gridIndex);
             }, time);
 
             const cell = gridRef.current[gridIndex];
+
             if (cell?.isActive && cell.sampleId) {
                 triggerSample(cell.sampleId, time);
             }
-        }, Array.from({ length: rows * cols }, (_, i) => i), "8n");
 
-        seq.start(0);
+
+        }, Array.from({ length: totalSteps }, (_, i) => i), "8n");
+
+        if (isPlaying) {
+            seq.start(0);
+        } else {
+            setActiveStep(-1);
+        }
+
         return () => seq.dispose();
-    }, [rows, cols, isPlaying, triggerSample]);
-
+    }, [rows, cols, numBars, isPlaying, triggerSample]);
 
 
     return {
@@ -374,6 +392,8 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         setSelectedSampleId,
         lastTriggerTime,
         lastTriggerRef,
+        numBars,
+        setNumBars,
         tapBpm,
         loadFile,
         doubleBpm: () => updateBpmGlobal(bpm * 2),
@@ -381,6 +401,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         stopAll,
         setSampleStart,
         setSampleEnd,
+        currentBarIdx: Math.floor(activeStep / (rows * cols)),
         playSampleSolo: (id) => {
             const player = players.current[id];
             const sampleData = sampleRef.current.find(sample => sample.id === id);
