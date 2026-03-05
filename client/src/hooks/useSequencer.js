@@ -25,6 +25,12 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         ));
     };
 
+    const setSampleEnd = (sampleId, newEnd) => {
+        setSamples(prev => prev.map(s =>
+            s.id === sampleId ? { ...s, endTime: newEnd } : s
+        ));
+    };
+
     const setChokeGroup = (sampleId, group) => {
         setSamples(prev => prev.map(sample =>
             sample.id === sampleId
@@ -33,7 +39,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         ));
     };
 
-    // Core Logic
+    // Core logic
     const triggerSample = useCallback((sampleId, time) => {
         const player = players.current[sampleId];
         const sampleData = sampleRef.current.find(s => s.id === sampleId);
@@ -42,7 +48,8 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
 
             if (sampleData.chokeGroup && sampleData.chokeGroup !== 'none') {
                 sampleRef.current.forEach(otherSample => {
-                    // Choke other players in same group
+
+                    // Choke group logic
                     if (otherSample.chokeGroup === sampleData.chokeGroup) {
                         players.current[otherSample.id]?.stop(time);
                     }
@@ -50,7 +57,11 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
             }
 
             const offset = (sampleData.startTime || 0) / 1000;
-            player.start(time, offset);
+            const endTime = (sampleData.endTime || (player.buffer.duration * 1000)) / 1000;
+            const duration = endTime - offset;
+
+
+            player.start(time, offset, duration);
 
             // Sync triggers
             lastTriggerRef.current = time;
@@ -248,7 +259,8 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
                     url: cleanUrl,
                     buffer: newPlayer.buffer,
                     startTime: 0,
-                    chokeGroup: "none"
+                    endTime: newPlayer.buffer.duration * 1000,
+                    chokeGroup: "none",
                 }];
             });
         } catch (err) {
@@ -368,6 +380,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         halfBpm: () => updateBpmGlobal(bpm / 2),
         stopAll,
         setSampleStart,
+        setSampleEnd,
         playSampleSolo: (id) => {
             const player = players.current[id];
             const sampleData = sampleRef.current.find(sample => sample.id === id);
