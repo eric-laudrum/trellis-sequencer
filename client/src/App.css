@@ -168,8 +168,7 @@ h1.main-title {
 .sample-settings {
   display: flex;
   flex-direction: column;
-  width: 350px;
-  flex-shrink: 0;
+  width: 100%;
   height: 100%;
 
   border: 3px solid yellow;

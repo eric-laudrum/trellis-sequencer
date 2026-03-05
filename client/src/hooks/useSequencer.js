@@ -19,6 +19,8 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     const tapTimes = useRef([]);
     const tapTimeoutRef = useRef(null);
 
+    const [viewingBar, setViewingBar] = useState(0);
+    const [isFollowEnabled, setIsFollowEnabled] = useState(true);
 
     const setSampleStart = (sampleId, newStart) => {
         setSamples(prev => prev.map(s =>
@@ -39,6 +41,8 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
                 : sample
         ));
     };
+
+
 
     // Core logic
     const triggerSample = useCallback((sampleId, time) => {
@@ -115,6 +119,18 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         }
     };
 
+
+    // Follow playhead to different bars
+    useEffect(() => {
+        if (isFollowEnabled && activeStep !== -1) {
+            const stepsPerBar = rows * cols;
+            const playheadBar = Math.floor(activeStep / stepsPerBar);
+
+            if (playheadBar !== viewingBar) {
+                setViewingBar(playheadBar);
+            }
+        }
+    }, [activeStep, isFollowEnabled, rows, cols, viewingBar]);
 
 
 
@@ -200,6 +216,8 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
             transport.bpm.value = bpm;
         }
     }, [bpm, transport]);
+
+
 
     const loadFile = async (file) => {
         const formData = new FormData();
@@ -345,16 +363,19 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
 
 
         const seq = new Tone.Sequence((time, stepIdx) => {
-            const currentStepInBar = stepIdx % stepsPerBar;
+            // Find current bar & step
+            const currentBar = Math.floor(stepIdx / stepsPerBar);
+            const stepInBar = stepIdx % stepsPerBar;
 
             // Calculate grid coords
-            const col = currentStepInBar % cols;
-            const standardRow = Math.floor(currentStepInBar / cols);
+            const col = stepInBar % cols;
+            const standardRow = Math.floor(stepInBar / cols);
 
             // Flip around to order bottom left to top right
             const flippedRow = (rows - 1) - standardRow;
-            const gridIndex = (flippedRow * cols) + col;
 
+            // Calculate new grid index
+            const gridIndex = (currentBar * stepsPerBar) + (flippedRow * cols) + col;
 
             // Sync highlights
             Tone.Draw.schedule(() => {
@@ -362,7 +383,6 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
             }, time);
 
             const cell = gridRef.current[gridIndex];
-
             if (cell?.isActive && cell.sampleId) {
                 triggerSample(cell.sampleId, time);
             }
@@ -382,6 +402,10 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
 
     return {
         activeStep,
+        viewingBar,
+        setViewingBar,
+        isFollowEnabled,
+        setIsFollowEnabled,
         isPlaying,
         togglePlayback,
         bpm,
