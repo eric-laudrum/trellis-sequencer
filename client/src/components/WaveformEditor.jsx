@@ -1,16 +1,23 @@
 import React, {useRef, useEffect, useState} from 'react';
 import * as Tone from 'tone';
 
-const WaveformEditor = ({ buffer, startTime, onUpdateStart, isPlaying, lastTriggerTime, lastTriggerRef }) => {
+const WaveformEditor = ({
+                            buffer,
+                            startTime,
+                            endTime,
+                            onUpdateStart,
+                            onUpdateEnd,
+                            isPlaying,
+                            lastTriggerTime,
+                            lastTriggerRef
+    }) => {
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
 
-    // Zoom
     const [zoomRange, setZoomRange] = useState({ start: 0, end: 1 });
     const [playheadPos, setPlayheadPos] = useState(0);
     const [isDraggingStart, setIsDraggingStart] = useState(false);
-
-    // States for Zoom Selection Box
+    const [isDraggingEnd, setIsDraggingEnd] = useState(false);
     const [selection, setSelection] = useState(null);
 
     // Draw waveform
@@ -29,25 +36,35 @@ const WaveformEditor = ({ buffer, startTime, onUpdateStart, isPlaying, lastTrigg
 
         ctx.fillStyle = '#050505';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.strokeStyle = '#f1ad36';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
+
+        // Convert ms to percentage of total buffer
+        const startPct = (startTime / 1000) / buffer.duration;
+        const endPct = (endTime / 1000) / buffer.duration;
+
 
         for (let i = 0; i < canvas.width; i++) {
+            // Calculate what percentage of the total buffer this pixel represents
+            const pixelPct = zoomRange.start + (i / canvas.width) * (zoomRange.end - zoomRange.start);
+
+            // Determine if pixel is "outside" the active region
+            const isOutside = pixelPct < startPct || pixelPct > endPct;
+
+            ctx.strokeStyle = isOutside ? '#332200' : '#f1ad36'; // Darker color for outside
+
             let min = 1.0, max = -1.0;
             for (let j = 0; j < step; j++) {
                 const datum = visibleData[(i * step) + j];
                 if (datum < min) min = datum;
                 if (datum > max) max = datum;
             }
+            ctx.beginPath();
             ctx.moveTo(i, (1 + min) * amp);
             ctx.lineTo(i, (1 + max) * amp);
+            ctx.stroke();
         }
-        ctx.stroke();
-    }, [buffer, zoomRange]);
+    }, [buffer, zoomRange, startTime, endTime]);
 
-
-    // Update playhead
+    // Playhead logic
     useEffect(() => {
         let animId;
         const loop = () => {
@@ -77,27 +94,53 @@ const WaveformEditor = ({ buffer, startTime, onUpdateStart, isPlaying, lastTrigg
         return () => cancelAnimationFrame(animId);
     }, [buffer, lastTriggerTime, lastTriggerRef, startTime, zoomRange]);
 
+    // Helper function
+    const getTimeFromMouse = (x) => {
+        if (!buffer) return 0;
+        const rect = containerRef.current.getBoundingClientRect();
+        const percentOfCanvas = x / rect.width;
+        const actualPercent = zoomRange.start + (percentOfCanvas * (zoomRange.end - zoomRange.start));
+
+        return Math.max(0, Math.min(actualPercent * buffer.duration * 1000, buffer.duration * 1000));
+    };
+
     // Drag logic
     const handleMouseDown = (e) => {
         const rect = containerRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
 
-        if (e.shiftKey) {
-            setSelection({ startX: x, currentX: x });
-        } else {
+        // Calculate current visual positions of lines (0-100)
+        const sPos = (getPos(startTime) / 100) * rect.width;
+        const ePos = (getPos(endTime) / 100) * rect.width;
+
+        // Line's hit area
+        const hitTolerance = 15;
+
+        if (Math.abs(x - sPos) < hitTolerance) {
             setIsDraggingStart(true);
-            updateStartFromMouse(x);
+        } else if (Math.abs(x - ePos) < hitTolerance) {
+            setIsDraggingEnd(true);
+        } else if (e.shiftKey) {
+            // Only allow zoom selection if not dragging a handle
+            setSelection({ startX: x, currentX: x });
         }
     };
 
     const handleMouseMove = (e) => {
         const rect = containerRef.current.getBoundingClientRect();
         const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+        const newTime = getTimeFromMouse(x);
 
-        if (selection) {
+        if (isDraggingStart) {
+            // Boundary: 0 < Start < End
+            const clampedStart = Math.min(newTime, endTime - 10);
+            onUpdateStart(clampedStart);
+        } else if (isDraggingEnd) {
+            // Boundary: Start < End < Buffer Duration
+            const clampedEnd = Math.max(newTime, startTime + 10);
+            onUpdateEnd(clampedEnd);
+        } else if (selection) {
             setSelection(prev => ({ ...prev, currentX: x }));
-        } else if (isDraggingStart) {
-            updateStartFromMouse(x);
         }
     };
 
@@ -107,7 +150,7 @@ const WaveformEditor = ({ buffer, startTime, onUpdateStart, isPlaying, lastTrigg
             const x1 = Math.min(selection.startX, selection.currentX) / rect.width;
             const x2 = Math.max(selection.startX, selection.currentX) / rect.width;
 
-            if (x2 - x1 > 0.01) { // Min zoom threshold
+            if (x2 - x1 > 0.01) {
                 const newStart = zoomRange.start + x1 * (zoomRange.end - zoomRange.start);
                 const newEnd = zoomRange.start + x2 * (zoomRange.end - zoomRange.start);
                 setZoomRange({ start: newStart, end: newEnd });
@@ -115,7 +158,67 @@ const WaveformEditor = ({ buffer, startTime, onUpdateStart, isPlaying, lastTrigg
             setSelection(null);
         }
         setIsDraggingStart(false);
+        setIsDraggingEnd(false);
     };
+
+
+    // Calculate positions for markers
+    const getPos = (time) => buffer ?
+        ((time / 1000 / buffer.duration) - zoomRange.start) / (zoomRange.end - zoomRange.start) * 100
+        : 0;
+
+    const startLinePos = getPos(startTime);
+    const endLinePos = getPos(endTime);
+
+
+    return (
+        <div
+            className="waveform-container"
+            ref={containerRef}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onDoubleClick={() => setZoomRange({start: 0, end: 1})}
+            style={{position: 'relative', overflow: 'hidden', cursor: 'crosshair'}}
+        >
+            <canvas ref={canvasRef} width={600} height={120}/>
+
+            {/* Start Line (Red) with Handle Cursor */}
+            <div style={{
+                position: 'absolute',
+                left: `${startLinePos}%`,
+                top: 0, bottom: 0, width: '4px',
+                backgroundColor: 'red', zIndex: 20,
+                cursor: 'col-resize',
+                transform: 'translateX(-50%)' // Center the hit area
+            }}>
+                <div style={{ backgroundColor: 'red', color: 'white', fontSize: '9px', padding: '1px' }}>S</div>
+            </div>
+
+            {/* End Line (Blue) with Handle Cursor */}
+            <div style={{
+                position: 'absolute',
+                left: `${endLinePos}%`,
+                top: 0, bottom: 0, width: '4px',
+                backgroundColor: '#00ccff', zIndex: 20,
+                cursor: 'col-resize',
+                transform: 'translateX(-50%)'
+            }}>
+                <div style={{ backgroundColor: '#00ccff', color: 'black', fontSize: '9px', padding: '1px' }}>E</div>
+            </div>
+
+            {/* Playhead */}
+            {playheadPos >= 0 && playheadPos <= 100 && (
+                <div style={{
+                    position: 'absolute', left: `${playheadPos}%`, top: 0, bottom: 0,
+                    width: '2px', backgroundColor: 'white', zIndex: 11, pointerEvents: 'none'
+                }} />
+            )}
+
+
+        </div>
+    );
 
 
     const updateStartFromMouse = (x) => {
@@ -129,10 +232,6 @@ const WaveformEditor = ({ buffer, startTime, onUpdateStart, isPlaying, lastTrigg
     const handleDoubleClick = () => setZoomRange({ start: 0, end: 1 });
 
 
-    // Calculate Start Line position
-    const startLinePos = buffer ?
-        ((startTime / 1000 / buffer.duration) - zoomRange.start) / (zoomRange.end - zoomRange.start) * 100
-        : 0;
 
     return (
         <div

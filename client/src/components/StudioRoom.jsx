@@ -32,6 +32,7 @@ export default function StudioRoom({roomName, socket, onLeave }){
         tapBpm,
         playSampleSolo,
         setSampleStart,
+        setSampleEnd,
         loadFile,
 
     } = useSequencer(gridState, socket, roomName);
@@ -195,13 +196,32 @@ export default function StudioRoom({roomName, socket, onLeave }){
                         </div>
                     </div>
 
+                    <div className='sample-setting' id='end-time-control'>
+                        <label>END TIME</label>
+                        <div className="nudge-container">
+                            <button className="settings-btn"
+                                    onClick={() => setSampleEnd(selectedSampleId, (currentSample?.endTime || 0) - 10)}>-
+                            </button>
+                            <div className="editable-value">
+                                <span className="value-display">
+                                    {((currentSample?.endTime || 0) / 1000).toFixed(2)}s
+                                </span>
+                            </div>
+                            <button className="settings-btn"
+                                    onClick={() => setSampleEnd(selectedSampleId, (currentSample?.endTime || 0) + 10)}>+
+                            </button>
+                        </div>
+                    </div>
+
                     {currentSample && (
                         <WaveformEditor
                             buffer={currentSample?.buffer}
                             startTime={currentSample?.startTime || 0}
+                            endTime={currentSample?.endTime || (currentSample?.buffer.duration * 1000)} // Pass end time
                             onUpdateStart={(newTime) => setSampleStart(selectedSampleId, newTime)}
+                            onUpdateEnd={(newTime) => setSampleEnd(selectedSampleId, newTime)} // Pass handler
                             isPlaying={isPlaying}
-                            lastTriggerTime={lastTriggerTime}
+                            lastTriggerTime={ lastTriggerTime}
                             lastTriggerRef={lastTriggerRef}
                         />
                     )}
