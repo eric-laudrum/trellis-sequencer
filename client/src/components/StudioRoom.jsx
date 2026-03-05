@@ -79,16 +79,19 @@ export default function StudioRoom({roomName, socket, onLeave }){
             sampleId: null
         }));
 
-        setGridState(prev => {
-            const newState = [...prev, ...extraPads];
-            // Tell the server about grid size change
-            socket.emit('update-entire-grid', {
-                grid: newState,
-                numBars: newBars
-            });
-            return newState;
-        });
+        const newState = [...gridState, ...extraPads];
+
+
+        // Update local state
+        setGridState(newState);
         setNumBars(newBars);
+
+
+        socket.emit('update-entire-grid', {
+            roomId: roomName, // Ensure roomId is included
+            grid: newState,
+            numBars: newBars
+        });
     };
 
 

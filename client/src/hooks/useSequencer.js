@@ -169,18 +169,18 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
             }
         });
 
+        // Update Bpm
         socket.on('update-bpm', (newBpm) => {
-            setBpm(prev => {
-                if (Math.abs(prev - newBpm) > 0.1) {
-                    transport.bpm.value = newBpm;
-                    return newBpm;
-                }
-                return prev;
-            });
+            setBpm(newBpm);
         });
+        return () => socket.off('update-bpm');
 
-        const handleDownload = async ({ id, url, name }) => {
-            await addNewPlayer(id, url, name);
+        // Download samples
+        const handleDownload = async (sampleData) => {
+            // sampleData should contain { id, url, name }
+            if (!players.current[sampleData.id]) {
+                await addNewPlayer(sampleData.id, sampleData.url, sampleData.name);
+            }
         };
         socket.on('download-sample', handleDownload);
 
@@ -209,7 +209,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
             socket.off('download-sample', handleDownload);
             socket.off('kill-audio-instantly');
         };
-    }, [socket, transport]);
+    }, [socket, setBpm, transport]);
 
     useEffect(() => {
         if (Math.abs(transport.bpm.value - bpm) > 0.1) {
@@ -236,13 +236,16 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
             if (!response.ok) throw new Error("Upload failed status: " + response.status);
 
             const { url, name } = await response.json();
+            const publicUrl = `${window.location.origin}${url}`;
+
+
             const id = crypto.randomUUID();
 
             await addNewPlayer(id, url, name);
 
             socket.emit('share-sample', {
                 roomId: roomName,
-                sampleData: { id, url, name }
+                sampleData: { id, url: publicUrl, name }
             });
         } catch (err) {
             console.error("Upload error:", err);
@@ -253,23 +256,18 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         // Prevent duplicate samples
         if (players.current[id]) return;
 
-        // Select appropriate backend location
-        const backendBase = window.location.hostname === 'localhost'
-            ? 'http://localhost:4000'
-            : window.location.origin;
-
-        const fileName = url.split('/').pop();
-        const cleanUrl = `${backendBase}/uploads/${fileName}`;
-
-        // Debug
-        console.log("Attempting to load audio from:", cleanUrl);
+        const cleanUrl = url.startsWith('http')
+            ? url
+            : `${window.location.origin}${url.startsWith('/') ? '' : '/'}${url}`;
 
         try {
-            const newPlayer = new Tone.Player().toDestination();
-            // Use the Promise-based load method
+            const newPlayer = new Tone.Player();
+
             await newPlayer.load(cleanUrl);
+            newPlayer.toDestination();
 
             players.current[id] = newPlayer;
+
             setSamples(prev => {
                 if (prev.find(s => s.id === id)) return prev;
                 return [...prev, {
@@ -283,8 +281,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
                 }];
             });
         } catch (err) {
-            console.error("Tone.js could not load the file. Verify the url in browser: ", cleanUrl);
-            console.error("Detailed Error:", err);
+            console.error("Load failed for:", cleanUrl, err);
         }
     };
 

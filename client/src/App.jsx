@@ -10,7 +10,11 @@ import Lobby from "./components/Lobby.jsx";
 import './App.css'
 import StudioRoom from "./components/StudioRoom.jsx";
 
-const socket = io();
+const socket = io({
+    extraHeaders: {
+        "ngrok-skip-browser-warning": "true"
+    }
+});
 
 function App() {
     const [ roomName, setRoomName ] = useState(null);
