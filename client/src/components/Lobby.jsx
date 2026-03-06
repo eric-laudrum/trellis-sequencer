@@ -1,20 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
-const lobbySocket = io();
 
-export default function Lobby({onJoin }){
+export default function Lobby({socket, onJoin }){
     const [ rooms, setRooms ] = useState([]);
     const [ input, setInput ] = useState('');
 
     useEffect(() =>{
-        lobbySocket.emit('get-rooms');
-        lobbySocket.on('room-list', (list) => {
-            setRooms(list)
-        });
+        if(!socket) return;
 
-        return () => lobbySocket.off('room-list');
+        // Use socket from App.js
+        const onConnect = () => {
+            socket.emit('get-rooms');
+        };
 
-    }, []);
+        if (socket.connected) {
+            onConnect();
+        }
+
+        socket.on('connect', onConnect);
+        socket.on('room-list', (list) => setRooms(list));
+
+
+        return () => {
+            socket.off('connect', onConnect);
+            socket.off('room-list');
+        };
+
+    }, [socket]);
 
 
     return(
@@ -22,11 +34,17 @@ export default function Lobby({onJoin }){
             <h1>TRELLIS STUDIO</h1>
             <h3>LOBBY</h3>
             <div className="create-section">
+
+                {/* Debugging */}
+                <p style={{color: socket?.connected ? 'green' : 'red', fontSize: '10px'}}>
+                    {socket?.connected ? '● Server Connected' : '○ Connecting to Server...'}
+                </p>
+
                 <input
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     placeholder="Room name..."
-                    />
+                />
                 <button onClick={() => input && onJoin(input)}>CREATE / JOIN</button>
             </div>
             <div className="room-list">

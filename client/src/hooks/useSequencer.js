@@ -212,17 +212,33 @@ export const useSequencer = (
     };
 
     const loadFile = async (file) => {
+        console.log(`[UPLOAD] Starting upload for: ${file.name}`);
+
         const formData = new FormData();
         formData.append('file', file);
+
         const serverUrl = window.location.hostname === 'localhost' ? 'http://localhost:4000' : window.location.origin;
 
         try {
-            const response = await fetch(`${serverUrl}/upload-sample`, { method: 'POST', body: formData });
+            const response = await fetch(`${serverUrl}/upload-sample`, {
+                method: 'POST',
+                body: formData
+            });
+
             if (!response.ok) throw new Error("Upload failed");
+
             const data = await response.json();
+
+            console.log("[UPLOAD] Server responded with URL:", data.url);
+
             const id = crypto.randomUUID();
             await addNewPlayer(id, data.url, data.name);
-            emitEvent('share-sample', { sampleData: { id, url: data.url, name: data.name } });
+            socket.emit('share-sample', {
+                roomId: roomName,
+                sampleData: { url: data.url, name: data.name, id: Date.now() }
+            });
+            console.log("[SOCKET] Broadcast 'share-sample' sent to server");
+
         } catch (err) { console.error("Upload error:", err); }
     };
 

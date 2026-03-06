@@ -41,14 +41,21 @@ app.use((req, res, next) => {
 
 // Api routes
 app.post('/upload-sample', upload.single('file'), (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    if (!req.file) {
+        console.error("Upload Failed: No file in request");
+        return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Debugging
+    console.log(`[FILE] Received: ${req.file.originalname} (${req.file.size} bytes)`);
 
     const protocol = req.headers['x-forwarded-proto'] || 'http';
     const host = req.headers['host'];
     const fileUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
 
-    res.json({ url: fileUrl, name: req.file.originalname });
     console.log("File uploaded, URL created:", fileUrl);
+    res.json({ url: fileUrl, name: req.file.originalname });
+
 });
 
 // Socket IO logic
@@ -59,20 +66,25 @@ const io = new Server(server, {
     }
 });
 
-const getRoomListData = () =>{
-    return Object.keys(rooms).map(roomName =>{
-        const room = io.sockets.adapter.rooms.get(roomName);
+const getRoomListData = () => {
+    return Object.keys(rooms).map(roomName => {
+        const activeSocketRoom = io.sockets.adapter.rooms.get(roomName);
         return {
             name: roomName,
-            count: room ? room.size: 0
+            // If room is empty, set as 0, but the room still exists in the object
+            count: activeSocketRoom ? activeSocketRoom.size : 0
         };
     });
-}
+};
 
 io.on('connection', (socket) => {
     console.log('User connected: ' + socket.id);
 
+    // Send list to new user
+    socket.emit('room-list', getRoomListData());
+
     socket.on('get-rooms', () =>{
+        console.log("Current rooms on server:", rooms)
         socket.emit('room-list', getRoomListData());
     });
 
@@ -121,6 +133,9 @@ io.on('connection', (socket) => {
             socket.to(room).emit('update-bpm', newBpm);
         }
     });
+
+
+
 
     socket.on('share-sample', ({ roomId, sampleData }) => {
         if (rooms[roomId]) {

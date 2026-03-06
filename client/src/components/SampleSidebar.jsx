@@ -1,4 +1,9 @@
-const SampleSidebar = ({ samples =[], selectedId, onSelect, onUpload, onPlaySolo, onSetChokeGroup }) => {
+const SampleSidebar = ({samples =[],
+                           selectedId,
+                           onSelect,
+                           onUpload,
+                           onPlaySolo,
+                           onSetChokeGroup }) => {
     return(
 
         <aside className="sample-sidebar">
