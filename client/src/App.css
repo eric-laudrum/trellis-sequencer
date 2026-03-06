@@ -44,20 +44,10 @@ body, #root{
 .app-container {
   display: flex;
   flex-direction: column;
-
-  height: 100vh;
-  width: 100vw;
-
-  margin: 20px;
+  height: 98vh;
+  width: 98vw;
+  margin: auto;
   overflow: hidden;
-  box-sizing: border-box;
-  padding: 10px;
-  background: #222222;
-  border-radius: 12px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
-  border: 2px solid black;
-
-
 }
 
 /* --- Typography --- */
@@ -74,20 +64,25 @@ h1.main-title {
 /* --- Studio/Sequencer Sections --- */
 .seq-header {
   display: flex;
-  gap: 20px;
-
+  flex-direction: column;
+  gap: 10px;
   width: 100%;
   max-width: 1200px;
-  margin: 0 auto 10px auto;
+  margin: 0 auto 5px auto;
+
+  height: auto;
+  min-height: 180px;
+  flex-shrink: 0;
+
   box-sizing: border-box;
-
-  padding: 15px;
+  padding: 10px;
   border-radius: 10px;
-
   border: 1px solid #333;
   background: var(--bg-darker);
+  overflow-y: auto;
 
 }
+
 
 .seq-main {
   display: flex;
@@ -105,65 +100,18 @@ h1.main-title {
 
   box-sizing: border-box;
 
-}
-
-.pad {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  background: #333;
-  border: 1px solid #444;
-  border-radius: 4px;
-  cursor: pointer;
-  box-sizing: border-box;
-}
-
-.pad.active {
-  background-color: #f1ad36 !important;
-}
-
-.pad.playing {
-  border: 2px solid white !important;
-}
-
-
-.grid-container {
-  display: flex;
-
-  justify-content: center;
-  align-items: center;
-  background: #111;
-  padding: 20px;
-  border-radius: 8px;
-
-  max-width: 450px;
-  margin: 0 auto;
-  box-sizing: border-box;
-
 
 }
 
-.grid-viewport {
-  width: auto;
-  height: 100%;
-  aspect-ratio: 1 / 1;
-  max-height: 100%;
 
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(4, 1fr);
-  gap: 10px;
-
-}
 
 .sequencer-column {
   display: flex;
   flex-direction: column;
-  align-content: center;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(4, 1fr);
-  gap: 10px;
-  width: 100%;
+  flex: 1;
   height: 100%;
+  min-height: 0; /* Add this if it's missing! */
+  justify-content: space-between;
 
 
 }
@@ -173,12 +121,25 @@ h1.main-title {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100%;
+  justify-content: center;
 
   background: var(--bg-darker);
   border-radius: 8px;
   overflow: hidden;
 
+
+}
+
+.sample-control-strip{
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 15px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border-bottom: 1px solid #333;
+  min-height: 50px;
 }
 
 .sample-setting {
@@ -192,17 +153,16 @@ h1.main-title {
   border: 1px solid black;
 }
 
+.sample-setting-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 10px;
+}
+
 .sample-options{
   display: flex;
   flex-direction: row;
-
-}
-
-.choke-selector{
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  margin: 5px;
 
 }
 
@@ -212,9 +172,39 @@ h1.main-title {
   padding: 5px;
   text-align: center;
   width: 60px;
-
-
 }
+
+.sample-control-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  gap: 15px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid #333;
+}
+
+.choke-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--primary);
+}
+
+.preview-btn {
+  padding: 4px 12px;
+  background: var(--primary);
+  color: black;
+  font-weight: bold;
+  font-size: 0.75rem;
+  border: none;
+  border-radius: 4px;
+}
+
+
+
+
 
 .bpm-controls-wrapper,
 .nudge-container {
@@ -228,13 +218,83 @@ h1.main-title {
 }
 
 /* --- Play Controls ---- */
-.play-controls{
+
+/* Grid + Play area */
+.grid-and-controls-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  gap: 15px;
+  position: relative;
+}
+
+.play-controls {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding: 15px;
+  flex-shrink: 0;
+
+  align-self: flex-end;
+}
+
+.play-button, .stop-button {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 10px;
-  min-height: 80px;
-  flex-shrink: 0;
+
+  width: 7vh;
+  height: 7vh;
+  max-width: 60px;
+  max-height: 60px;
+  min-width: 45px;
+  min-height: 45px;
+  font-size: 1.5rem;
+
+  border-radius: 8px;
+  border: 2px solid var(--primary);
+  background-color: var(--bg-dark);
+  cursor: pointer;
+
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+/* Play Button Specifics */
+.play-button {
+  color: var(--primary);
+}
+
+.play-button.start {
+  background: rgba(255, 165, 0, 0.1);
+}
+
+.play-button.pause {
+  background: var(--primary);
+  color: black;
+}
+
+/* Stop Button Specifics */
+.stop-button {
+  color: #dd1f1f; /* Standard red for stop */
+  border-color: #dd2d2d;
+  background: #111;
+}
+
+/* Hover & Active States */
+.play-button:hover, .stop-button:hover {
+  transform: scale(1.1);
+  filter: brightness(1.2);
+  box-shadow: 0 0 15px rgba(255, 165, 0, 0.3);
+}
+
+.play-button:active, .stop-button:active {
+  transform: scale(0.9);
 }
 
 /* --- Buttons --- */
@@ -253,40 +313,40 @@ button:hover {
 }
 
 .settings-btn {
+  display: flex;
+  align-content: center;
+  justify-content: center;
   padding: 4px 8px;
   font-size: 12px;
   min-width: 35px;
   color: var(--primary);
 }
 
-.tap-btn,
-.play-button,
-.stop-button {
+.tap-btn {
   color: var(--primary);
   border: 1px solid var(--primary);
+  background: transparent;
   text-transform: uppercase;
   font-weight: bold;
+
+  width: fit-content !important;
+  height: 35px !important;
+  padding: 0 12px !important;
+  font-size: 11px !important;
+  line-height: 35px;
+  margin: 0;
+
+  cursor: pointer;
+  border-radius: 4px;
+  flex-shrink: 0;
 }
 
-.tap-btn:active,
-.play-button,
-.stop-button :active {
+.tap-btn:active {
   background: var(--primary);
   color: black;
   transform: scale(0.95);
 }
 
-.play-button,
-.stop-button {
-  flex-shrink: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 2em;
-  width: 2em;
-  font-size: 2.5em;
-  margin: 10px;
-}
 
 /* --- Inputs & Editable Values --- */
 .value-display {
@@ -316,9 +376,9 @@ button:hover {
   display: flex;
   flex-direction: column;
 
-  width: 500px;
-  flex-shrink: 0;
-
+  width: 30%;
+  min-width: 250px;
+  max-width: 400px;
   height: 100%;
 
 
@@ -327,18 +387,19 @@ button:hover {
   overflow: hidden;
 }
 
-.sample-name{
-  display: inline-block;
-  max-width: 30ch;
+.sample-name {
+  display: block;
+  font-weight: 500;
+  color: #eee;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  vertical-align: middle;
 }
 
 .sample-time{
   align-content: center;
   margin: 5px;
+  display: none;
 }
 
 .sample-list {
@@ -349,19 +410,26 @@ button:hover {
 
 .sample-item {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
-  padding: 20px;
-  margin: 4px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 4px;
-  border: 1px solid transparent;
-  max-height: 0.75em;
+  padding: 12px 15px;
+  margin: 2px 4px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
   cursor: pointer;
-  transition: background 0.2s ease;
-
 }
+
+.sample-item .sample-name {
+  font-size: 0.9rem;
+  color: #ccc;
+  text-align: left;
+}
+
+.sample-item button,
+.sample-item .choke-selector {
+  display: none;
+}
+
 
 .sample-item:hover {
   background: rgba(241, 173, 54, 0.1);
@@ -426,6 +494,7 @@ button:hover {
   display: flex;
   align-items: center;
   flex-direction: row;
+  justify-content: space-between;
 
 }
 
@@ -457,6 +526,8 @@ button:hover {
   display: flex;
   flex-direction: column;
   align-items: center;
+
+
 }
 .bar-navigation {
   display: flex;
@@ -466,6 +537,8 @@ button:hover {
 .bar-btn-wrapper {
   position: relative;
   display: inline-block;
+
+
 }
 
 .delete-bar-btn {
@@ -520,6 +593,8 @@ button:hover {
 .follow-btn.active {
   color: #f1ad36;
   text-shadow: 0 0 5px #f1ad36;
+  margin: 0;
+
 }
 
 
@@ -531,3 +606,5 @@ button:hover {
 
   padding-top: 20vh;
 }
+
+

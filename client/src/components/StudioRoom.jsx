@@ -91,86 +91,118 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
     return (
         <div className='app-container'>
             <div className="room-header">
-                <button className="settings-btn" onClick={onLeave}>← EXIT STUDIO</button>
                 <h1 className='main-title'>STUDIO: {roomName}</h1>
+                <button className="settings-btn" onClick={onLeave}>← EXIT</button>
+
             </div>
 
             <div className="seq-header">
+
+            {/* Sample Settings */}
                 <div className='sample-settings'>
-                    <div className='sample-setting' id='bpm-control'>
-                        <label>BPM</label>
-                        <div className="bpm-controls-wrapper">
-                            <button className="settings-btn" onClick={() => setBpm(bpm / 2)}>/2</button>
-                            <div className="editable-value">
-                                {isEditingBpm ? (
-                                    <input
-                                        autoFocus
-                                        className="inline-input"
-                                        type="number"
-                                        value={tempBpm}
-                                        onChange={(e) => setTempBpm(e.target.value)}
-                                        onBlur={commitBpm}
-                                        onKeyDown={(e) => e.key === "Enter" && commitBpm()}
-                                    />
-                                ) : (
-                                    <span className="value-display" onClick={() => setIsEditingBpm(true)}>{bpm}</span>
-                                )}
+                    {currentSample ? (
+                        <>
+                            {/* Sample Controls */}
+                            <div className='sample-control-strip'>
+
+                                {/* BPM controls */}
+                                <div className='sample-setting' id='bpm-control'>
+                                    <label>BPM</label>
+
+                                    <div className="bpm-controls-wrapper">
+                                        <button className="settings-btn" onClick={() => setBpm(bpm / 2)}>/2</button>
+                                        <div className="editable-value">
+                                            {isEditingBpm ? (
+                                                <input
+                                                    autoFocus
+                                                    className="inline-input"
+                                                    type="number"
+                                                    value={tempBpm}
+                                                    onChange={(e) => setTempBpm(e.target.value)}
+                                                    onBlur={commitBpm}
+                                                    onKeyDown={(e) => e.key === "Enter" && commitBpm()}
+                                                />
+                                            ) : (
+                                                <span className="value-display"
+                                                      onClick={() => setIsEditingBpm(true)}>{bpm}</span>
+                                            )}
+                                        </div>
+                                        <button className="settings-btn" onClick={() => setBpm(bpm * 2)}>x2</button>
+                                        <button className="tap-btn" onClick={tapBpm}>TAP</button>
+                                    </div>
+                                </div>
+
+                                {/* Sample Start Time */}
+                                <div className='sample-setting'>
+                                    <label>START TIME</label>
+
+                                    <button className="settings-btn" onClick={() => setSampleStart(selectedSampleId, (currentSample?.startTime || 0) - 10)}>
+                                        -
+                                    </button>
+
+                                    <span className="value-display">{((currentSample?.startTime || 0) / 1000).toFixed(2)}
+                                        s
+                                    </span>
+
+                                    <button className="settings-btn"
+                                            onClick={() => setSampleEnd(selectedSampleId, (currentSample?.endTime || 0) + 10)}>
+                                        +
+                                    </button>
+
+                                </div>
+
+                                {/* Sample End Time */}
+                                <div className='sample-setting'>
+                                    <label>END TIME</label>
+                                    <div className="nudge-container">
+
+                                        <button className="settings-btn"
+                                                onClick={() => setSampleEnd(selectedSampleId, (currentSample?.endTime || 0) - 10)}>
+                                            -
+                                        </button>
+
+                                        <span
+                                            className="value-display">{((currentSample?.endTime || 0) / 1000).toFixed(2)}s</span>
+
+                                        <button className="settings-btn"
+                                                onClick={() => setSampleEnd(selectedSampleId, (currentSample?.endTime || 0) + 10)}>
+                                            +
+                                        </button>
+
+                                    </div>
+                                </div>
+
+                                {/* Play sample */}
+                                <button className="preview-btn" onClick={() => playSampleSolo(selectedSampleId)}>
+                                    ▶
+                                </button>
+
                             </div>
-                            <button className="settings-btn" onClick={() => setBpm(bpm * 2)}>x2</button>
-                            <button className="tap-btn" onClick={tapBpm}>TAP</button>
+
+                        </>
+
+                    ) : (
+                        <div className="no-selection-message">
+                            <p>Select a sample to edit parameters</p>
                         </div>
-                    </div>
 
-                    <div className='sample-setting'>
-                        <label>START TIME</label>
+                    )}
+                </div>
 
-                            <button className="settings-btn"
-                                    onClick={() => setSampleStart(selectedSampleId, (currentSample?.startTime || 0) - 10)}>
-                                -
-                            </button>
-
-                            <span className="value-display">{((currentSample?.startTime || 0) / 1000).toFixed(2)}s</span>
-
-                            <button className="settings-btn"
-                                    onClick={() => setSampleStart(selectedSampleId, (currentSample?.startTime || 0) + 10)}>
-                                +
-                            </button>
-
-                        </div>
-                    </div>
-
-                    <div className='sample-setting'>
-                        <label>END TIME</label>
-                        <div className="nudge-container">
-
-                            <button className="settings-btn"
-                                    onClick={() => setSampleEnd(selectedSampleId, (currentSample?.endTime || 0) - 10)}>
-                                -
-                            </button>
-
-                            <span className="value-display">{((currentSample?.endTime || 0) / 1000).toFixed(2)}s</span>
-
-                            <button className="settings-btn"
-                                    onClick={() => setSampleEnd(selectedSampleId, (currentSample?.endTime || 0) + 10)}>
-                                +
-                            </button>
-
-                        </div>
-                    </div>
 
                     {currentSample && (
                         <WaveformEditor
-                            buffer={currentSample.buffer}
-                            startTime={currentSample.startTime}
-                            endTime={currentSample.endTime}
-                            onUpdateStart={(newTime) => setSampleStart(selectedSampleId, newTime)}
-                            onUpdateEnd={(newTime) => setSampleEnd(selectedSampleId, newTime)}
-                            isPlaying={isPlaying}
-                            lastTriggerTime={lastTriggerTime}
-                            lastTriggerRef={lastTriggerRef}
-                        />
-                    )}
-                </div>
+                        buffer={currentSample.buffer}
+                    startTime={currentSample.startTime}
+                    endTime={currentSample.endTime}
+                        onUpdateStart={(newTime) => setSampleStart(selectedSampleId, newTime)}
+                        onUpdateEnd={(newTime) => setSampleEnd(selectedSampleId, newTime)}
+                        isPlaying={isPlaying}
+                        lastTriggerTime={lastTriggerTime}
+                        lastTriggerRef={lastTriggerRef}
+                    />
+                )}
+            </div>
 
             <div className="seq-main">
                 <SampleSidebar
@@ -183,6 +215,8 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                 />
 
                 <div className="sequencer-column">
+
+                    {/* Bar Controls */}
                     <div className="bar-controls-row">
                         <div className="bar-navigation">
                             {Array.from({ length: numBars || 1 }).map((_, i) => (
@@ -215,20 +249,28 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                         <button className={`follow-btn ${followPlayhead ? 'on' : ''}`} onClick={() => setFollowPlayhead(!followPlayhead)}>FOLLOW</button>
                     </div>
 
-                    <div className="grid-container">
-                        <TrellisGrid
-                            gridState={visiblePads}
-                            activeStep={currentBarIdx === displayBar ? activeStep % 16 : -1}
-                            onToggle={(localIdx) => handleToggle(localIdx + startIndex)}
-                        />
+                    <div className="grid-and-controls-wrapper">
+                        {/* Seq Grid */}
+                        <div className="grid-container">
+                            <TrellisGrid
+                                gridState={visiblePads}
+                                activeStep={currentBarIdx === displayBar ? activeStep % 16 : -1}
+                                onToggle={(localIdx) => handleToggle(localIdx + startIndex)}
+                            />
+                        </div>
+
+                        {/* Play Controls */}
+                        <div className='play-controls'>
+                            <button className={`play-button ${isPlaying ? 'pause' : 'start'}`} onClick={togglePlayback}>
+                                {isPlaying ? '⏸︎' : '▶'}
+                            </button>
+                            <button className="stop-button" onClick={stopAll}>
+                                ⏹
+                            </button>
+                        </div>
                     </div>
 
-                    <div className='play-controls'>
-                        <button className={`play-button ${isPlaying ? 'pause' : 'start'}`} onClick={togglePlayback}>
-                            {isPlaying ? '⏸︎' : '▶'}
-                        </button>
-                        <button className="stop-button" onClick={stopAll}>⏹</button>
-                    </div>
+
                 </div>
             </div>
         </div>
