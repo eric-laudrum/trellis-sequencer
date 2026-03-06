@@ -10,8 +10,9 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     const [bpm, setBpm] = useState(120);
     const [numBars, setNumBars] = useState(1);
     const [lastTriggerTime, setLastTriggerTime] = useState(0);
-    const lastTriggerRef = useRef(0);
 
+    const lastLocalBpmChange = useRef(0);
+    const lastTriggerRef = useRef(0);
     const players = useRef({});
     const gridRef = useRef(gridState);
     const sampleRef = useRef([]);
@@ -93,29 +94,16 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         const newTapTimes = [...tapTimes.current, now].slice(-4);
         tapTimes.current = newTapTimes;
 
-
         if (newTapTimes.length > 1) {
             const intervals = [];
             for (let i = 1; i < newTapTimes.length; i++) {
                 intervals.push(newTapTimes[i] - newTapTimes[i - 1]);
             }
-
             const avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
             const calculatedBpm = Math.round(60000 / avgInterval);
-            const clamped = Math.max(30, Math.min(300, calculatedBpm));
 
-            // This is the line that actually updates the state and server
-
-
-            setBpm(clamped);
-            transport.bpm.value = clamped;
-
-            // Debounce the socket emit
-            if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
-
-            tapTimeoutRef.current = setTimeout(() => {
-                socket.emit('bpm-change', clamped);
-            }, 500);
+            // Use global updater to handle the Lock and the Socket
+            updateBpmGlobal(calculatedBpm);
         }
     };
 
@@ -171,8 +159,15 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
 
         // Update Bpm
         socket.on('update-bpm', (newBpm) => {
-            setBpm(newBpm);
+            // Ignore server's "echo" to prevent jitter and crashes.
+            if (Date.now() - lastLocalBpmChange.current < 3000) return;
+
+            if (Number.isFinite(newBpm) && newBpm > 0) {
+                setBpm(newBpm);
+            }
         });
+
+
         return () => socket.off('update-bpm');
 
         // Download samples
@@ -211,12 +206,6 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         };
     }, [socket, setBpm, transport]);
 
-    useEffect(() => {
-        if (Math.abs(transport.bpm.value - bpm) > 0.1) {
-            transport.bpm.value = bpm;
-        }
-    }, [bpm, transport]);
-
 
 
     const loadFile = async (file) => {
@@ -236,17 +225,16 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
             if (!response.ok) throw new Error("Upload failed status: " + response.status);
 
             const { url, name } = await response.json();
-            const publicUrl = `${window.location.origin}${url}`;
-
+            const publicUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
 
             const id = crypto.randomUUID();
-
-            await addNewPlayer(id, url, name);
+            await addNewPlayer(id, publicUrl, name);
 
             socket.emit('share-sample', {
                 roomId: roomName,
                 sampleData: { id, url: publicUrl, name }
             });
+
         } catch (err) {
             console.error("Upload error:", err);
         }
@@ -297,9 +285,9 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
 
     const updateBpmGlobal = (val) => {
         const clamped = Math.max(30, Math.min(300, val));
+        lastLocalBpmChange.current = Date.now();
         setBpm(clamped);
-        transport.bpm.value = clamped;
-        socket.emit('bpm-change', clamped); // Tell the room
+        socket.emit('bpm-change', clamped);
     };
 
     const togglePlayback = useCallback(async () => {
@@ -348,8 +336,10 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
 
     // Sync BPM
     useEffect(() => {
-        transport.bpm.value = bpm;
-    }, [bpm]);
+        if (transport?.bpm && Number.isFinite(bpm) && bpm > 0) {
+            transport.bpm.rampTo(bpm, 0.1);
+        }
+    }, [bpm, transport]);
 
     // Sequence Generator
     useEffect(() => {

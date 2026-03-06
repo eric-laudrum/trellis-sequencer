@@ -26,18 +26,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 app.use(cors({
-    origin: function(origin, callback){
-        if(!origin ||
-            origin.includes('localhost:5173') ||
-            origin.includes('localhost:4000') ||
-            origin.includes('ngrok-free.app') ||
-        origin.includes('ngrok-free.dev')) {
-            callback(null, true);
-        } else{
-            console.log("Blocked by CORS. Origin was:", origin);
-            callback(new Error('Error: Not allowed by CORS'));
-        }
-    },
+    origin: true,
     credentials: true
 }));
 
@@ -45,16 +34,22 @@ app.use(express.static(path.join(__dirname, '../client/dist')));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+app.use((req, res, next) => {
+    res.setHeader('ngrok-skip-browser-warning', 'true');
+    next();
+});
+
+
 // Api routes
 app.post('/upload-sample', upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-    const host = req.get('host');
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const protocol = req.headers['x-forwarded-proto'] || 'http';
+    const host = req.headers['host'];
     const fileUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
 
-    console.log("File uploaded, URL created:", fileUrl);
     res.json({ url: fileUrl, name: req.file.originalname });
+    console.log("File uploaded, URL created:", fileUrl);
 });
 
 // Socket IO logic
@@ -92,6 +87,7 @@ io.on('connection', (socket) => {
                 grid: Array.from({ length: 16 }, () => ({ isActive: false, sampleId: null })),
                 bpm: 120,
                 samples: [],
+                numBars: 1,
             };
         }
 
@@ -99,7 +95,8 @@ io.on('connection', (socket) => {
         socket.emit('initial-state', {
             grid: rooms[roomName].grid,
             bpm: rooms[roomName].bpm,
-            samples: rooms[roomName].samples
+            samples: rooms[roomName].samples,
+            numBars: rooms[roomName].numBars,
         });
 
         io.emit('room-list', getRoomListData());
@@ -137,10 +134,20 @@ io.on('connection', (socket) => {
     socket.on('stop-all-audio', () => {
         const room = socket.currentRoom;
         if (room) {
-            // Tell everyone in the room to kill their audio
+            // Tell the room to kill their audio
             socket.to(room).emit('kill-audio-instantly');
         }
     });
+
+    socket.on('update-entire-grid', ({ roomId, grid, numBars }) => {
+        if (rooms[roomId]) {
+            rooms[roomId].grid = grid;
+            rooms[roomId].numBars = numBars;
+            socket.to(roomId).emit('sync-entire-grid', { grid, numBars });
+        }
+    });
+
+
 
     socket.on('disconnect', () => {
         io.emit('room-list', getRoomListData());

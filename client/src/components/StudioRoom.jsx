@@ -81,14 +81,14 @@ export default function StudioRoom({roomName, socket, onLeave }){
 
         const newState = [...gridState, ...extraPads];
 
-
         // Update local state
         setGridState(newState);
         setNumBars(newBars);
 
 
+        // Update server
         socket.emit('update-entire-grid', {
-            roomId: roomName, // Ensure roomId is included
+            roomId: roomName,
             grid: newState,
             numBars: newBars
         });
@@ -136,10 +136,12 @@ export default function StudioRoom({roomName, socket, onLeave }){
         socket.emit('join-room', roomName);
 
         socket.on('initial-state', (data) => {
-            // split grid and bpm
             if (data.grid) setGridState(data.grid);
             if (data.bpm) setBpm(data.bpm);
-            if (data.grid) setNumBars(data.grid.length / 16);
+
+            // Set numBars if the server's data.numBars is missing
+            const barCount = data.numBars || (data.grid ? data.grid.length / 16 : 1);
+            setNumBars(barCount);
         });
 
         socket.on('update-state', ({ index, newState }) => {
@@ -148,6 +150,12 @@ export default function StudioRoom({roomName, socket, onLeave }){
                 next[index] = newState;
                 return next;
             });
+        });
+
+        socket.on('sync-entire-grid', ({ grid, numBars }) => {
+            console.log("Syncing grid from server. New bar count:", numBars);
+            setGridState(grid);
+            setNumBars(numBars);
         });
 
 
@@ -181,7 +189,8 @@ export default function StudioRoom({roomName, socket, onLeave }){
     const handleBpmChange = (newVal) => {
         const clamped = Math.max(30, Math.min(300, newVal));
         setBpm(clamped);
-        socket.emit('bpm-change', clamped);
+
+        socket.emit('bpm-change', { roomId: roomName, bpm: clamped });
     };
 
     const handleToggle = (index) => {
