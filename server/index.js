@@ -83,11 +83,13 @@ io.on('connection', (socket) => {
     // Send list to new user
     socket.emit('room-list', getRoomListData());
 
+    // Get Rooms
     socket.on('get-rooms', () =>{
         console.log("Current rooms on server:", rooms)
         socket.emit('room-list', getRoomListData());
     });
 
+    // Join Room
     socket.on('join-room', (roomName) => {
         socket.join(roomName);
         socket.currentRoom = roomName;
@@ -112,6 +114,7 @@ io.on('connection', (socket) => {
         io.emit('room-list', getRoomListData());
     });
 
+    // Hit Pad
     socket.on('pad-toggle', ({ index, newState }) => {
         const room = socket.currentRoom;
         if (room && rooms[room]) {
@@ -120,12 +123,14 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Move sequence
     socket.on('transport-toggle', ({ isPlaying }) => {
         if (socket.currentRoom) {
             socket.to(socket.currentRoom).emit('update-transport', { isPlaying });
         }
     });
 
+    // BPM
     socket.on('bpm-change', (newBpm) => {
         const room = socket.currentRoom;
         if (room && rooms[room]) {
@@ -134,9 +139,7 @@ io.on('connection', (socket) => {
         }
     });
 
-
-
-
+    // Share Sample
     socket.on('share-sample', ({ roomId, sampleData }) => {
         if (rooms[roomId]) {
             rooms[roomId].samples.push(sampleData);
@@ -144,14 +147,20 @@ io.on('connection', (socket) => {
         socket.to(roomId).emit('download-sample', sampleData);
     });
 
-    socket.on('stop-all-audio', () => {
-        const room = socket.currentRoom;
+    // Stop
+    socket.on('stop-all-audio', (data) => {
+        const room = data?.roomId;
+        console.log(`[SERVER] Received stop request for room: ${room}`);
+
         if (room) {
-            // Tell room to kill their audio
-            socket.to(room).emit('kill-audio-instantly');
+            io.to(room).emit('sync-stop');
+            console.log(`[SERVER] Broadcast sent to all sockets in ${room}`);
+        } else {
+            console.error("[SERVER] Stop failed: roomId was missing in the packet.");
         }
     });
 
+    // Grid Update
     socket.on('update-entire-grid', ({ roomId, grid, numBars }) => {
         if (rooms[roomId]) {
             rooms[roomId].grid = grid;
@@ -160,6 +169,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Disconnect
     socket.on('disconnect', () => {
         io.emit('room-list', getRoomListData());
     });

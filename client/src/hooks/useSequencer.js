@@ -96,17 +96,35 @@ export const useSequencer = (
 
     const togglePlayback = useCallback(async () => {
         if (Tone.getContext().state !== 'running') await Tone.start();
+
         const nextState = !isPlaying;
+
+        // Local Audio Control
+        if (nextState) {
+            Tone.getTransport().start();
+        } else {
+            Tone.getTransport().pause();
+        }
+
         setIsPlaying(nextState);
         emitEvent('transport-toggle', { isPlaying: nextState });
     }, [isPlaying, emitEvent]);
 
     const stopAll = useCallback(() => {
+        console.log("[LOCAL] Stop all audio... Sending to Room:", roomName);
+
+        // Reset local state immediately
         setIsPlaying(false);
         setActiveStep(-1);
+        Tone.getTransport().stop();
+        Tone.getTransport().position = 0;
         Object.values(players.current).forEach(p => p.stop());
-        emitEvent('kill-audio-instantly');
-    }, [emitEvent]);
+
+        // Tell emit to bypass any manager locks
+        if (socket) {
+            socket.emit('stop-all-audio', { roomId: roomName });
+        }
+    }, [socket, roomName]);
 
     // Sample Control Logic
     const setSampleStart = (sampleId, newStart) => {
@@ -168,7 +186,18 @@ export const useSequencer = (
         });
 
         socket.on('update-transport', ({ isPlaying: remoteIsPlaying }) => {
+
+            console.log(`[SYNC] Remote transport change: ${remoteIsPlaying ? 'PLAY' : 'PAUSE'}`);
+
             setIsPlaying(remoteIsPlaying);
+
+            // Start/Stop audio clock
+            if (remoteIsPlaying) {
+                Tone.getTransport().start();
+            } else {
+                Tone.getTransport().pause();
+            }
+
         });
 
         socket.on('update-state', ({ index, newState }) =>{
@@ -193,10 +222,32 @@ export const useSequencer = (
             if (data.bpm) setBpm(data.bpm);
         });
 
-        socket.on('kill-audio-instantly', () => {
+        socket.on('download-sample', async (sampleData) => {
+            console.log(`[RECEIVE] New sample notification: ${sampleData.name}`);
+            // Call existing function to create the Tone.Player
+            await addNewPlayer(sampleData.id, sampleData.url, sampleData.name);
+        });
+
+        socket.on('sync-stop', () => {
+            console.log("[SOCKET] Global Sync-Stop received. Killing all audio.");
+
+            // Reset the UI State
             setIsPlaying(false);
             setActiveStep(-1);
-            Object.values(players.current).forEach(p => p.stop());
+
+            // Stop the Global Transport (Clock)
+            Tone.getTransport().stop();
+            Tone.getTransport().position = 0;
+            Tone.getTransport().cancel(); // This clears any scheduled events
+
+            // Force stop every individual sample player immediately
+            if (players.current) {
+                Object.values(players.current).forEach(p => {
+                    if (p && typeof p.stop === 'function') {
+                        p.stop();
+                    }
+                });
+            }
         });
 
         return () => {
@@ -205,9 +256,10 @@ export const useSequencer = (
             socket.off('sync-entire-grid');
             socket.off('update-transport');
             socket.off('initial-state');
-            socket.off('kill-audio-instantly');
+            socket.off('download-sample');
+            socket.off('sync-stop');
         };
-    }, [socket, shouldIgnoreServer, setGridState]);
+    }, [socket, shouldIgnoreServer, setGridState, roomName ]);
 
     const addNewPlayer = async (id, url, name) => {
 

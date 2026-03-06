@@ -9,7 +9,7 @@ export const useSocketManager = (socket, roomName) => {
     };
 
     const shouldIgnoreServer = () => {
-        return Date.now() - lastLocalUpdate.current < 3000;
+        return Date.now() - lastLocalUpdate.current < 200;
     };
 
     const emitEvent = (event, data) => {
