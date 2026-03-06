@@ -74,16 +74,22 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
             return;
         }
 
-        const next = [...gridState];
-        const currentIsActive = next[index]?.isActive;
-        next[index] = {
-            ...next[index],
-            isActive: !currentIsActive,
-            sampleId: !currentIsActive ? selectedSampleId : null,
-        };
+        // Ensure the room has the latest grid
+        setGridState(prev => {
+            const next = [...prev];
+            const currentIsActive = next[index]?.isActive;
+            const updatedPad = {
+                ...next[index],
+                isActive: !currentIsActive,
+                sampleId: !currentIsActive ? selectedSampleId : null,
+            };
+            next[index] = updatedPad;
 
-        setGridState(next);
-        socket.emit('pad-toggle', { index, newState: next[index] });
+            // Emit the event now or immediately after
+            socket.emit('pad-toggle', { index, newState: updatedPad });
+
+            return next;
+        });
     };
 
     const currentSample = samples.find(s => s.id === selectedSampleId);

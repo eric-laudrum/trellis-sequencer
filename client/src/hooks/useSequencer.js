@@ -171,6 +171,17 @@ export const useSequencer = (
             setIsPlaying(remoteIsPlaying);
         });
 
+        socket.on('update-state', ({ index, newState }) =>{
+            if(shouldIgnoreServer()) return;
+
+            console.log(`[SYNC] Updating pad at index ${index}`);
+            setGridState(prevGrid => {
+                const newGrid = [...prevGrid];
+                newGrid[index] = newState;
+                return newGrid;
+            });
+        });
+
         socket.on('initial-state', async (data) => {
             if (data.samples) {
                 for (const s of data.samples) {
@@ -189,6 +200,7 @@ export const useSequencer = (
         });
 
         return () => {
+            socket.off('update-state')
             socket.off('update-bpm');
             socket.off('sync-entire-grid');
             socket.off('update-transport');
@@ -198,17 +210,29 @@ export const useSequencer = (
     }, [socket, shouldIgnoreServer, setGridState]);
 
     const addNewPlayer = async (id, url, name) => {
+
         if (players.current[id]) return;
+
         try {
+            console.log(`[AUDIO] Decoding buffer for: ${name} ...`);
+            const startTime = performance.now();
+
             const newPlayer = new Tone.Player().toDestination();
             await newPlayer.load(url);
+
+            const duration = (performance.now() - startTime).toFixed(2);
             players.current[id] = newPlayer;
+
+            console.log(`[AUDIO] ${name} ready! Load time: ${duration}ms`);
+
             setSamples(prev => [...prev, {
                 id, name, url, buffer: newPlayer.buffer,
                 startTime: 0, endTime: newPlayer.buffer.duration * 1000,
                 chokeGroup: "none"
             }]);
-        } catch (err) { console.error("Load failed:", url, err); }
+        } catch (err) {
+            console.error(`[AUDIO] Failed to load ${url}:`, err);
+        }
     };
 
     const loadFile = async (file) => {
