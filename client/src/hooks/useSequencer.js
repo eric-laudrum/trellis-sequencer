@@ -1,24 +1,114 @@
-// hooks/useSequencer.js
 import { useState, useEffect, useRef, useCallback } from "react";
 import * as Tone from 'tone';
+import { useSocketManager } from "./useSocketManager.js";
+import { useAudioEngine } from "./useAudioEngine.js";
 
-export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) => {
+export const useSequencer = (
+    gridState,
+    setGridState,
+    socket,
+    roomName,
+    rows = 4, cols = 4) => {
     const [samples, setSamples] = useState([]);
     const [selectedSampleId, setSelectedSampleId] = useState(null);
     const [activeStep, setActiveStep] = useState(-1);
     const [isPlaying, setIsPlaying] = useState(false);
     const [bpm, setBpm] = useState(120);
-
+    const [numBars, setNumBars] = useState(1);
     const [lastTriggerTime, setLastTriggerTime] = useState(0);
-    const lastTriggerRef = useRef(0);
 
     const players = useRef({});
-    const gridRef = useRef(gridState);
     const sampleRef = useRef([]);
-    const transport = Tone.getTransport();
-    const tapTimes = useRef([]);
-    const tapTimeoutRef = useRef(null);
+    const gridRef = useRef(gridState);
+    const lastTriggerRef = useRef(0);
 
+    const tapTimes = useRef([]);
+    const [viewingBar, setViewingBar] = useState(0);
+    const [isFollowEnabled, setIsFollowEnabled] = useState(true);
+
+    const { shouldIgnoreServer, emitEvent } = useSocketManager(socket, roomName);
+
+    // Sync refs for audio engine
+    useEffect(() => { gridRef.current = gridState; }, [gridState]);
+    useEffect(() => { sampleRef.current = samples; }, [samples]);
+
+    const triggerSample = useCallback((sampleId, time) => {
+        const player = players.current[sampleId];
+        const data = sampleRef.current.find(s => s.id === sampleId);
+        if (player?.loaded && data) {
+            const offset = (data.startTime || 0) / 1000;
+            const duration = ((data.endTime || (player.buffer.duration * 1000)) / 1000) - offset;
+            player.start(time, offset, duration);
+            lastTriggerRef.current = time;
+            setLastTriggerTime(time);
+        }
+    }, []);
+
+    // Audio Engine Orchestration
+    useAudioEngine(
+        bpm,
+        numBars,
+        isPlaying,
+        gridRef,
+        triggerSample,
+        setActiveStep,
+        rows,
+        cols
+    );
+
+    const updateBpmGlobal = (val) => {
+        const safeVal = Number.isFinite(val) ? val : 120;
+        const clamped = Math.max(30, Math.min(300, safeVal));
+        setBpm(clamped);
+        emitEvent('bpm-change', clamped);
+    };
+
+    const addBar = useCallback(() => {
+        setNumBars(prevBars => {
+            const newBars = prevBars + 1;
+            setGridState(prevGrid => {
+                const extraPads = Array.from({ length: rows * cols }, () => ({
+                    isActive: false,
+                    sampleId: null
+                }));
+                const newState = [...prevGrid, ...extraPads];
+                emitEvent('update-entire-grid', { grid: newState, numBars: newBars });
+                return newState;
+            });
+            return newBars;
+        });
+    }, [rows, cols, emitEvent, setGridState]);
+
+    const deleteBar = useCallback((barIdx) => {
+        setNumBars(prevBars => {
+            if (prevBars <= 1) return prevBars;
+            const newBars = prevBars - 1;
+            setGridState(prevGrid => {
+                const stepsPerBar = rows * cols;
+                const newState = [...prevGrid];
+                newState.splice(barIdx * stepsPerBar, stepsPerBar);
+                emitEvent('update-entire-grid', { grid: newState, numBars: newBars });
+                return newState;
+            });
+            return newBars;
+        });
+    }, [rows, cols, emitEvent, setGridState]);
+
+    const togglePlayback = useCallback(async () => {
+        if (Tone.getContext().state !== 'running') await Tone.start();
+        const nextState = !isPlaying;
+        setIsPlaying(nextState);
+        emitEvent('transport-toggle', { isPlaying: nextState });
+    }, [isPlaying, emitEvent]);
+
+    const stopAll = useCallback(() => {
+        setIsPlaying(false);
+        setActiveStep(-1);
+        Object.values(players.current).forEach(p => p.stop());
+        emitEvent('kill-audio-instantly');
+    }, [emitEvent]);
+
+    // Sample Control Logic
     const setSampleStart = (sampleId, newStart) => {
         setSamples(prev => prev.map(s =>
             s.id === sampleId ? { ...s, startTime: newStart } : s
@@ -39,37 +129,6 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         ));
     };
 
-    // Core logic
-    const triggerSample = useCallback((sampleId, time) => {
-        const player = players.current[sampleId];
-        const sampleData = sampleRef.current.find(s => s.id === sampleId);
-
-        if (player?.loaded && sampleData) {
-
-            if (sampleData.chokeGroup && sampleData.chokeGroup !== 'none') {
-                sampleRef.current.forEach(otherSample => {
-
-                    // Choke group logic
-                    if (otherSample.chokeGroup === sampleData.chokeGroup) {
-                        players.current[otherSample.id]?.stop(time);
-                    }
-                });
-            }
-
-            const offset = (sampleData.startTime || 0) / 1000;
-            const endTime = (sampleData.endTime || (player.buffer.duration * 1000)) / 1000;
-            const duration = endTime - offset;
-
-
-            player.start(time, offset, duration);
-
-            // Sync triggers
-            lastTriggerRef.current = time;
-            setLastTriggerTime(time);
-        }
-    }, []);
-
-
     const playSampleSolo = (id) => {
         const player = players.current[id];
         const sampleData = sampleRef.current.find(s => s.id === id);
@@ -81,318 +140,123 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         }
     };
 
-    const tapBpm = () =>{
+    const tapBpm = () => {
         const now = Date.now();
-
-        // Last 4 taps
         const newTapTimes = [...tapTimes.current, now].slice(-4);
         tapTimes.current = newTapTimes;
-
-
         if (newTapTimes.length > 1) {
-            const intervals = [];
-            for (let i = 1; i < newTapTimes.length; i++) {
-                intervals.push(newTapTimes[i] - newTapTimes[i - 1]);
-            }
-
-            const avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
-            const calculatedBpm = Math.round(60000 / avgInterval);
-            const clamped = Math.max(30, Math.min(300, calculatedBpm));
-
-            // This is the line that actually updates the state and server
-
-
-            setBpm(clamped);
-            transport.bpm.value = clamped;
-
-            // Debounce the socket emit
-            if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
-
-            tapTimeoutRef.current = setTimeout(() => {
-                socket.emit('bpm-change', clamped);
-            }, 500);
+            const avg = (newTapTimes[newTapTimes.length - 1] - newTapTimes[0]) / (newTapTimes.length - 1);
+            const calculatedBpm = Math.round(60000 / avg);
+            updateBpmGlobal(calculatedBpm);
         }
     };
 
-
-
-
-
-
-    // Socket listeners
+    // Socket Sync
     useEffect(() => {
-        if (!socket){
-            console.warn("useSequencer: Socket not found")
-            return;
-        }
+        if (!socket) return;
 
-        socket.on('initial-state', async (data) => {
-            if (data.samples && data.samples.length > 0) {
+        socket.on('update-bpm', (newBpm) => {
+            if (shouldIgnoreServer()) return;
+            setBpm(newBpm);
+        });
 
-                // Load every sample the room already has
-                for (const s of data.samples) {
-
-                    // Prevent duplicate loading
-                    if (!players.current[s.id]) {
-                        await addNewPlayer(s.id, s.url, s.name);
-                    }
-                }
+        socket.on('sync-entire-grid', ({ grid, numBars: remoteBars }) => {
+            if (!shouldIgnoreServer()) {
+                setGridState(grid);
+                setNumBars(remoteBars);
             }
         });
 
         socket.on('update-transport', ({ isPlaying: remoteIsPlaying }) => {
-            if (remoteIsPlaying) {
-                transport.start();
-                setIsPlaying(true);
-            } else {
-                transport.stop();
-                transport.seconds = 0;
-                setIsPlaying(false);
-                setActiveStep(-1);
-            }
+            setIsPlaying(remoteIsPlaying);
         });
 
-        socket.on('update-bpm', (newBpm) => {
-            setBpm(prev => {
-                if (Math.abs(prev - newBpm) > 0.1) {
-                    transport.bpm.value = newBpm;
-                    return newBpm;
+        socket.on('initial-state', async (data) => {
+            if (data.samples) {
+                for (const s of data.samples) {
+                    if (!players.current[s.id]) await addNewPlayer(s.id, s.url, s.name);
                 }
-                return prev;
-            });
+            }
+            if (data.grid) setGridState(data.grid);
+            if (data.numBars) setNumBars(data.numBars);
+            if (data.bpm) setBpm(data.bpm);
         });
-
-        const handleDownload = async ({ id, url, name }) => {
-            await addNewPlayer(id, url, name);
-        };
-        socket.on('download-sample', handleDownload);
 
         socket.on('kill-audio-instantly', () => {
-            // Stop the clock locally
-            transport.stop();
-            transport.seconds = 0;
-            setActiveStep(-1);
             setIsPlaying(false);
-
-            // Kill all active audio buffers
-            Object.values(players.current).forEach(player => {
-                player.stop();
-            });
-
-            // Reset visual triggers
-            lastTriggerRef.current = 0;
-            setLastTriggerTime(0);
+            setActiveStep(-1);
+            Object.values(players.current).forEach(p => p.stop());
         });
 
-
         return () => {
-            socket.off('initial-state');
-            socket.off('update-transport');
             socket.off('update-bpm');
-            socket.off('download-sample', handleDownload);
+            socket.off('sync-entire-grid');
+            socket.off('update-transport');
+            socket.off('initial-state');
             socket.off('kill-audio-instantly');
         };
-    }, [socket, transport]);
+    }, [socket, shouldIgnoreServer, setGridState]);
 
-    useEffect(() => {
-        if (Math.abs(transport.bpm.value - bpm) > 0.1) {
-            transport.bpm.value = bpm;
-        }
-    }, [bpm, transport]);
+    const addNewPlayer = async (id, url, name) => {
+        if (players.current[id]) return;
+        try {
+            const newPlayer = new Tone.Player().toDestination();
+            await newPlayer.load(url);
+            players.current[id] = newPlayer;
+            setSamples(prev => [...prev, {
+                id, name, url, buffer: newPlayer.buffer,
+                startTime: 0, endTime: newPlayer.buffer.duration * 1000,
+                chokeGroup: "none"
+            }]);
+        } catch (err) { console.error("Load failed:", url, err); }
+    };
 
     const loadFile = async (file) => {
         const formData = new FormData();
         formData.append('file', file);
-
-        const serverUrl = window.location.hostname === 'localhost'
-            ? 'http://localhost:4000'
-            : window.location.origin;
+        const serverUrl = window.location.hostname === 'localhost' ? 'http://localhost:4000' : window.location.origin;
 
         try {
-            const response = await fetch(`${serverUrl}/upload-sample`, {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) throw new Error("Upload failed status: " + response.status);
-
-            const { url, name } = await response.json();
+            const response = await fetch(`${serverUrl}/upload-sample`, { method: 'POST', body: formData });
+            if (!response.ok) throw new Error("Upload failed");
+            const data = await response.json();
             const id = crypto.randomUUID();
-
-            await addNewPlayer(id, url, name);
-
-            socket.emit('share-sample', {
-                roomId: roomName,
-                sampleData: { id, url, name }
-            });
-        } catch (err) {
-            console.error("Upload error:", err);
-        }
+            await addNewPlayer(id, data.url, data.name);
+            emitEvent('share-sample', { sampleData: { id, url: data.url, name: data.name } });
+        } catch (err) { console.error("Upload error:", err); }
     };
 
-    const addNewPlayer = async (id, url, name) => {
-        // Prevent duplicate samples
-        if (players.current[id]) return;
-
-        // Select appropriate backend location
-        const backendBase = window.location.hostname === 'localhost'
-            ? 'http://localhost:4000'
-            : window.location.origin;
-
-        const fileName = url.split('/').pop();
-        const cleanUrl = `${backendBase}/uploads/${fileName}`;
-
-        // Debug
-        console.log("Attempting to load audio from:", cleanUrl);
-
-        try {
-            const newPlayer = new Tone.Player().toDestination();
-            // Use the Promise-based load method
-            await newPlayer.load(cleanUrl);
-
-            players.current[id] = newPlayer;
-            setSamples(prev => {
-                if (prev.find(s => s.id === id)) return prev;
-                return [...prev, {
-                    id,
-                    name,
-                    url: cleanUrl,
-                    buffer: newPlayer.buffer,
-                    startTime: 0,
-                    endTime: newPlayer.buffer.duration * 1000,
-                    chokeGroup: "none",
-                }];
-            });
-        } catch (err) {
-            console.error("Tone.js could not load the file. Verify the url in browser: ", cleanUrl);
-            console.error("Detailed Error:", err);
-        }
-    };
-
-
-    // Sequencer Engine
-    useEffect(() => {
-        sampleRef.current = samples;
-        gridRef.current = gridState;
-    }, [samples, gridState]);
-
-
-    // Handlers
-
-    const updateBpmGlobal = (val) => {
-        const clamped = Math.max(30, Math.min(300, val));
-        setBpm(clamped);
-        transport.bpm.value = clamped;
-        socket.emit('bpm-change', clamped); // Tell the room
-    };
-
-    const togglePlayback = useCallback(async () => {
-        if (Tone.getContext().state !== 'running') await Tone.start();
-        const nextState = !isPlaying;
-
-        if (nextState) transport.start();
-        else {
-            transport.stop();
-            transport.seconds = 0;
-            setActiveStep(-1);
-        }
-        setIsPlaying(nextState);
-        socket.emit('transport-toggle', { isPlaying: nextState });
-    }, [isPlaying, socket]);
-
-    const stopAll = () => {
-        // Stop the transport
-        transport.stop();
-        transport.seconds = 0;
-
-        // Reset triggers
-        lastTriggerRef.current = 0;
-        setLastTriggerTime(0);
-
-        Object.values(players.current).forEach(player => {
-            player.stop();
-            player.seek(0);
-        });
-
-        setIsPlaying(false);
-        setActiveStep(-1);
-
-        socket.emit('stop-all-audio');
-        socket.emit('transport-toggle', { isPlaying: false });
-
-    };
-
-
-
-
-
-    // Update Refs
-    useEffect(() => { sampleRef.current = samples; }, [samples]);
-    useEffect(() => { gridRef.current = gridState; }, [gridState]);
-
-    // Sync BPM
-    useEffect(() => {
-        transport.bpm.value = bpm;
-    }, [bpm]);
-
-    // Sequence Generator
-    useEffect(() => {
-        const order = [];
-        for (let r = rows - 1; r >= 0; r--) {
-            for (let c = 0; c < cols; c++) order.push(r * cols + c);
-        }
-
-        const seq = new Tone.Sequence((time, stepIdx) => {
-            const gridIndex = order[stepIdx];
-
-            // Draw highlight on the 16-pad grid
-            Tone.Draw.schedule(() => {
-                setActiveStep(gridIndex);
-            }, time);
-
-            const cell = gridRef.current[gridIndex];
-            if (cell?.isActive && cell.sampleId) {
-                triggerSample(cell.sampleId, time);
-            }
-        }, Array.from({ length: rows * cols }, (_, i) => i), "8n");
-
-        seq.start(0);
-        return () => seq.dispose();
-    }, [rows, cols, isPlaying, triggerSample]);
-
-
+    // Derived State
+    const currentBarIdx = activeStep === -1 ? 0 : Math.floor(activeStep / (rows * cols));
 
     return {
         activeStep,
+        viewingBar,
+        setViewingBar,
+        isFollowEnabled,
+        setIsFollowEnabled,
         isPlaying,
         togglePlayback,
         bpm,
         samples,
-        setBpm: updateBpmGlobal,
-        setChokeGroup,
         selectedSampleId,
         setSelectedSampleId,
         lastTriggerTime,
         lastTriggerRef,
+        numBars,
+        addBar,
+        deleteBar,
+        stopAll,
+        currentBarIdx,
+
         tapBpm,
         loadFile,
-        doubleBpm: () => updateBpmGlobal(bpm * 2),
-        halfBpm: () => updateBpmGlobal(bpm / 2),
-        stopAll,
+        setBpm: updateBpmGlobal,
+        setChokeGroup,
         setSampleStart,
         setSampleEnd,
-        playSampleSolo: (id) => {
-            const player = players.current[id];
-            const sampleData = sampleRef.current.find(sample => sample.id === id);
-
-            if (player?.loaded && sampleData) {
-                const now = Tone.now();
-
-                player.start(now, (sampleData.startTime || 0) / 1000);
-
-                lastTriggerRef.current = now;
-                setLastTriggerTime(now);
-            }
-        },
+        playSampleSolo,
+        doubleBpm: () => updateBpmGlobal(bpm * 2),
+        halfBpm: () => updateBpmGlobal(bpm / 2),
     };
 };

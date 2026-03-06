@@ -1,16 +1,22 @@
 import React, { useState } from 'react'
 import io from 'socket.io-client';
-
-
-import TrellisGrid from './components/TrellisGrid.jsx';
-import SampleSidebar from "./components/SampleSidebar.jsx";
-import WaveformEditor from "./components/WaveformEditor.jsx";
 import Lobby from "./components/Lobby.jsx";
 
 import './App.css'
 import StudioRoom from "./components/StudioRoom.jsx";
 
-const socket = io();
+const SOCKET_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:4000'
+    : window.location.origin;
+
+const socket = io(SOCKET_URL, {
+    extraHeaders: {
+        "ngrok-skip-browser-warning": "true"
+    },
+    transports: ['websocket', 'polling'],
+    reconnectionAttempts: 5,
+    timeout: 10000
+});
 
 function App() {
     const [ roomName, setRoomName ] = useState(null);

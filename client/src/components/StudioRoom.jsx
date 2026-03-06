@@ -2,156 +2,105 @@ import React, { useState, useEffect } from "react";
 import TrellisGrid  from './TrellisGrid.jsx';
 import SampleSidebar from "./SampleSidebar.jsx";
 import WaveformEditor from "./WaveformEditor.jsx";
-import { useSequencer} from "../hooks/useSequencer.js";
-import * as Tone from "tone";
-import io from "socket.io-client";
+import { useSequencer } from "../hooks/useSequencer.js";
 
-
-export default function StudioRoom({roomName, socket, onLeave }){
+export default function StudioRoom({ roomName, socket, onLeave }) {
 
     const [gridState, setGridState] = useState(
-        Array.from({ length: 16 }, () => ({ isActive: false, sampleId: null })));
+        Array.from({ length: 16 }, () => ({ isActive: false, sampleId: null }))
+    );
 
     const {
         activeStep,
+        numBars,
+        currentBarIdx,
         isPlaying,
         togglePlayback,
-        stopAll,
         bpm,
-        setBpm,
-
         samples,
         selectedSampleId,
         setSelectedSampleId,
+        addBar,
+        deleteBar,
         lastTriggerTime,
         lastTriggerRef,
+        stopAll,
 
-        setChokeGroup,
-        doubleBpm,
-        halfBpm,
+        loadFile,
         tapBpm,
+        setBpm,
         playSampleSolo,
         setSampleStart,
         setSampleEnd,
-        loadFile,
+        setChokeGroup
+    } = useSequencer(gridState, setGridState, socket, roomName);
 
-    } = useSequencer(gridState, socket, roomName);
+    const [isEditingBpm, setIsEditingBpm] = useState(false);
+    const [tempBpm, setTempBpm] = useState(bpm);
+    const [viewedBar, setViewedBar] = useState(0);
+    const [followPlayhead, setFollowPlayhead] = useState(true);
 
-    const [ isEditingBpm, setIsEditingBpm ] = useState( false );
-    const [ isEditingStart, setIsEditingStart ] = useState( false );
-    const [ tempBpm, setTempBpm ] = useState(bpm);
+    // Auto-follow logic
+    useEffect(() => {
+        if (followPlayhead) {
+            setViewedBar(currentBarIdx);
+        }
+    }, [currentBarIdx, followPlayhead]);
 
-    // BPM
+    // Sync tempBpm with actual bpm
     useEffect(() => {
         setTempBpm(bpm);
     }, [bpm]);
 
-    // Sync with server
-    useEffect(() => {
-        socket.emit('join-room', roomName);
+    const displayBar = Math.max(0, viewedBar);
+    const startIndex = displayBar * 16;
 
-        socket.on('initial-state', (data) => {
-            // split grid and bpm
-            if (data.grid) setGridState(data.grid);
-            if (data.bpm) setBpm(data.bpm);
-        });
+    const visiblePads = gridState ? gridState.slice(startIndex, startIndex + 16) : [];
 
-        socket.on('update-state', ({ index, newState }) => {
-            setGridState(prev => {
-                const next = [...prev];
-                next[index] = newState;
-                return next;
-            });
-        });
-
-        return () => {
-            socket.off('initial-state');
-            socket.off('update-state');
-        };
-    }, [roomName, socket, setBpm ]);
-
-
-    const handleInputChange = (e) => {
-        setTempBpm(e.target.value);
+    const handleBarClick = (index) => {
+        setFollowPlayhead(false);
+        setViewedBar(index);
     };
 
     const commitBpm = () => {
         const newVal = Number(tempBpm);
-        if (!isNaN(newVal)) {
-            handleBpmChange(newVal); // This triggers the global setBpm and socket.emit
-        }
+        if (!isNaN(newVal)) setBpm(newVal);
         setIsEditingBpm(false);
     };
 
-
-
-    const handleTogglePlayback = () => {
-        const nextState = !isPlaying;
-        togglePlayback(); // Local change
-        socket.emit('transport-toggle', { isPlaying: nextState }); // Global change
-    };
-
-    const handleBpmChange = (newVal) => {
-        const clamped = Math.max(30, Math.min(300, newVal));
-        setBpm(clamped);
-        socket.emit('bpm-change', clamped);
-    };
-
     const handleToggle = (index) => {
-        console.log("Clicked pad:", index, "Selected Sample:", selectedSampleId);
-        if (!selectedSampleId){
+        if (!selectedSampleId) {
             alert("Select a sample from the library");
             return;
         }
 
-        setGridState(prev => {
-            const next = [...prev];
-            const currentIsActive = next[index].isActive;
+        const next = [...gridState];
+        const currentIsActive = next[index]?.isActive;
+        next[index] = {
+            ...next[index],
+            isActive: !currentIsActive,
+            sampleId: !currentIsActive ? selectedSampleId : null,
+        };
 
-            next[index] = {
-                ...next[index],
-                isActive: !currentIsActive,
-                sampleId: !currentIsActive ? selectedSampleId : null,
-            };
-
-            socket.emit('pad-toggle', { index, newState: next[index] });
-            return next;
-        });
-    };
-
-    const nudgeStart = (amount) => {
-        const nextValue = Math.max(0, Math.min(20000, sampleStart + amount));
-        setSampleStart(nextValue);
-    };
-
-    const handleFileChange = (evt) => {
-        const file = evt.target.files[0];
-        if (file) loadFile(file);
+        setGridState(next);
+        socket.emit('pad-toggle', { index, newState: next[index] });
     };
 
     const currentSample = samples.find(s => s.id === selectedSampleId);
 
-
     return (
         <div className='app-container'>
-            <div className="room-nav">
+            <div className="room-header">
                 <button className="settings-btn" onClick={onLeave}>← EXIT STUDIO</button>
                 <h1 className='main-title'>STUDIO: {roomName}</h1>
             </div>
 
             <div className="seq-header">
                 <div className='sample-settings'>
-                    {/* BPM Control */}
                     <div className='sample-setting' id='bpm-control'>
                         <label>BPM</label>
                         <div className="bpm-controls-wrapper">
-
-                            {/*  BPM /2 */}
-                            <button
-                                className="settings-btn"
-                                onClick={() => handleBpmChange(bpm / 2)}>/2
-                            </button>
-
+                            <button className="settings-btn" onClick={() => setBpm(bpm / 2)}>/2</button>
                             <div className="editable-value">
                                 {isEditingBpm ? (
                                     <input
@@ -159,7 +108,7 @@ export default function StudioRoom({roomName, socket, onLeave }){
                                         className="inline-input"
                                         type="number"
                                         value={tempBpm}
-                                        onChange={handleInputChange}
+                                        onChange={(e) => setTempBpm(e.target.value)}
                                         onBlur={commitBpm}
                                         onKeyDown={(e) => e.key === "Enter" && commitBpm()}
                                     />
@@ -167,66 +116,61 @@ export default function StudioRoom({roomName, socket, onLeave }){
                                     <span className="value-display" onClick={() => setIsEditingBpm(true)}>{bpm}</span>
                                 )}
                             </div>
-
-                            {/*  BPM x2 */}
-                            <button
-                                className="settings-btn"
-                                onClick={() => handleBpmChange(bpm * 2)}>x2
-                            </button>
-
+                            <button className="settings-btn" onClick={() => setBpm(bpm * 2)}>x2</button>
                             <button className="tap-btn" onClick={tapBpm}>TAP</button>
                         </div>
                     </div>
 
-                    {/* Start Time Control */}
-                    <div className='sample-setting' id='start-time-control'>
+                    <div className='sample-setting'>
                         <label>START TIME</label>
-                        <div className="nudge-container">
+
                             <button className="settings-btn"
-                                    onClick={() => setSampleStart(selectedSampleId, (currentSample?.startTime || 0) - 10)}>-
+                                    onClick={() => setSampleStart(selectedSampleId, (currentSample?.startTime || 0) - 10)}>
+                                -
                             </button>
-                            <div className="editable-value">
-                                <span className="value-display">
-                                    {((currentSample?.startTime || 0) / 1000).toFixed(2)}s
-                                </span>
-                            </div>
+
+                            <span className="value-display">{((currentSample?.startTime || 0) / 1000).toFixed(2)}s</span>
+
                             <button className="settings-btn"
-                                    onClick={() => setSampleStart(selectedSampleId, (currentSample?.startTime || 0) + 10)}>+
+                                    onClick={() => setSampleStart(selectedSampleId, (currentSample?.startTime || 0) + 10)}>
+                                +
                             </button>
+
                         </div>
                     </div>
 
-                    <div className='sample-setting' id='end-time-control'>
+                    <div className='sample-setting'>
                         <label>END TIME</label>
                         <div className="nudge-container">
+
                             <button className="settings-btn"
-                                    onClick={() => setSampleEnd(selectedSampleId, (currentSample?.endTime || 0) - 10)}>-
+                                    onClick={() => setSampleEnd(selectedSampleId, (currentSample?.endTime || 0) - 10)}>
+                                -
                             </button>
-                            <div className="editable-value">
-                                <span className="value-display">
-                                    {((currentSample?.endTime || 0) / 1000).toFixed(2)}s
-                                </span>
-                            </div>
+
+                            <span className="value-display">{((currentSample?.endTime || 0) / 1000).toFixed(2)}s</span>
+
                             <button className="settings-btn"
-                                    onClick={() => setSampleEnd(selectedSampleId, (currentSample?.endTime || 0) + 10)}>+
+                                    onClick={() => setSampleEnd(selectedSampleId, (currentSample?.endTime || 0) + 10)}>
+                                +
                             </button>
+
                         </div>
                     </div>
 
                     {currentSample && (
                         <WaveformEditor
-                            buffer={currentSample?.buffer}
-                            startTime={currentSample?.startTime || 0}
-                            endTime={currentSample?.endTime || (currentSample?.buffer.duration * 1000)} // Pass end time
+                            buffer={currentSample.buffer}
+                            startTime={currentSample.startTime}
+                            endTime={currentSample.endTime}
                             onUpdateStart={(newTime) => setSampleStart(selectedSampleId, newTime)}
-                            onUpdateEnd={(newTime) => setSampleEnd(selectedSampleId, newTime)} // Pass handler
+                            onUpdateEnd={(newTime) => setSampleEnd(selectedSampleId, newTime)}
                             isPlaying={isPlaying}
-                            lastTriggerTime={ lastTriggerTime}
+                            lastTriggerTime={lastTriggerTime}
                             lastTriggerRef={lastTriggerRef}
                         />
                     )}
                 </div>
-            </div>
 
             <div className="seq-main">
                 <SampleSidebar
@@ -234,28 +178,58 @@ export default function StudioRoom({roomName, socket, onLeave }){
                     onSetChokeGroup={setChokeGroup}
                     selectedId={selectedSampleId}
                     onSelect={setSelectedSampleId}
-                    onUpload={handleFileChange}
+                    onUpload={(e) => e.target.files[0] && loadFile(e.target.files[0])}
                     onPlaySolo={playSampleSolo}
                 />
-                <TrellisGrid
-                    gridState={gridState}
-                    onToggle={handleToggle}
-                    activeStep={activeStep}
-                />
-            </div>
 
-            <div className='play-controls'>
+                <div className="sequencer-column">
+                    <div className="bar-controls-row">
+                        <div className="bar-navigation">
+                            {Array.from({ length: numBars || 1 }).map((_, i) => (
+                                <div key={i} className="bar-btn-wrapper">
+                                    <button
+                                        onClick={() => handleBarClick(i)}
+                                        className={`bar-btn 
+                                            ${displayBar === i ? 'viewing' : ''} 
+                                            ${(currentBarIdx || 0) === i ? 'playing' : ''}`}
+                                    >
+                                        {i + 1}
+                                    </button>
+                                    {(numBars || 1) > 1 && (
+                                        <button
+                                            className="delete-bar-btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // Don't switch to view being deleted
+                                                deleteBar(i);
+                                            }}
+                                        >
+                                            ×
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            <button className="add-bar-btn" onClick={addBar}>
+                                +
+                            </button>
+                        </div>
+                        <button className={`follow-btn ${followPlayhead ? 'on' : ''}`} onClick={() => setFollowPlayhead(!followPlayhead)}>FOLLOW</button>
+                    </div>
 
-                <button
-                    className={`play-button ${isPlaying ? 'pause' : 'start'}`}
-                    onClick={handleTogglePlayback}
-                >
-                    {isPlaying ? '⏸︎' : '▶'}
-                </button>
+                    <div className="grid-container">
+                        <TrellisGrid
+                            gridState={visiblePads}
+                            activeStep={currentBarIdx === displayBar ? activeStep % 16 : -1}
+                            onToggle={(localIdx) => handleToggle(localIdx + startIndex)}
+                        />
+                    </div>
 
-                <button className="stop-button"
-                        onClick={stopAll}
-                >⏹</button>
+                    <div className='play-controls'>
+                        <button className={`play-button ${isPlaying ? 'pause' : 'start'}`} onClick={togglePlayback}>
+                            {isPlaying ? '⏸︎' : '▶'}
+                        </button>
+                        <button className="stop-button" onClick={stopAll}>⏹</button>
+                    </div>
+                </div>
             </div>
         </div>
     );
