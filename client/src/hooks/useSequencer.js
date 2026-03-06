@@ -3,7 +3,12 @@ import * as Tone from 'tone';
 import { useSocketManager } from "./useSocketManager.js";
 import { useAudioEngine } from "./useAudioEngine.js";
 
-export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) => {
+export const useSequencer = (
+    gridState,
+    setGridState,
+    socket,
+    roomName,
+    rows = 4, cols = 4) => {
     const [samples, setSamples] = useState([]);
     const [selectedSampleId, setSelectedSampleId] = useState(null);
     const [activeStep, setActiveStep] = useState(-1);
@@ -12,23 +17,98 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     const [numBars, setNumBars] = useState(1);
     const [lastTriggerTime, setLastTriggerTime] = useState(0);
 
-    const lastTriggerRef = useRef(0);
     const players = useRef({});
     const sampleRef = useRef([]);
-    const transport = Tone.getTransport();
-    const tapTimes = useRef([]);
+    const gridRef = useRef(gridState);
+    const lastTriggerRef = useRef(0);
 
+    const tapTimes = useRef([]);
     const [viewingBar, setViewingBar] = useState(0);
     const [isFollowEnabled, setIsFollowEnabled] = useState(true);
 
-    // 1. Initialize Compartmentalized Logic
     const { shouldIgnoreServer, emitEvent } = useSocketManager(socket, roomName);
 
-    const gridRef = useRef(gridState);
+    // Sync refs for audio engine
     useEffect(() => { gridRef.current = gridState; }, [gridState]);
     useEffect(() => { sampleRef.current = samples; }, [samples]);
 
-    // 2. Sample Control Logic
+    const triggerSample = useCallback((sampleId, time) => {
+        const player = players.current[sampleId];
+        const data = sampleRef.current.find(s => s.id === sampleId);
+        if (player?.loaded && data) {
+            const offset = (data.startTime || 0) / 1000;
+            const duration = ((data.endTime || (player.buffer.duration * 1000)) / 1000) - offset;
+            player.start(time, offset, duration);
+            lastTriggerRef.current = time;
+            setLastTriggerTime(time);
+        }
+    }, []);
+
+    // Audio Engine Orchestration
+    useAudioEngine(
+        bpm,
+        numBars,
+        isPlaying,
+        gridRef,
+        triggerSample,
+        setActiveStep,
+        rows,
+        cols
+    );
+
+    const updateBpmGlobal = (val) => {
+        const safeVal = Number.isFinite(val) ? val : 120;
+        const clamped = Math.max(30, Math.min(300, safeVal));
+        setBpm(clamped);
+        emitEvent('bpm-change', clamped);
+    };
+
+    const addBar = useCallback(() => {
+        setNumBars(prevBars => {
+            const newBars = prevBars + 1;
+            setGridState(prevGrid => {
+                const extraPads = Array.from({ length: rows * cols }, () => ({
+                    isActive: false,
+                    sampleId: null
+                }));
+                const newState = [...prevGrid, ...extraPads];
+                emitEvent('update-entire-grid', { grid: newState, numBars: newBars });
+                return newState;
+            });
+            return newBars;
+        });
+    }, [rows, cols, emitEvent, setGridState]);
+
+    const deleteBar = useCallback((barIdx) => {
+        setNumBars(prevBars => {
+            if (prevBars <= 1) return prevBars;
+            const newBars = prevBars - 1;
+            setGridState(prevGrid => {
+                const stepsPerBar = rows * cols;
+                const newState = [...prevGrid];
+                newState.splice(barIdx * stepsPerBar, stepsPerBar);
+                emitEvent('update-entire-grid', { grid: newState, numBars: newBars });
+                return newState;
+            });
+            return newBars;
+        });
+    }, [rows, cols, emitEvent, setGridState]);
+
+    const togglePlayback = useCallback(async () => {
+        if (Tone.getContext().state !== 'running') await Tone.start();
+        const nextState = !isPlaying;
+        setIsPlaying(nextState);
+        emitEvent('transport-toggle', { isPlaying: nextState });
+    }, [isPlaying, emitEvent]);
+
+    const stopAll = useCallback(() => {
+        setIsPlaying(false);
+        setActiveStep(-1);
+        Object.values(players.current).forEach(p => p.stop());
+        emitEvent('kill-audio-instantly');
+    }, [emitEvent]);
+
+    // Sample Control Logic
     const setSampleStart = (sampleId, newStart) => {
         setSamples(prev => prev.map(s =>
             s.id === sampleId ? { ...s, startTime: newStart } : s
@@ -49,29 +129,6 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         ));
     };
 
-    const triggerSample = useCallback((sampleId, time) => {
-        const player = players.current[sampleId];
-        const sampleData = sampleRef.current.find(s => s.id === sampleId);
-
-        if (player?.loaded && sampleData) {
-            if (sampleData.chokeGroup && sampleData.chokeGroup !== 'none') {
-                sampleRef.current.forEach(otherSample => {
-                    if (otherSample.chokeGroup === sampleData.chokeGroup) {
-                        players.current[otherSample.id]?.stop(time);
-                    }
-                });
-            }
-
-            const offset = (sampleData.startTime || 0) / 1000;
-            const endTime = (sampleData.endTime || (player.buffer.duration * 1000)) / 1000;
-            const duration = endTime - offset;
-
-            player.start(time, offset, duration);
-            lastTriggerRef.current = time;
-            setLastTriggerTime(time);
-        }
-    }, []);
-
     const playSampleSolo = (id) => {
         const player = players.current[id];
         const sampleData = sampleRef.current.find(s => s.id === id);
@@ -83,21 +140,10 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         }
     };
 
-    // 3. Audio Engine Orchestration (Kills the Freeze)
-    useAudioEngine(bpm, numBars, isPlaying, gridRef, triggerSample, setActiveStep, rows, cols);
-
-    // 4. BPM & Transport Actions (Kills the Jitter)
-    const updateBpmGlobal = (val) => {
-        const clamped = Math.max(30, Math.min(300, val));
-        setBpm(clamped);
-        emitEvent('bpm-change', clamped);
-    };
-
     const tapBpm = () => {
         const now = Date.now();
         const newTapTimes = [...tapTimes.current, now].slice(-4);
         tapTimes.current = newTapTimes;
-
         if (newTapTimes.length > 1) {
             const avg = (newTapTimes[newTapTimes.length - 1] - newTapTimes[0]) / (newTapTimes.length - 1);
             const calculatedBpm = Math.round(60000 / avg);
@@ -105,21 +151,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         }
     };
 
-    const togglePlayback = useCallback(async () => {
-        if (Tone.getContext().state !== 'running') await Tone.start();
-        const nextState = !isPlaying;
-        setIsPlaying(nextState);
-        emitEvent('transport-toggle', { isPlaying: nextState });
-    }, [isPlaying, emitEvent]);
-
-    const stopAll = () => {
-        setIsPlaying(false);
-        setActiveStep(-1);
-        Object.values(players.current).forEach(p => p.stop());
-        emitEvent('stop-all-audio');
-    };
-
-    // 5. Socket Sync (Respects the 3s Lock)
+    // Socket Sync
     useEffect(() => {
         if (!socket) return;
 
@@ -129,10 +161,10 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
         });
 
         socket.on('sync-entire-grid', ({ grid, numBars: remoteBars }) => {
-            if (shouldIgnoreServer()) return;
-            // Note: gridState is usually managed in StudioRoom, 
-            // ensure StudioRoom's setGridState is synced if necessary.
-            setNumBars(remoteBars);
+            if (!shouldIgnoreServer()) {
+                setGridState(grid);
+                setNumBars(remoteBars);
+            }
         });
 
         socket.on('update-transport', ({ isPlaying: remoteIsPlaying }) => {
@@ -145,6 +177,9 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
                     if (!players.current[s.id]) await addNewPlayer(s.id, s.url, s.name);
                 }
             }
+            if (data.grid) setGridState(data.grid);
+            if (data.numBars) setNumBars(data.numBars);
+            if (data.bpm) setBpm(data.bpm);
         });
 
         socket.on('kill-audio-instantly', () => {
@@ -160,16 +195,7 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
             socket.off('initial-state');
             socket.off('kill-audio-instantly');
         };
-    }, [socket, shouldIgnoreServer]);
-
-    // 6. UI Helpers & Loading
-    useEffect(() => {
-        if (isFollowEnabled && activeStep !== -1) {
-            const stepsPerBar = rows * cols;
-            const playheadBar = Math.floor(activeStep / stepsPerBar);
-            if (playheadBar !== viewingBar) setViewingBar(playheadBar);
-        }
-    }, [activeStep, isFollowEnabled, viewingBar, rows, cols]);
+    }, [socket, shouldIgnoreServer, setGridState]);
 
     const addNewPlayer = async (id, url, name) => {
         if (players.current[id]) return;
@@ -188,23 +214,49 @@ export const useSequencer = (gridState, socket, roomName, rows = 4, cols = 4) =>
     const loadFile = async (file) => {
         const formData = new FormData();
         formData.append('file', file);
+        const serverUrl = window.location.hostname === 'localhost' ? 'http://localhost:4000' : window.location.origin;
+
         try {
-            const response = await fetch(`${window.location.origin}/upload-sample`, { method: 'POST', body: formData });
-            const { url, name } = await response.json();
+            const response = await fetch(`${serverUrl}/upload-sample`, { method: 'POST', body: formData });
+            if (!response.ok) throw new Error("Upload failed");
+            const data = await response.json();
             const id = crypto.randomUUID();
-            await addNewPlayer(id, url, name);
-            emitEvent('share-sample', { sampleData: { id, url, name } });
+            await addNewPlayer(id, data.url, data.name);
+            emitEvent('share-sample', { sampleData: { id, url: data.url, name: data.name } });
         } catch (err) { console.error("Upload error:", err); }
     };
 
+    // Derived State
+    const currentBarIdx = activeStep === -1 ? 0 : Math.floor(activeStep / (rows * cols));
+
     return {
-        activeStep, viewingBar, setViewingBar, isFollowEnabled, setIsFollowEnabled,
-        isPlaying, togglePlayback, bpm, samples, setBpm: updateBpmGlobal,
-        setChokeGroup, selectedSampleId, setSelectedSampleId, lastTriggerTime, lastTriggerRef,
-        numBars, setNumBars, tapBpm, loadFile, stopAll, setSampleStart, setSampleEnd,
+        activeStep,
+        viewingBar,
+        setViewingBar,
+        isFollowEnabled,
+        setIsFollowEnabled,
+        isPlaying,
+        togglePlayback,
+        bpm,
+        samples,
+        selectedSampleId,
+        setSelectedSampleId,
+        lastTriggerTime,
+        lastTriggerRef,
+        numBars,
+        addBar,
+        deleteBar,
+        stopAll,
+        currentBarIdx,
+
+        tapBpm,
+        loadFile,
+        setBpm: updateBpmGlobal,
+        setChokeGroup,
+        setSampleStart,
+        setSampleEnd,
+        playSampleSolo,
         doubleBpm: () => updateBpmGlobal(bpm * 2),
         halfBpm: () => updateBpmGlobal(bpm / 2),
-        currentBarIdx: Math.floor(activeStep / (rows * cols)),
-        playSampleSolo
     };
 };

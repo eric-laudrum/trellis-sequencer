@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as Tone from "tone";
 
-export const useAudioEngine = (bpm, numBars, isPlaying, gridRef, triggerSample, setActiveStep) => {
+export const useAudioEngine = (bpm, numBars, isPlaying, gridRef, triggerSample, setActiveStep, rows, cols) => {
     const transport = Tone.getTransport();
 
     // BPM Control
@@ -13,17 +13,24 @@ export const useAudioEngine = (bpm, numBars, isPlaying, gridRef, triggerSample, 
 
     // Sequence
     useEffect(() => {
-        const stepsPerBar = 16;
+
+        if (!isPlaying) {
+            transport.stop();
+            transport.seconds = 0;
+            setActiveStep(-1);
+            return;
+        }
+
+        const stepsPerBar = rows * cols;
         const totalSteps = stepsPerBar * numBars;
 
         const seq = new Tone.Sequence((time, stepIdx) => {
-            const stepsPerBar = rows * cols;
             const currentBar = Math.floor(stepIdx / stepsPerBar);
             const stepInBar = stepIdx % stepsPerBar;
 
             const col = stepInBar % cols;
             const standardRow = Math.floor(stepInBar / cols);
-            const flippedRow = (rows - 1) - standardRow; // Keeps your bottom-up layout
+            const flippedRow = (rows - 1) - standardRow;
 
             const gridIndex = (currentBar * stepsPerBar) + (flippedRow * cols) + col;
 
@@ -33,18 +40,11 @@ export const useAudioEngine = (bpm, numBars, isPlaying, gridRef, triggerSample, 
             if (cell?.isActive && cell.sampleId) {
                 triggerSample(cell.sampleId, time);
             }
-        }, Array.from({ length: 16 * numBars }, (_, i) => i), "8n");
+        }, Array.from({ length: totalSteps }, (_, i) => i), "8n");
 
-        if (isPlaying) {
-            if (Tone.getContext().state !== 'running') Tone.start();
-            transport.start();
-            seq.start(0);
-        } else {
-            transport.stop();
-            transport.seconds = 0;
-            seq.stop();
-        }
+        transport.start();
+        seq.start(0);
 
         return () => seq.dispose();
-    }, [numBars, isPlaying]); // Only re-run if bars or play/pause changes
+    }, [numBars, isPlaying, rows, cols]);
 };

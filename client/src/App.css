@@ -521,3 +521,13 @@ button:hover {
   color: #f1ad36;
   text-shadow: 0 0 5px #f1ad36;
 }
+
+
+
+.landing-page{
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+
+  padding-top: 20vh;
+}

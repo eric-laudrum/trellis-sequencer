@@ -36,14 +36,14 @@ Sequencer
 [X] Active pad highlighted
 
 Controls
-  [X] Play
-  [X] Stop / Restart 
-  [X] Pause (keep position)
+[X] Play
+[X] Stop / Restart 
+[X] Pause (keep position)
 
 Settings
-[] BPM
+[X] BPM
 [] Volume
-[] Number of bars
+[X] Number of bars
 
 ### ngrok
   bash

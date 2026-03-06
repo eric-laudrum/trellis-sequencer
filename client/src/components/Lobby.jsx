@@ -17,7 +17,6 @@ export default function Lobby({onJoin }){
     }, []);
 
 
-
     return(
         <div className="landing-page">
             <h1>TRELLIS STUDIO</h1>

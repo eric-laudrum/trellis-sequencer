@@ -39,7 +39,6 @@ app.use((req, res, next) => {
     next();
 });
 
-
 // Api routes
 app.post('/upload-sample', upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
@@ -55,7 +54,7 @@ app.post('/upload-sample', upload.single('file'), (req, res) => {
 // Socket IO logic
 const io = new Server(server, {
     cors: {
-        origin: "*", // Allow connection from any ngrok/localhost source for development
+        origin: "*", // Allow connection from ngrok or localhost for development
         methods: ["GET", "POST"]
     }
 });
@@ -69,7 +68,6 @@ const getRoomListData = () =>{
         };
     });
 }
-
 
 io.on('connection', (socket) => {
     console.log('User connected: ' + socket.id);
@@ -134,7 +132,7 @@ io.on('connection', (socket) => {
     socket.on('stop-all-audio', () => {
         const room = socket.currentRoom;
         if (room) {
-            // Tell the room to kill their audio
+            // Tell room to kill their audio
             socket.to(room).emit('kill-audio-instantly');
         }
     });
@@ -146,8 +144,6 @@ io.on('connection', (socket) => {
             socket.to(roomId).emit('sync-entire-grid', { grid, numBars });
         }
     });
-
-
 
     socket.on('disconnect', () => {
         io.emit('room-list', getRoomListData());
@@ -171,9 +167,6 @@ setInterval(cleanOldFiles, 3600000);
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
-
-
-
 
 server.listen(4000, () =>{
     console.log('Server started on port 4000');

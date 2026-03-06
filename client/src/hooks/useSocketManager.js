@@ -1,7 +1,7 @@
 import { useRef } from "react";
 
 export const useSocketManager = (socket, roomName) => {
-    // Global Lock - ignore server for 3s after local input
+    // Global Lock - ignore server for 3s after input
     const lastLocalUpdate = useRef(0);
 
     const setLock = () => {
