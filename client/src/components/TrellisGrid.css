@@ -47,13 +47,15 @@
 }
 
 .pad.playing {
-    border: 2px solid white;
-    filter: brightness(1.3);
-    transform: scale(1.02);
+    border: 1px solid rgba(245, 130, 10, 0.35);
+    filter: brightness(1.2);
+    transform: scale(0.95);
     z-index: 2;
+    box-shadow: 0 0 2px rgba(241, 173, 54, 0.88);
 }
 
 .pad.active.playing {
     background-color: #ffb366;
     box-shadow: 0 0 12px #f5820a;
+
 }

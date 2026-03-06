@@ -281,20 +281,20 @@ h1.main-title {
 
 /* Stop Button Specifics */
 .stop-button {
-  color: #dd1f1f; /* Standard red for stop */
-  border-color: #dd2d2d;
+  color: var(--primary);
+  border-color: var(--primary);;
   background: #111;
 }
 
 /* Hover & Active States */
 .play-button:hover, .stop-button:hover {
-  transform: scale(1.1);
+  transform: scale(1.01);
   filter: brightness(1.2);
   box-shadow: 0 0 15px rgba(255, 165, 0, 0.3);
 }
 
 .play-button:active, .stop-button:active {
-  transform: scale(0.9);
+  transform: scale(0.98);
 }
 
 /* --- Buttons --- */
@@ -381,8 +381,10 @@ button:hover {
   max-width: 400px;
   height: 100%;
 
+  padding: 10px;
 
-  background: var(--bg-darker);
+
+  background: rgba(35, 35, 35, 0.95);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -412,11 +414,13 @@ button:hover {
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  padding: 12px 15px;
+  padding: 10px 10px;
   margin: 2px 4px;
   background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid rgba(255,255,255,0.05);
   cursor: pointer;
+  overflow: hidden;
+
 }
 
 .sample-item .sample-name {
