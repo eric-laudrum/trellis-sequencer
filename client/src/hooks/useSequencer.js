@@ -35,10 +35,27 @@ export const useSequencer = (
     const triggerSample = useCallback((sampleId, time) => {
         const player = players.current[sampleId];
         const data = sampleRef.current.find(s => s.id === sampleId);
+
+
         if (player?.loaded && data) {
+
+            if (data.chokeGroup && data.chokeGroup !== 'none') {
+                sampleRef.current.forEach(otherSample => {
+                    // Sample in same group but not the active pad
+                    if (otherSample.chokeGroup === data.chokeGroup && otherSample.id !== sampleId) {
+                        const otherPlayer = players.current[otherSample.id];
+                        if (otherPlayer) {
+                            // Stop player when new one starts
+                            otherPlayer.stop(time);
+                        }
+                    }
+                });
+            }
+
             const offset = (data.startTime || 0) / 1000;
             const duration = ((data.endTime || (player.buffer.duration * 1000)) / 1000) - offset;
             player.start(time, offset, duration);
+
             lastTriggerRef.current = time;
             setLastTriggerTime(time);
         }

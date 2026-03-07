@@ -14,9 +14,6 @@ const SampleSidebar = ({samples =[],
                        accept="audio/*"
                        onChange={onUpload}
                 />
-                <label htmlFor="file-upload" className="upload-btn">
-                    + UPLOAD SAMPLE
-                </label>
 
             </div>
 

@@ -104,7 +104,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
 
             <div className="seq-header">
 
-            {/* Sample Settings */}
+                {/* Sample Settings */}
                 <div className='sample-settings'>
                     {currentSample ? (
                         <>
@@ -142,11 +142,13 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                 <div className='sample-setting'>
                                     <label>START TIME</label>
 
-                                    <button className="settings-btn" onClick={() => setSampleStart(selectedSampleId, (currentSample?.startTime || 0) - 10)}>
+                                    <button className="settings-btn"
+                                            onClick={() => setSampleStart(selectedSampleId, (currentSample?.startTime || 0) - 10)}>
                                         -
                                     </button>
 
-                                    <span className="value-display">{((currentSample?.startTime || 0) / 1000).toFixed(2)}
+                                    <span
+                                        className="value-display">{((currentSample?.startTime || 0) / 1000).toFixed(2)}
                                         s
                                     </span>
 
@@ -178,11 +180,27 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                     </div>
                                 </div>
 
+                                {/* Set Choke Group */}
+                                <div className='sample-setting'>
+                                    <label>CHOKE GROUP</label>
+                                    <select
+                                        className="choke-select"
+                                        value={currentSample.chokeGroup || 'none'}
+                                        onChange={(e) => setChokeGroup(selectedSampleId, e.target.value)}
+                                    >
+                                        <option value="none">-</option>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                    </select>
+                                </div>
+
+
                                 {/* Play sample */}
                                 <button className="preview-btn" onClick={() => playSampleSolo(selectedSampleId)}>
                                     ▶
                                 </button>
-
                             </div>
 
                         </>
@@ -196,18 +214,23 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                 </div>
 
 
-                    {currentSample && (
-                        <WaveformEditor
+                {currentSample && (
+                    <WaveformEditor
                         buffer={currentSample.buffer}
-                    startTime={currentSample.startTime}
-                    endTime={currentSample.endTime}
+                        startTime={currentSample.startTime}
+                        endTime={currentSample.endTime}
                         onUpdateStart={(newTime) => setSampleStart(selectedSampleId, newTime)}
                         onUpdateEnd={(newTime) => setSampleEnd(selectedSampleId, newTime)}
                         isPlaying={isPlaying}
                         lastTriggerTime={lastTriggerTime}
                         lastTriggerRef={lastTriggerRef}
                     />
+
                 )}
+
+
+
+
             </div>
 
             <div className="seq-main">
@@ -225,7 +248,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                     {/* Bar Controls */}
                     <div className="bar-controls-row">
                         <div className="bar-navigation">
-                            {Array.from({ length: numBars || 1 }).map((_, i) => (
+                            {Array.from({length: numBars || 1}).map((_, i) => (
                                 <div key={i} className="bar-btn-wrapper">
                                     <button
                                         onClick={() => handleBarClick(i)}
@@ -246,13 +269,21 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                             ×
                                         </button>
                                     )}
+
                                 </div>
+
                             ))}
                             <button className="add-bar-btn" onClick={addBar}>
                                 +
                             </button>
+
+
+                            <button className={`follow-btn ${followPlayhead ? 'on' : ''}`}
+                                    onClick={() => setFollowPlayhead(!followPlayhead)}>
+                                FOLLOW
+                            </button>
                         </div>
-                        <button className={`follow-btn ${followPlayhead ? 'on' : ''}`} onClick={() => setFollowPlayhead(!followPlayhead)}>FOLLOW</button>
+
                     </div>
 
                     <div className="grid-and-controls-wrapper">

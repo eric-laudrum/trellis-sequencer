@@ -29,9 +29,7 @@ body {
   min-height: 100vh;
   width: 100%;
 
-
   overflow-x: hidden;
-
 }
 
 body, #root{
@@ -39,6 +37,7 @@ body, #root{
   padding: 0;
   height: 100vh;
   overflow: hidden;
+  background-color: black;
 }
 
 .app-container {
@@ -48,6 +47,9 @@ body, #root{
   width: 98vw;
   margin: auto;
   overflow: hidden;
+  border-radius: 10px;
+  background-color: #0f0f0f;
+  border: 0.5px solid black;
 }
 
 /* --- Typography --- */
@@ -99,10 +101,7 @@ h1.main-title {
   border-radius: 10px;
 
   box-sizing: border-box;
-
-
 }
-
 
 
 .sequencer-column {
@@ -110,10 +109,10 @@ h1.main-title {
   flex-direction: column;
   flex: 1;
   height: 100%;
-  min-height: 0; /* Add this if it's missing! */
-  justify-content: space-between;
-
-
+  min-height: 0;
+  gap: 10px;
+  overflow: hidden;
+  position: relative;
 }
 
 /* --- Sample Settings & Controls --- */
@@ -184,7 +183,7 @@ h1.main-title {
   border-bottom: 1px solid #333;
 }
 
-.choke-selector {
+.choke-select {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -219,26 +218,28 @@ h1.main-title {
 
 /* --- Play Controls ---- */
 
-/* Grid + Play area */
 .grid-and-controls-wrapper {
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: center;
   flex: 1;
   min-height: 0;
   width: 100%;
   gap: 15px;
-  position: relative;
+  padding: 10px;
+  box-sizing: border-box;
 }
 
 .play-controls {
   display: flex;
   flex-direction: column-reverse;
-  justify-content: center;
-  align-items: center;
+
+  align-items: flex-end;
   gap: 20px;
   padding: 15px;
   flex-shrink: 0;
+
 
   align-self: flex-end;
 }
@@ -322,6 +323,7 @@ button:hover {
   color: var(--primary);
 }
 
+
 .tap-btn {
   color: var(--primary);
   border: 1px solid var(--primary);
@@ -347,6 +349,10 @@ button:hover {
   transform: scale(0.95);
 }
 
+
+.upload-btn{
+  border: 2px solid red;
+}
 
 /* --- Inputs & Editable Values --- */
 .value-display {
@@ -408,6 +414,9 @@ button:hover {
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  border-radius: 10px;
+  background-color: rgba(169, 169, 169, 0.06);
+  margin: 10px 1px;
 }
 
 .sample-item {
@@ -430,7 +439,7 @@ button:hover {
 }
 
 .sample-item button,
-.sample-item .choke-selector {
+.sample-item .choke-select {
   display: none;
 }
 
@@ -499,6 +508,7 @@ button:hover {
   align-items: center;
   flex-direction: row;
   justify-content: space-between;
+  padding: 5px 20px;
 
 }
 
@@ -528,19 +538,28 @@ button:hover {
 /* Number of Bars */
 .bar-controls-row{
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  justify-content: center;
   align-items: center;
-
-
+  flex-shrink: 0;
+  width: 100%;
+  padding: 10px 0;
+  background: var(--bg-darker);
+  border-radius: 8px;
+  z-index: 10;
 }
+
+
 .bar-navigation {
   display: flex;
+  flex: 0;
   gap: 8px;
 }
 
 .bar-btn-wrapper {
   position: relative;
   display: inline-block;
+
 
 
 }
@@ -576,6 +595,15 @@ button:hover {
   cursor: pointer;
 }
 
+.add-bar-btn{
+  width: 35px;
+  height: 35px;
+  background: #222;
+  border: 1px solid #444;
+  color: white;
+  cursor: pointer;
+}
+
 .bar-btn.active {
   background: #f1ad36;
   color: #000;
@@ -593,15 +621,28 @@ button:hover {
 }
 
 
+.follow-btn:not(.on){
+  margin: 5px;
+  border: 2px solid gray;
+  color: gray;
+}
 
-.follow-btn.active {
+.follow-btn:hover{
+  border: 2px solid #f1ad36;
   color: #f1ad36;
-  text-shadow: 0 0 5px #f1ad36;
-  margin: 0;
+  transform: scale(1.01);
+  box-shadow: 0 0 15px rgba(255, 165, 0, 0.3);
 
 }
 
+.follow-btn.on {
+  margin: 5px;
+  color: #f1ad36;
+  text-shadow: 0 0 5px #f1ad36;
+  border: 2px solid #c58d2c;
+  transform: scale(0.99);
 
+}
 
 .landing-page{
   display: flex;
