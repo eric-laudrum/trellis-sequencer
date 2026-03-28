@@ -28,31 +28,45 @@ This project uses NPM Workspaces and Concurrently to run the front and backend s
   bash
   npm run dev
 
+### ngrok
+bash
+npm install -g ngrok
+
+npm run server
+ngrok http 4000
+
+### multer
+bash
+npm install multer --workspace=server
+
+
   
 ## Checklist
-Sequencer
+### Sequencer
 [X] 16 Pad grid
 [X] Click to make pad active
 [X] Active pad highlighted
 
-Controls
+### Controls
 [X] Play
 [X] Stop / Restart 
 [X] Pause (keep position)
 
-Settings
+### Settings
 [X] BPM
-[] Volume
 [X] Number of bars
+[] Volume
 
-### ngrok
-  bash
-  npm install -g ngrok
+### Features
+[] Undo sample start time edit
+[] Zoom on sample with +/- buttons instead of mouse drag
+[x] Chat section
+[] Username selection
+[] Profile picture
+[] Identify user pad (unique colour)
+  [] Default colours
+  [] User selected colour
 
-  npm run server
-  ngrok http 4000
 
-### multer
-  bash
-  npm install multer --workspace=server
+
 

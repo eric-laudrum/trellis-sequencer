@@ -169,6 +169,17 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Chat
+    socket.on('send-message', (data) => {
+        const room = socket.currentRoom;
+
+        if( room ){
+            socket.to(room).emit('chat-message', data);
+            console.log(`[CHAT] ${data.user} in ${room}: ${data.text}`);
+        }
+    });
+
+
     // Disconnect
     socket.on('disconnect', () => {
         io.emit('room-list', getRoomListData());

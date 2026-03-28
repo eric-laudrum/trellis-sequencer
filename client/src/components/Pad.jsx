@@ -10,7 +10,7 @@ const Pad = ({ isActive, isHighlighted, sample, onClick }) => {
                 ${isHighlighted ? 'playing' : ''}
           `}
         >
-            {sample && <span className="sample-name">{sample.name}</span>}
+            {sample && <span className="sample-name-overlay">{sample.name}</span>}
         </div>
     );
 };

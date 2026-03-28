@@ -3,6 +3,7 @@ import TrellisGrid  from './TrellisGrid.jsx';
 import SampleSidebar from "./SampleSidebar.jsx";
 import WaveformEditor from "./WaveformEditor.jsx";
 import { useSequencer } from "../hooks/useSequencer.js";
+import ChatPanel from "./ChatPanel.jsx";
 
 export default function StudioRoom({ roomName, socket, onLeave }) {
 
@@ -243,6 +244,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                     onPlaySolo={playSampleSolo}
                 />
 
+
                 <div className="sequencer-column">
 
                     {/* Bar Controls */}
@@ -306,9 +308,11 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                             </button>
                         </div>
                     </div>
-
-
                 </div>
+
+                <ChatPanel socket={socket} roomName={roomName} />
+
+
             </div>
         </div>
     );

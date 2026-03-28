@@ -1,11 +1,17 @@
 /* --- Global & Layout --- */
 :root {
   --primary: orange;
+
+  --primary-light: rgb(99, 95, 95);
+  --primary-font-color: rgba(44, 30, 2, 0.98);
+
   --bg-dark: #1a1a1a;
   --bg-darker: #111;
   --border-muted: rgba(255, 255, 255, 0.2);
   font-family: 'Futura', 'Inter', system-ui, sans-serif;
   color-scheme: dark;
+
+
 }
 
 #root {
@@ -93,9 +99,9 @@ h1.main-title {
   min-height: 0;
 
   width: 100%;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  gap: 10px;
+  gap: 15px;
   padding: 10px;
   overflow: hidden;
   border-radius: 10px;
@@ -108,12 +114,34 @@ h1.main-title {
   display: flex;
   flex-direction: column;
   flex: 1;
-  height: 100%;
-  min-height: 0;
+  min-width: 0;
   gap: 10px;
   overflow: hidden;
-  position: relative;
+
 }
+
+.grid-container {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.grid-viewport {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 8px;
+  width: 95%;
+  max-width: 500px;
+  aspect-ratio: 1/1;
+}
+
+
+
 
 /* --- Sample Settings & Controls --- */
 .sample-settings {
@@ -355,6 +383,31 @@ button:hover {
   border: 2px solid red;
 }
 
+
+.pad {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.pad .sample-name {
+  font-size: 9px;
+  text-transform: uppercase;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90%;
+  color: rgba(255, 255, 255, 0.5);
+}
+
 /* --- Inputs & Editable Values --- */
 .value-display {
   cursor: pointer;
@@ -382,18 +435,15 @@ button:hover {
 .sample-sidebar {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
 
-  width: 30%;
-  min-width: 250px;
-  max-width: 400px;
+  width: 260px;
   height: 100%;
 
+  box-sizing: border-box;
   padding: 10px;
-
-
   background: rgba(35, 35, 35, 0.95);
-  border-radius: 8px;
-  overflow: hidden;
+
 }
 
 .sample-name {
@@ -658,3 +708,124 @@ button:hover {
 }
 
 
+
+/* Chat Section */
+
+.chat-panel{
+  display: flex;
+  flex-direction: column;
+
+  flex-shrink: 0;
+  width: 280px;
+  height: 100%;
+  border-radius: 8px;
+
+  box-shadow: 0px 0px 10px 1px rgba(241, 173, 54, 0.20);
+  background-color: var(--bg-darker);
+
+  border: 1px solid #333;
+  overflow: hidden;
+}
+
+.chat-header{
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid #333;
+  text-align: center;
+}
+
+.chat-title{
+
+  font-size: 1rem;
+  letter-spacing: 2px;
+  color: var(--primary);
+  text-transform: uppercase;
+}
+
+.messages{
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  gap: 0.1em;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.messages::-webkit-scrollbar {
+  width: 4px;
+}
+.messages::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 2px;
+}
+
+.message{
+  display: flex;
+  flex-direction: column;
+
+  align-content: flex-start;
+  justify-content: flex-start;
+
+  align-items: start;
+
+  background: rgba(255, 255, 255, 0.42);
+
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 8px;
+  border-radius: 6px;
+
+}
+
+.chat-user {
+  font-size: 0.7rem;
+  font-weight: bold;
+  color: var(--primary);
+  margin-bottom: 4px;
+  opacity: 0.8;
+}
+
+.chat-text {
+  font-size: 0.85rem;
+  color: #ddd;
+  word-break: break-word;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.chat-user, .chat-text{
+  font-size: 0.8em;
+  color: var(--primary-font-color);
+}
+
+.chat-input-area {
+  display: flex;
+  padding: 10px;
+  background: #000;
+  border-top: 1px solid #333;
+  gap: 5px;
+}
+
+.chat-input-area input {
+  flex: 1;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: white;
+  padding: 8px;
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.chat-input-area input:focus {
+  border-color: var(--primary);
+}
+
+.chat-input-area button {
+  background: var(--primary);
+  color: black;
+  border: none;
+  font-weight: bold;
+  padding: 0 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
