@@ -60,7 +60,7 @@ npm install multer --workspace=server
 ### Features
 [] Undo sample start time edit
 [] Zoom on sample with +/- buttons instead of mouse drag
-[] Chat section
+[x] Chat section
 [] Username selection
 [] Profile picture
 [] Identify user pad (unique colour)
