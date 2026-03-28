@@ -9,6 +9,8 @@ export default function ChatPanel({ socket, roomName }) {
 
     // Listen for messages
     useEffect(() => {
+        if(!socket) return;
+
         socket.on('chat-message', (message) => {
             setMessages((prevMessages) => [...prevMessages, message]);
         });
@@ -24,8 +26,6 @@ export default function ChatPanel({ socket, roomName }) {
         const handleMessage = (message) => {
             // Debugging
             console.log("New message received:", message);
-
-            //
             setMessages((prev) => [...prev, message]);
         };
 
@@ -58,7 +58,10 @@ export default function ChatPanel({ socket, roomName }) {
     return(
         <div className="chat-panel">
 
-            <h2>CHAT PANEL</h2>
+            <div className="chat-header">
+                <h2 className="chat-title">CHAT PANEL</h2>
+            </div>
+
 
             <div className="messages" ref={scrollRef}>
                 { messages.map((message, index) => (

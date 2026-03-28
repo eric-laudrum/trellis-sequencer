@@ -244,7 +244,6 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                     onPlaySolo={playSampleSolo}
                 />
 
-                <ChatPanel socket={socket} roomName={roomName} />
 
                 <div className="sequencer-column">
 
@@ -309,9 +308,11 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                             </button>
                         </div>
                     </div>
-
-
                 </div>
+
+                <ChatPanel socket={socket} roomName={roomName} />
+
+
             </div>
         </div>
     );
