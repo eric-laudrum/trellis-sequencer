@@ -2,12 +2,12 @@
 :root {
   --primary: orange;
 
-  --primary-light: rgb(99, 95, 95);
+  --primary-light: rgb(51, 51, 51);
   --primary-font-color: rgba(44, 30, 2, 0.98);
 
   --bg-dark: #1a1a1a;
   --bg-darker: #111;
-  --border-muted: rgba(255, 255, 255, 0.2);
+  --border-muted: rgba(39, 38, 38, 0.2);
   font-family: 'Futura', 'Inter', system-ui, sans-serif;
   color-scheme: dark;
 
@@ -114,30 +114,10 @@ h1.main-title {
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-width: 0;
+  min-width: fit-content;
   gap: 10px;
   overflow: hidden;
 
-}
-
-.grid-container {
-  flex: 1;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.grid-viewport {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(4, 1fr);
-  gap: 8px;
-  width: 95%;
-  max-width: 500px;
-  aspect-ratio: 1/1;
 }
 
 
@@ -249,15 +229,21 @@ h1.main-title {
 
 .grid-and-controls-wrapper {
   display: flex;
+  flex: 1;
+  flex-shrink: 0;
+
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  flex: 1;
+
   min-height: 0;
   width: 100%;
+  min-width: 20em;
   gap: 15px;
   padding: 10px;
   box-sizing: border-box;
+
+
 }
 
 .play-controls {
@@ -387,6 +373,7 @@ button:hover {
 .pad {
   width: 100%;
   height: 100%;
+  aspect-ratio: 1;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.1s ease;
