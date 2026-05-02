@@ -1,3 +1,10 @@
+/*
+
+    Sample Library
+
+*/
+
+
 const SampleSidebar = ({samples =[],
                            selectedId,
                            onSelect,

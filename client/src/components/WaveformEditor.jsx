@@ -172,51 +172,74 @@ const WaveformEditor = ({
 
 
     return (
-        <div
-            className="waveform-container"
-            ref={containerRef}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            onDoubleClick={() => setZoomRange({start: 0, end: 1})}
-            style={{position: 'relative', overflow: 'hidden', cursor: 'crosshair'}}
-        >
-            <canvas ref={canvasRef} width={600} height={120}/>
+        <div className="waveform-section">
 
-            {/* Start Line (Red) with Handle Cursor */}
-            <div style={{
-                position: 'absolute',
-                left: `${startLinePos}%`,
-                top: 0, bottom: 0, width: '4px',
-                backgroundColor: 'red', zIndex: 20,
-                cursor: 'col-resize',
-                transform: 'translateX(-50%)' // Center the hit area
-            }}>
-                <div style={{ backgroundColor: 'red', color: 'white', fontSize: '9px', padding: '1px' }}>S</div>
+            <div className="zoom-section">
+                <button className='zoom-button'>+</button>
+                <button className='zoom-button'>-</button>
+
             </div>
+            
 
-            {/* End Line (Blue) with Handle Cursor */}
-            <div style={{
-                position: 'absolute',
-                left: `${endLinePos}%`,
-                top: 0, bottom: 0, width: '4px',
-                backgroundColor: '#00ccff', zIndex: 20,
-                cursor: 'col-resize',
-                transform: 'translateX(-50%)'
-            }}>
-                <div style={{ backgroundColor: '#00ccff', color: 'black', fontSize: '9px', padding: '1px' }}>E</div>
-            </div>
+        
+            <div
+                className="waveform-container"
+                ref={containerRef}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                onDoubleClick={() => setZoomRange({start: 0, end: 1})}
+                style={{
+                    position: 'relative', 
+                    overflow: 'hidden', 
+                    cursor: 'crosshair',
+                    }}
+            >
+                <canvas ref={canvasRef} width={600} height={120}/>
 
-            {/* Playhead */}
-            {playheadPos >= 0 && playheadPos <= 100 && (
+                {/* Start Line (Red) with Handle Cursor */}
                 <div style={{
-                    position: 'absolute', left: `${playheadPos}%`, top: 0, bottom: 0,
-                    width: '2px', backgroundColor: 'white', zIndex: 11, pointerEvents: 'none'
-                }} />
-            )}
+                    position: 'absolute',
+                    left: `${startLinePos}%`,
+                    top: 0, bottom: 0, width: '4px',
+                    backgroundColor: 'red', zIndex: 20,
+                    cursor: 'col-resize',
+                    transform: 'translateX(-50%)' // Center the hit area
+                }}>
+                    <div style={{ backgroundColor: 'red', color: 'white', fontSize: '9px', padding: '1px' }}>S</div>
+                </div>
 
+                {/* End Line (Blue) with Handle Cursor */}
+                <div style={{
+                    position: 'absolute',
+                    left: `${endLinePos}%`,
+                    top: 0, bottom: 0, width: '4px',
+                    backgroundColor: '#00ccff', zIndex: 20,
+                    cursor: 'col-resize',
+                    transform: 'translateX(-50%)'
+                }}>
+                    <div style={{ 
+                        backgroundColor: '#00ccff', 
+                        color: 'black', 
+                        fontSize: '9px', 
+                        padding: '1px' }}>E</div>
+                </div>
 
+                {/* Playhead */}
+                {playheadPos >= 0 && playheadPos <= 100 && (
+                    <div style={{
+                        position: 'absolute', 
+                        left: `${playheadPos}%`, 
+                        top: 0, 
+                        bottom: 0,
+                        width: '2px', 
+                        backgroundColor: 'white', 
+                        zIndex: 11, 
+                        pointerEvents: 'none'
+                    }} />
+                )}
+            </div>
         </div>
     );
 
