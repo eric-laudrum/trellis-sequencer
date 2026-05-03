@@ -63,10 +63,19 @@ const WaveformEditor = ({
     useEffect(() => {
         let animId;
         const loop = () => {
+
+            // Reset Playhead if stopped
+            if (!isPlaying) {
+                setPlayheadPos(-1);
+                animId = requestAnimationFrame(loop);
+                return;
+            }
+
             const triggerTime = (lastTriggerRef && lastTriggerRef.current) ? lastTriggerRef.current : lastTriggerTime;
             const now = Tone.now();
             const elapsed = now - lastTriggerTime;
 
+            // Verify playhead is still active 
             const isWithinSample = buffer && triggerTime > 0 && elapsed >= 0 && elapsed <= buffer.duration;
 
             if (isWithinSample) {
@@ -79,13 +88,20 @@ const WaveformEditor = ({
                     setPlayheadPos(-1);
                 }
             } else {
+                // Sample has finished / not started
                 setPlayheadPos(-1);
             }
             animId = requestAnimationFrame(loop);
         };
         loop();
         return () => cancelAnimationFrame(animId);
-    }, [buffer, lastTriggerTime, lastTriggerRef, startTime, zoomRange]);
+    }, [
+        buffer, 
+        lastTriggerTime, 
+        lastTriggerRef, 
+        startTime, 
+        zoomRange]
+    );
 
     const getTimeFromMouse = (x) => {
         if (!buffer) return 0;
