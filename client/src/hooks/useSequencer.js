@@ -133,6 +133,10 @@ export const useSequencer = (
         // Reset local state immediately
         setIsPlaying(false);
         setActiveStep(-1);
+
+        setLastTriggerTime(0); 
+        lastTriggerRef.current = 0;
+
         Tone.getTransport().stop();
         Tone.getTransport().position = 0;
         Object.values(players.current).forEach(p => p.stop());
@@ -252,6 +256,9 @@ export const useSequencer = (
             setIsPlaying(false);
             setActiveStep(-1);
 
+            setLastTriggerTime(0);
+            lastTriggerRef.current = 0;
+
             // Stop the Global Transport (Clock)
             Tone.getTransport().stop();
             Tone.getTransport().position = 0;
@@ -328,7 +335,7 @@ export const useSequencer = (
             await addNewPlayer(id, data.url, data.name);
             socket.emit('share-sample', {
                 roomId: roomName,
-                sampleData: { url: data.url, name: data.name, id: Date.now() }
+                sampleData: { url: data.url, name: data.name, id: id }
             });
             console.log("[SOCKET] Broadcast 'share-sample' sent to server");
 
