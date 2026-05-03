@@ -552,6 +552,7 @@ button:hover {
 
   font-size: 1em;
 
+
 }
 
 .zoom-button{
@@ -561,7 +562,7 @@ button:hover {
 
   width: 1em;
   height: 1em;
-  margin: 1em;
+  margin: 2px;
   border-radius: 2px;
 
   padding: 1.5em;
@@ -569,7 +570,7 @@ button:hover {
 
   
 
-  border: 1px solid orange;
+  border: 1px solid rgb(126, 82, 0);
 }
 
 .zoom-button:hover{
