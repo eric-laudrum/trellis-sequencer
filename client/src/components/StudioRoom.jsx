@@ -20,6 +20,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
         bpm,
         samples,
         selectedSampleId,
+        
 
         lastTriggerTime,
         lastTriggerRef,
@@ -36,7 +37,8 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
         playSampleSolo,
         setSampleStart,
         setSampleEnd,
-        setChokeGroup
+        setSampleColor,
+        setChokeGroup,
     } = useSequencer(gridState, setGridState, socket, roomName);
 
     const [isEditingBpm, setIsEditingBpm] = useState(false);
@@ -241,6 +243,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                 <SampleSidebar
                     samples={samples}
                     duplicateSample={duplicateSample}
+                    onSetColor={setSampleColor}
                     onSetChokeGroup={setChokeGroup}
                     selectedId={selectedSampleId}
                     onSelect={setSelectedSampleId}

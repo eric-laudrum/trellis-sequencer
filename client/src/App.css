@@ -546,6 +546,13 @@ button:hover {
     
 }
 
+.color-picker-mini{
+  width: 30px;
+  height: 30px;
+  
+
+}
+
 
 
 /* --- Waveform Visualizer --- */

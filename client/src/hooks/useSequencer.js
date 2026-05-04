@@ -173,6 +173,7 @@ export const useSequencer = (
             ...sourceSample,
             id: newId,
             name: `${baseName} ${maxNum + 1}`,
+            color: sourceSample.color || '#f1ad36',
             startTime: sourceSample.startTime,
             endTime: sourceSample.endTime,
         };
@@ -191,6 +192,13 @@ export const useSequencer = (
         });
     }, [samples, roomName, socket]);
 
+    const setSampleColor = (sampleId, color) => {
+        setSamples(prev => prev.map(s =>
+            s.id === sampleId ? { ...s, color } : s
+        ));
+        // Sync colour with the room
+        emitEvent('update-sample-color', { sampleId, color });
+    };
 
 
 
@@ -436,5 +444,7 @@ export const useSequencer = (
         playSampleSolo,
         doubleBpm: () => updateBpmGlobal(bpm * 2),
         halfBpm: () => updateBpmGlobal(bpm / 2),
+        setSampleColor,
+        
     };
 };
