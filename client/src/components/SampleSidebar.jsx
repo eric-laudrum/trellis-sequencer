@@ -5,16 +5,19 @@
 */
 
 
-const SampleSidebar = ({samples =[],
-                           selectedId,
-                           onSelect,
-                           onUpload,
-                           onPlaySolo,
-                           onSetChokeGroup }) => {
+const SampleSidebar = ({
+    samples =[],
+    duplicateSample,
+    selectedId,
+    onSelect,
+    onUpload,
+    onPlaySolo,
+    onSetChokeGroup }) => {
+
     return(
 
         <aside className="sample-sidebar">
-            <h3>Library</h3>
+            <h3 id="library-title">Library</h3>
 
             <div className="upload-wrapper">
                 <input type="file"
@@ -33,45 +36,41 @@ const SampleSidebar = ({samples =[],
                         onClick={() => onSelect(sample.id)}
                     >
 
+                        {/* Sample name */}
                         <div className="sample-info">
                             <span className="sample-name">{sample.name}</span>
                         </div>
 
-
+                        {/* Sample options */}
                         <div className="sample-options">
-                            <span className="sample-time">{( sample.startTime || 0).toFixed(2)}s</span>
 
-                            <div className="choke-selector">
-                                <select className="group-select"
-                                        value={sample.chokeGroup ?? "none"}
-                                        onChange={(e) => {
-                                            e.stopPropagation();
-                                            onSetChokeGroup(sample.id, e.target.value);
-                                        }}
-                                        onClick={(e) => e.stopPropagation()}
-                                >
-                                    <option value="none">-</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
-                            </div>
-
-                            <button
-                                className="solo-play-btn"
-                                onClick={(e) => {
+                            {/* Choke group */}
+                            <select 
+                                className="group-select"
+                                value={sample.chokeGroup ?? "none"}
+                                onChange={(e) => {
                                     e.stopPropagation();
-                                    onPlaySolo(sample.id);
+                                    onSetChokeGroup(sample.id, e.target.value);
                                 }}
                             >
-                                ▶
+                                <option value="none">-</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                            </select>
+
+                            {/* Duplication Button */}
+                            <button
+                                className="duplicate-btn"
+                                title="Duplicate Sample"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    duplicateSample(sample.id);
+                                }}
+                            >
+                            +
                             </button>
-
-
                         </div>
-
-
                     </div>
                 ))}
             </div>

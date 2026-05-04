@@ -147,6 +147,49 @@ export const useSequencer = (
         }
     }, [socket, roomName]);
 
+    // Duplicate a Sample
+    const duplicateSample = useCallback((sampleId) => {
+        const sourceSample = samples.find(s => s.id === sampleId);
+        if (!sourceSample) return;
+
+        // Create a unique ID for the new version
+        const newId = crypto.randomUUID();
+
+        // Reuse the existing player for the new ID to save memory
+        players.current[newId] = players.current[sampleId];
+
+        // Create the new sample object with copied metadata
+        const duplicatedSample = {
+            ...sourceSample,
+            id: newId,
+            name: `${sourceSample.name} (Copy)`,
+            // New version can now be edited independently
+            startTime: sourceSample.startTime,
+            endTime: sourceSample.endTime,
+        };
+
+        // Update local state
+        setSamples(prev => [...prev, duplicatedSample]);
+
+        // Sync with the room so others see the duplicated pad
+        socket.emit('share-sample', {
+            roomId: roomName,
+            sampleData: { 
+                url: duplicatedSample.url, 
+                name: duplicatedSample.name, 
+                id: newId,
+                startTime: duplicatedSample.startTime,
+                endTime: duplicatedSample.endTime
+            }
+        });
+
+        console.log(`[AUDIO] Duplicated ${sourceSample.name} to new ID: ${newId}`);
+    }, [samples, roomName, socket]);
+
+
+
+
+
     // Sample Control Logic
     const setSampleStart = (sampleId, newStart) => {
         setSamples(prev => prev.map(s =>
@@ -245,8 +288,22 @@ export const useSequencer = (
 
         socket.on('download-sample', async (sampleData) => {
             console.log(`[RECEIVE] New sample notification: ${sampleData.name}`);
-            // Call existing function to create the Tone.Player
-            await addNewPlayer(sampleData.id, sampleData.url, sampleData.name);
+            // Check if we already have a player for this URL to avoid re-fetching
+            const existingPlayerEntry = Object.entries(players.current).find(([id, p]) => p.url === sampleData.url);
+
+            if (existingPlayerEntry) {
+                // Reuse existing buffer/player for the new ID
+                players.current[sampleData.id] = existingPlayerEntry[1];
+                
+                setSamples(prev => [...prev, {
+                    ...sampleData,
+                    buffer: existingPlayerEntry[1].buffer,
+                    chokeGroup: sampleData.chokeGroup || "none"
+                }]);
+            } else {
+                // If it's a brand new file for this client, download it
+                await addNewPlayer(sampleData.id, sampleData.url, sampleData.name);
+            }
         });
 
         socket.on('sync-stop', () => {
@@ -348,23 +405,23 @@ export const useSequencer = (
     return {
         activeStep,
         viewingBar,
-        setViewingBar,
         isFollowEnabled,
-        setIsFollowEnabled,
         isPlaying,
-        togglePlayback,
         bpm,
         samples,
         selectedSampleId,
-        setSelectedSampleId,
         lastTriggerTime,
         lastTriggerRef,
         numBars,
+        currentBarIdx,
+        setViewingBar,
+        setIsFollowEnabled,
+        togglePlayback,
+        setSelectedSampleId,
         addBar,
         deleteBar,
         stopAll,
-        currentBarIdx,
-
+        duplicateSample,
         tapBpm,
         loadFile,
         setBpm: updateBpmGlobal,

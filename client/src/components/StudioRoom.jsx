@@ -16,15 +16,18 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
         numBars,
         currentBarIdx,
         isPlaying,
-        togglePlayback,
+        
         bpm,
         samples,
         selectedSampleId,
+
+        lastTriggerTime,
+        lastTriggerRef,
+        togglePlayback,
         setSelectedSampleId,
         addBar,
         deleteBar,
-        lastTriggerTime,
-        lastTriggerRef,
+        duplicateSample,
         stopAll,
 
         loadFile,
@@ -237,6 +240,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
             <div className="seq-main">
                 <SampleSidebar
                     samples={samples}
+                    duplicateSample={duplicateSample}
                     onSetChokeGroup={setChokeGroup}
                     selectedId={selectedSampleId}
                     onSelect={setSelectedSampleId}
