@@ -16,15 +16,19 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
         numBars,
         currentBarIdx,
         isPlaying,
-        togglePlayback,
+        
         bpm,
         samples,
         selectedSampleId,
+        
+
+        lastTriggerTime,
+        lastTriggerRef,
+        togglePlayback,
         setSelectedSampleId,
         addBar,
         deleteBar,
-        lastTriggerTime,
-        lastTriggerRef,
+        duplicateSample,
         stopAll,
 
         loadFile,
@@ -33,7 +37,8 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
         playSampleSolo,
         setSampleStart,
         setSampleEnd,
-        setChokeGroup
+        setSampleColor,
+        setChokeGroup,
     } = useSequencer(gridState, setGridState, socket, roomName);
 
     const [isEditingBpm, setIsEditingBpm] = useState(false);
@@ -237,6 +242,8 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
             <div className="seq-main">
                 <SampleSidebar
                     samples={samples}
+                    duplicateSample={duplicateSample}
+                    onSetColor={setSampleColor}
                     onSetChokeGroup={setChokeGroup}
                     selectedId={selectedSampleId}
                     onSelect={setSelectedSampleId}

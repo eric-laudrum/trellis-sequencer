@@ -174,7 +174,10 @@ h1.main-title {
 
 .sample-options{
   display: flex;
-  flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    padding-left: 10px;
 
 }
 
@@ -428,12 +431,13 @@ button:hover {
   flex-direction: column;
   flex-shrink: 0;
 
-  width: 260px;
+  width: auto;
   height: 100%;
-
+  border-radius: 8px;
   box-sizing: border-box;
-  padding: 10px;
+  padding: 0 10px;
   background: rgba(35, 35, 35, 0.95);
+
 
 }
 
@@ -459,18 +463,24 @@ button:hover {
   border-radius: 10px;
   background-color: rgba(169, 169, 169, 0.06);
   margin: 10px 1px;
+  padding: 2px;
 }
 
 .sample-item {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
+  width: 100%;
   align-items: center;
   padding: 10px 10px;
   margin: 2px 4px;
   background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid rgba(255,255,255,0.05);
   cursor: pointer;
-  overflow: hidden;
+  overflow: visible;
+  border-radius: 4px;
+
+
+
 
 }
 
@@ -494,7 +504,56 @@ button:hover {
 .sample-item.active {
   border: 1px solid var(--primary);
   background: rgba(255, 165, 0, 0.1);
+
 }
+
+.duplicate-btn {
+    display: flex !important;
+    width: 10px; 
+    height: 10px;
+    
+    background-color: #333;
+    color: #f1ad36; 
+    border: 1px solid #555;
+    cursor: pointer;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 4px;
+    font-size: 18px;
+    font-weight: bold;
+
+    margin-left: 1px;
+}
+
+.duplicate-btn:hover {
+    background-color: #444;
+    border-color: #f1ad36;
+}
+
+
+  
+
+
+.sample-options {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    padding-left: 10px;
+    overflow: visible;
+    
+}
+
+.color-picker-mini{
+  width: 30px;
+  height: 30px;
+  
+
+}
+
+
 
 /* --- Waveform Visualizer --- */
 

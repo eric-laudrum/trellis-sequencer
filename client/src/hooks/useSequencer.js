@@ -147,6 +147,62 @@ export const useSequencer = (
         }
     }, [socket, roomName]);
 
+    const duplicateSample = useCallback((sampleId) => {
+        // Find the source sample
+        const sourceSample = samples.find(s => s.id === sampleId);
+        if (!sourceSample) return;
+
+        // Generate new ID
+        const newId = crypto.randomUUID(); 
+
+        // Increment Naming Logic
+        const baseNameMatch = sourceSample.name.match(/^(.*?)(?: (\d+))?$/);
+        const baseName = baseNameMatch[1];
+        const relatedSamples = samples.filter(s => s.name.startsWith(baseName));
+
+        let maxNum = 1;
+        relatedSamples.forEach(s => {
+            const match = s.name.match(/ (\d+)$/);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                if (num > maxNum) maxNum = num;
+            }
+        });
+
+        const duplicatedSample = {
+            ...sourceSample,
+            id: newId,
+            name: `${baseName} ${maxNum + 1}`,
+            color: sourceSample.color || '#f1ad36',
+            startTime: sourceSample.startTime,
+            endTime: sourceSample.endTime,
+        };
+
+        // Update References and State
+        players.current[newId] = players.current[sampleId]; 
+        setSamples(prev => [...prev, duplicatedSample]);
+
+        // Emit to server
+        socket.emit('share-sample', {
+            roomId: roomName,
+            sampleData: { 
+                ...duplicatedSample,
+                url: sourceSample.url 
+            }
+        });
+    }, [samples, roomName, socket]);
+
+    const setSampleColor = (sampleId, color) => {
+        setSamples(prev => prev.map(s =>
+            s.id === sampleId ? { ...s, color } : s
+        ));
+        // Sync colour with the room
+        emitEvent('update-sample-color', { sampleId, color });
+    };
+
+
+
+
     // Sample Control Logic
     const setSampleStart = (sampleId, newStart) => {
         setSamples(prev => prev.map(s =>
@@ -245,8 +301,22 @@ export const useSequencer = (
 
         socket.on('download-sample', async (sampleData) => {
             console.log(`[RECEIVE] New sample notification: ${sampleData.name}`);
-            // Call existing function to create the Tone.Player
-            await addNewPlayer(sampleData.id, sampleData.url, sampleData.name);
+            // Check if we already have a player for this URL to avoid re-fetching
+            const existingPlayerEntry = Object.entries(players.current).find(([id, p]) => p.url === sampleData.url);
+
+            if (existingPlayerEntry) {
+                // Reuse existing buffer/player for the new ID
+                players.current[sampleData.id] = existingPlayerEntry[1];
+                
+                setSamples(prev => [...prev, {
+                    ...sampleData,
+                    buffer: existingPlayerEntry[1].buffer,
+                    chokeGroup: sampleData.chokeGroup || "none"
+                }]);
+            } else {
+                // If it's a brand new file for this client, download it
+                await addNewPlayer(sampleData.id, sampleData.url, sampleData.name);
+            }
         });
 
         socket.on('sync-stop', () => {
@@ -348,23 +418,23 @@ export const useSequencer = (
     return {
         activeStep,
         viewingBar,
-        setViewingBar,
         isFollowEnabled,
-        setIsFollowEnabled,
         isPlaying,
-        togglePlayback,
         bpm,
         samples,
         selectedSampleId,
-        setSelectedSampleId,
         lastTriggerTime,
         lastTriggerRef,
         numBars,
+        currentBarIdx,
+        setViewingBar,
+        setIsFollowEnabled,
+        togglePlayback,
+        setSelectedSampleId,
         addBar,
         deleteBar,
         stopAll,
-        currentBarIdx,
-
+        duplicateSample,
         tapBpm,
         loadFile,
         setBpm: updateBpmGlobal,
@@ -374,5 +444,7 @@ export const useSequencer = (
         playSampleSolo,
         doubleBpm: () => updateBpmGlobal(bpm * 2),
         halfBpm: () => updateBpmGlobal(bpm / 2),
+        setSampleColor,
+        
     };
 };
