@@ -147,43 +147,48 @@ export const useSequencer = (
         }
     }, [socket, roomName]);
 
-    // Duplicate a Sample
     const duplicateSample = useCallback((sampleId) => {
+        // Find the source sample
         const sourceSample = samples.find(s => s.id === sampleId);
         if (!sourceSample) return;
 
-        // Create a unique ID for the new version
-        const newId = crypto.randomUUID();
+        // Generate new ID
+        const newId = crypto.randomUUID(); 
 
-        // Reuse the existing player for the new ID to save memory
-        players.current[newId] = players.current[sampleId];
+        // Increment Naming Logic
+        const baseNameMatch = sourceSample.name.match(/^(.*?)(?: (\d+))?$/);
+        const baseName = baseNameMatch[1];
+        const relatedSamples = samples.filter(s => s.name.startsWith(baseName));
 
-        // Create the new sample object with copied metadata
+        let maxNum = 1;
+        relatedSamples.forEach(s => {
+            const match = s.name.match(/ (\d+)$/);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                if (num > maxNum) maxNum = num;
+            }
+        });
+
         const duplicatedSample = {
             ...sourceSample,
             id: newId,
-            name: `${sourceSample.name} (Copy)`,
-            // New version can now be edited independently
+            name: `${baseName} ${maxNum + 1}`,
             startTime: sourceSample.startTime,
             endTime: sourceSample.endTime,
         };
 
-        // Update local state
+        // Update References and State
+        players.current[newId] = players.current[sampleId]; 
         setSamples(prev => [...prev, duplicatedSample]);
 
-        // Sync with the room so others see the duplicated pad
+        // Emit to server
         socket.emit('share-sample', {
             roomId: roomName,
             sampleData: { 
-                url: duplicatedSample.url, 
-                name: duplicatedSample.name, 
-                id: newId,
-                startTime: duplicatedSample.startTime,
-                endTime: duplicatedSample.endTime
+                ...duplicatedSample,
+                url: sourceSample.url 
             }
         });
-
-        console.log(`[AUDIO] Duplicated ${sourceSample.name} to new ID: ${newId}`);
     }, [samples, roomName, socket]);
 
 
