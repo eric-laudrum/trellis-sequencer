@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import io from 'socket.io-client';
+import * as Tone from 'tone'; // <-- Ensure Tone is imported here
 import Lobby from "./components/Lobby.jsx";
-
 import './App.css'
 import StudioRoom from "./components/StudioRoom.jsx";
 
@@ -27,11 +27,14 @@ function App() {
 
 
     // Broadcast join
-    const handleJoin = (name) => {
-        // Resume Audio
-        if (window.AudioContext || window.webkitAudioContext) {
-            const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
-            tempCtx.resume();
+    const handleJoin = async (name) => {
+
+        // PROPER TONE.JS AUDIO UNLOCK
+        try {
+            await Tone.start();
+            console.log("[AUDIO] Tone.js Context unlocked by user gesture!");
+        } catch (err) {
+            console.error("[AUDIO] Failed to start Tone context", err);
         }
 
         // Existing socket/state logic

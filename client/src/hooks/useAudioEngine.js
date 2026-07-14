@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import * as Tone from "tone";
 
 export const useAudioEngine = (bpm, numBars, isPlaying, gridRef, triggerSample, setActiveStep, rows, cols) => {
@@ -13,7 +13,6 @@ export const useAudioEngine = (bpm, numBars, isPlaying, gridRef, triggerSample, 
 
     // Sequence
     useEffect(() => {
-
         if (!isPlaying) {
             transport.stop();
             transport.seconds = 0;
@@ -45,6 +44,8 @@ export const useAudioEngine = (bpm, numBars, isPlaying, gridRef, triggerSample, 
         transport.start();
         seq.start(0);
 
-        return () => seq.dispose();
-    }, [numBars, isPlaying, rows, cols]);
+        return () => {
+            seq.dispose();
+        };
+    }, [bpm, numBars, isPlaying, triggerSample, setActiveStep, rows, cols]);
 };

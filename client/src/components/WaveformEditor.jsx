@@ -23,41 +23,64 @@ const WaveformEditor = ({
     // Waveform Drawing logic
     useEffect(() => {
         if (!buffer || !canvasRef.current) return;
+
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
-        const data = buffer.getChannelData(0);
+
+        let data;
+        try {
+            // Bulletproof extraction:
+            // Tone.js buffers use .toArray(), Standard uploads use .getChannelData()
+            data = buffer.toArray ? buffer.toArray(0) : buffer.getChannelData(0);
+        } catch (err) {
+            console.error("[WAVEFORM] Could not extract audio data for drawing", err);
+            return; // Exit silently if it's an invalid buffer
+        }
 
         const startIdx = Math.floor(zoomRange.start * data.length);
         const endIdx = Math.floor(zoomRange.end * data.length);
         const visibleData = data.slice(startIdx, endIdx);
 
-        const step = Math.ceil(visibleData.length / canvas.width);
+        const step = Math.max(1, Math.ceil(visibleData.length / canvas.width));
         const amp = canvas.height / 2;
 
         ctx.fillStyle = '#050505';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        const startPct = (startTime / 1000) / buffer.duration;
-        const endPct = (endTime / 1000) / buffer.duration;
+        ctx.beginPath();
+        ctx.strokeStyle = '#f5820a';
+        ctx.lineWidth = 1.5;
 
         for (let i = 0; i < canvas.width; i++) {
-            const pixelPct = zoomRange.start + (i / canvas.width) * (zoomRange.end - zoomRange.start);
-            const isOutside = pixelPct < startPct || pixelPct > endPct;
-
-            ctx.strokeStyle = isOutside ? '#332200' : '#f1ad36';
-
-            let min = 1.0, max = -1.0;
+            let min = 1.0;
+            let max = -1.0;
             for (let j = 0; j < step; j++) {
                 const datum = visibleData[(i * step) + j];
                 if (datum < min) min = datum;
                 if (datum > max) max = datum;
             }
-            ctx.beginPath();
             ctx.moveTo(i, (1 + min) * amp);
             ctx.lineTo(i, (1 + max) * amp);
-            ctx.stroke();
         }
-    }, [buffer, zoomRange, startTime, endTime]);
+        ctx.stroke();
+
+        // Calculate overlays
+        const startPct = (startTime / 1000) / buffer.duration;
+        const endPct = (endTime / 1000) / buffer.duration;
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+
+        if (startPct > zoomRange.start) {
+            const x = ((startPct - zoomRange.start) / (zoomRange.end - zoomRange.start)) * canvas.width;
+            ctx.fillRect(0, 0, x, canvas.height);
+        }
+
+        if (endPct < zoomRange.end) {
+            const x = ((endPct - zoomRange.start) / (zoomRange.end - zoomRange.start)) * canvas.width;
+            ctx.fillRect(x, 0, canvas.width - x, canvas.height);
+        }
+
+    }, [buffer, zoomRange, startTime, endTime, playheadPos]);
 
     // Playhead logic
     useEffect(() => {

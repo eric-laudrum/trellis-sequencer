@@ -1,41 +1,31 @@
+/* TrellisGrid.css */
+
 .grid-viewport {
     display: grid !important;
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(4, 1fr);
-
     gap: 10px;
-
     width: 100%;
     height: 100%;
-
     aspect-ratio: 1 / 1;
-
     margin: 0 auto;
     box-sizing: border-box;
+
+    /* Morphs the layout dynamically */
+    transition: grid-template-columns 0.4s ease-in-out, grid-template-rows 0.4s ease-in-out;
 }
 
-.grid-container{
-    border: 2px solid black;
-    padding: 1em;
-    border-radius: 8px;
-    background: var(--primary-light);
-}
 
 .pad {
+    position: relative; /* Allows positioning of the user label */
     width: 100%;
     height: 100%;
     display: block;
-
     border: 1px solid rgba(50, 50, 50, 0.95);
     border-radius: 4px;
     cursor: pointer;
     background-color: #222;
-
     box-sizing: border-box;
-
-    transition: transform 0.1s ease, background-color 0.2s ease;
+    transition: transform 0.1s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
-
 
 .pad.active {
     background-color: #f5820a;
@@ -54,4 +44,62 @@
 .pad.active.playing {
     background-color: #ffb366;
     box-shadow: 0 0 12px #f5820a;
+}
+
+/* User Identity Tag */
+.pad-user-label {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-size: 0.55rem;
+    color: rgba(255, 255, 255, 0.7);
+    pointer-events: none;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+
+.grid-and-controls-wrapper {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    /* Allow horizontal scrolling on mobile */
+    overflow-x: auto;
+    padding-bottom: 10px;
+}
+
+.grid-container {
+    border: 2px solid black;
+    padding: 0.5em;
+    border-radius: 8px;
+    background: var(--primary-light);
+
+    /* Holistic Sizing */
+    height: 100%;
+    max-height: 50vh; /* Limits height to half the screen, allowing room for seq-header */
+    aspect-ratio: 1 / 1; /* Keeps grid square */
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+.grid-viewport {
+    display: grid !important;
+    gap: 4px; /* Tighter gap */
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    transition: grid-template-columns 0.4s ease;
+}
+
+@media (max-width: 768px) {
+    .grid-container {
+        max-width: 90vw; /* Switches to width constraint on narrow screens */
+        padding: 0.5em;
+    }
+    .grid-viewport {
+        gap: 3px;
+    }
 }

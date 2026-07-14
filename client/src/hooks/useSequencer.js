@@ -3,6 +3,27 @@ import * as Tone from 'tone';
 import { useSocketManager } from "./useSocketManager.js";
 import { useAudioEngine } from "./useAudioEngine.js";
 
+import everydaySample from '../assets/audio/AugustineTwins-EverydayOfMyLife-1967.wav';
+import drumBreak from '/src/assets/audio/80 BPM Side Stick Stop.wav';
+
+const STOCK_SOUNDS = [
+    {
+        id: 'stock-sample',
+        name: 'Everyday of My Life',
+        color: '#ff4444',
+        url: everydaySample,
+        chokeGroup: 'none'
+    },
+    {
+        id: 'stock-break',
+        name: '80BPM Break',
+        color: '#ff4444',
+        url: drumBreak,
+        chokeGroup: 'none'
+    }
+];
+
+
 export const useSequencer = (
     gridState,
     setGridState,
@@ -28,9 +49,70 @@ export const useSequencer = (
 
     const { shouldIgnoreServer, emitEvent } = useSocketManager(socket, roomName);
 
+
     // Sync refs for audio engine
     useEffect(() => { gridRef.current = gridState; }, [gridState]);
     useEffect(() => { sampleRef.current = samples; }, [samples]);
+
+    // Stock sounds
+    useEffect(() => {
+        const loadStockSounds = async () => {
+            const loadedSamples = [];
+
+            for (const sound of STOCK_SOUNDS) {
+                // 1. Check if it exists OR is currently loading
+                if (!players.current[sound.id]) {
+
+                    // 2. IMMEDIATELY lock it synchronously so the 2nd React render ignores it
+                    players.current[sound.id] = "loading";
+
+                    try {
+                        const newPlayer = new Tone.Player().toDestination();
+                        await newPlayer.load(sound.url);
+
+                        // 3. Overwrite the "loading" lock with the actual loaded player
+                        players.current[sound.id] = newPlayer;
+
+                        loadedSamples.push({
+                            ...sound,
+                            buffer: newPlayer.buffer,
+                            startTime: 0,
+                            endTime: newPlayer.buffer.duration * 1000
+                        });
+                    } catch (err) {
+                        // If it fails, remove the lock so it can be retried later if needed
+                        delete players.current[sound.id];
+                        console.error(`Failed to load stock sound ${sound.name}:`, err);
+                    }
+                }
+            }
+
+            if (loadedSamples.length > 0) {
+                setSamples(prev => {
+                    // Create an entirely new array for React
+                    const next = [...prev];
+
+                    loadedSamples.forEach(loadedData => {
+                        const idx = next.findIndex(p => p.id === loadedData.id);
+                        if (idx > -1) {
+                            // DEEP CLONE the object so WaveformEditor registers the change
+                            next[idx] = {
+                                ...next[idx],
+                                buffer: loadedData.buffer,
+                                endTime: loadedData.endTime
+                            };
+                        } else {
+                            next.push(loadedData);
+                        }
+                    });
+
+                    return next;
+                });
+            }
+        };
+
+        loadStockSounds();
+    }, []);
 
     const triggerSample = useCallback((sampleId, time) => {
         const player = players.current[sampleId];
@@ -153,7 +235,7 @@ export const useSequencer = (
         if (!sourceSample) return;
 
         // Generate new ID
-        const newId = crypto.randomUUID(); 
+        const newId = crypto.randomUUID();
 
         // Increment Naming Logic
         const baseNameMatch = sourceSample.name.match(/^(.*?)(?: (\d+))?$/);
@@ -179,15 +261,15 @@ export const useSequencer = (
         };
 
         // Update References and State
-        players.current[newId] = players.current[sampleId]; 
+        players.current[newId] = players.current[sampleId];
         setSamples(prev => [...prev, duplicatedSample]);
 
         // Emit to server
         socket.emit('share-sample', {
             roomId: roomName,
-            sampleData: { 
+            sampleData: {
                 ...duplicatedSample,
-                url: sourceSample.url 
+                url: sourceSample.url
             }
         });
     }, [samples, roomName, socket]);

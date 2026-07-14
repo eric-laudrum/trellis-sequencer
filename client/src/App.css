@@ -64,7 +64,7 @@ h1.main-title {
   line-height: 0.1;
   text-align: left;
   font-weight: 100;
-  color: var(--border-muted);
+  color: rgba(255, 255, 255, 0.758);
   margin: 0 0 10px 0;
 
 }
@@ -93,35 +93,41 @@ h1.main-title {
 
 
 .seq-main {
-  display: flex;
-  flex-direction: row;
-  flex: 1;
-  min-height: 0;
-
-  width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 300px 1fr 280px; /* Sidebar, Grid Area, Chat */
   gap: 15px;
+  flex: 1;
   padding: 10px;
   overflow: hidden;
-  border-radius: 10px;
-
-  box-sizing: border-box;
+  height: 100%;
 }
-
 
 .sequencer-column {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-width: fit-content;
   gap: 10px;
   overflow: hidden;
-
+  height: 100%;
 }
 
+.grid-and-controls-wrapper {
+  display: grid;
+  /* 1fr for the grid, auto for the buttons */
+  grid-template-columns: 1fr auto;
+  gap: 20px;
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+  align-items: center; /* Vertically centers grid and buttons */
+}
 
-
+.play-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  flex-shrink: 0;
+}
 
 /* --- Sample Settings & Controls --- */
 
@@ -189,15 +195,6 @@ h1.main-title {
   width: 60px;
 }
 
-.sample-control-strip {
-  display: flex;
-  align-items: center;
-  justify-content: space-evenly;
-  gap: 15px;
-  padding: 10px;
-  background: rgba(0, 0, 0, 0.2);
-  border-bottom: 1px solid #333;
-}
 
 .choke-select {
   display: flex;
@@ -234,37 +231,6 @@ h1.main-title {
 
 /* --- Play Controls ---- */
 
-.grid-and-controls-wrapper {
-  display: flex;
-  flex: 1;
-  flex-shrink: 0;
-
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-
-  min-height: 0;
-  width: 100%;
-  min-width: 20em;
-  gap: 15px;
-  padding: 10px;
-  box-sizing: border-box;
-
-
-}
-
-.play-controls {
-  display: flex;
-  flex-direction: column-reverse;
-
-  align-items: flex-end;
-  gap: 20px;
-  padding: 15px;
-  flex-shrink: 0;
-
-
-  align-self: flex-end;
-}
 
 .play-button, .stop-button {
   display: flex;
@@ -929,4 +895,50 @@ button:hover {
   padding: 0 12px;
   border-radius: 4px;
   cursor: pointer;
+}
+
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 850px) {
+  .seq-main {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .grid-and-controls-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .play-controls {
+    flex-direction: row;
+    justify-content: center;
+    align-self: center;
+    padding: 5px;
+  }
+
+
+  /* Allow the column to scroll sideways when the grid overflows */
+  .sequencer-column {
+    overflow-x: auto;
+    padding-bottom: 10px;
+  }
+
+  /* Allow sample settings to wrap to a new line */
+  .sample-control-strip {
+    flex-wrap: wrap;
+    height: auto;
+    justify-content: flex-start;
+  }
+
+  .sample-setting {
+    flex: 1 1 auto;
+  }
+
+  .room-header {
+    flex-wrap: wrap;
+    height: auto;
+    gap: 10px;
+    padding: 15px 20px;
+  }
 }

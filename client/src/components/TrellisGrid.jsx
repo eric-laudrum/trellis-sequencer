@@ -1,21 +1,32 @@
 import React from 'react';
+import Pad from './Pad.jsx'; // Make sure to import your Pad component
 import './TrellisGrid.css'
 
-const TrellisGrid = ({ gridState, onToggle, activeStep }) => {
+const TrellisGrid = ({ gridState, onToggle, activeStep, padCount, samples }) => {
 
-    const physicalPadCount = 16;
+    const cols = Math.sqrt(padCount);
 
     return (
-        <div className="grid-viewport">
+        <div
+            className="grid-viewport"
+            style={{
+                gridTemplateColumns: `repeat(${cols}, 1fr)`,
+                gridTemplateRows: `repeat(${cols}, 1fr)`
+            }}
+        >
             {gridState.map((cell, i) => {
+                const isPlaying = activeStep === i;
 
-                const isPlaying = (activeStep % physicalPadCount) === i;
+                // Find the actual sample object based on the ID saved in the grid cell
+                const matchedSample = samples.find(s => s.id === cell.sampleId);
 
                 return (
-                    <button
+                    <Pad
                         key={i}
+                        isActive={cell.isActive}
+                        isHighlighted={isPlaying}
+                        sample={matchedSample}
                         onClick={() => onToggle(i)}
-                        className={`pad ${cell.isActive ? 'active' : ''} ${isPlaying ? 'playing' : ''}`}
                     />
                 );
             })}
