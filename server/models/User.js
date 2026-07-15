@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
         unique: true,
     },
     password:{
-        true: String,
+        type: String,
         required: true,
     },
     tier:{
@@ -22,11 +22,10 @@ const userSchema = new mongoose.Schema({
         default: 10,
     },
     uploadedSounds: [{
-        s3Url: String, // aws instead of cloudinary?
+        fileUrl: String,
         filename: String,
         uploadedAt: { type: Date, default: Date.now },
     }]
-
 
 });
 

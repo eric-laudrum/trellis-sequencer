@@ -5,6 +5,7 @@
 
 # Environment variables (Crucial for security later)
 server/.env
+client/.env
 .env.local
 .env.development.local
 .env.test.local

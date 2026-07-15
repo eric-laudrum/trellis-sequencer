@@ -1,67 +1,75 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const mongoose = require('mongoose');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+require('dotenv').config();
+
 const app = express();
 const server = http.createServer(app);
 
-// Data storage
-const rooms = {};
+const authRoute = require('./routes/authRoutes');
 
-// File upload
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
-
-// Multer storage
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, 'uploads/'),
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
+
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'trellis-sequencer/users',
+        resource_type: 'auto',
+        allowed_formats: ['mp3', 'wav', 'ogg', 'm4a']
+    },
+});
+
 const upload = multer({ storage: storage });
 
-app.use(cors({
-    origin: true,
-    credentials: true
-}));
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('Connected to MongoDB'))
+    .catch((err) => console.error('Could not connect to MongoDB:', err));
 
-app.use(express.static(path.join(__dirname, '../client/dist')));
-
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
+// App Middleware
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json());
 app.use((req, res, next) => {
     res.setHeader('ngrok-skip-browser-warning', 'true');
     next();
 });
 
-// Api routes
+// Serve static frontend files (if building React into 'client/dist')
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+// API Routes
+app.use('/api/user', authRoute);
+
 app.post('/upload-sample', upload.single('file'), (req, res) => {
     if (!req.file) {
         console.error("Upload Failed: No file in request");
         return res.status(400).json({ error: 'No file uploaded' });
     }
-
-    // Debugging
-    console.log(`[FILE] Received: ${req.file.originalname} (${req.file.size} bytes)`);
-
-    const protocol = req.headers['x-forwarded-proto'] || 'http';
-    const host = req.headers['host'];
-    const fileUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
-
-    console.log("File uploaded, URL created:", fileUrl);
-    res.json({ url: fileUrl, name: req.file.originalname });
-
+    console.log(`[FILE] Successfully uploaded to Cloudinary: ${req.file.originalname}`);
+    res.json({
+        url: req.file.path,
+        name: req.file.originalname
+    });
 });
+
+// Data storage for rooms
+const rooms = {};
 
 // Socket IO logic
 const io = new Server(server, {
     cors: {
-        origin: "*", // Allow connection from ngrok or localhost for development
+        origin: "*",
         methods: ["GET", "POST"]
     }
 });
@@ -71,7 +79,6 @@ const getRoomListData = () => {
         const activeSocketRoom = io.sockets.adapter.rooms.get(roomName);
         return {
             name: roomName,
-            // If room is empty, set as 0, but the room still exists in the object
             count: activeSocketRoom ? activeSocketRoom.size : 0
         };
     });
@@ -80,16 +87,12 @@ const getRoomListData = () => {
 io.on('connection', (socket) => {
     console.log('User connected: ' + socket.id);
 
-    // Send list to new user
     socket.emit('room-list', getRoomListData());
 
-    // Get Rooms
     socket.on('get-rooms', () =>{
-        console.log("Current rooms on server:", rooms)
         socket.emit('room-list', getRoomListData());
     });
 
-    // Join Room
     socket.on('join-room', (roomName) => {
         socket.join(roomName);
         socket.currentRoom = roomName;
@@ -103,7 +106,6 @@ io.on('connection', (socket) => {
             };
         }
 
-        // Send room state and bpm to the new user
         socket.emit('initial-state', {
             grid: rooms[roomName].grid,
             bpm: rooms[roomName].bpm,
@@ -114,7 +116,6 @@ io.on('connection', (socket) => {
         io.emit('room-list', getRoomListData());
     });
 
-    // Hit Pad
     socket.on('pad-toggle', ({ index, newState }) => {
         const room = socket.currentRoom;
         if (room && rooms[room]) {
@@ -123,14 +124,12 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Move sequence
     socket.on('transport-toggle', ({ isPlaying }) => {
         if (socket.currentRoom) {
             socket.to(socket.currentRoom).emit('update-transport', { isPlaying });
         }
     });
 
-    // BPM
     socket.on('bpm-change', (newBpm) => {
         const room = socket.currentRoom;
         if (room && rooms[room]) {
@@ -139,7 +138,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Share Sample
     socket.on('share-sample', ({ roomId, sampleData }) => {
         if (rooms[roomId]) {
             rooms[roomId].samples.push(sampleData);
@@ -147,20 +145,13 @@ io.on('connection', (socket) => {
         socket.to(roomId).emit('download-sample', sampleData);
     });
 
-    // Stop
     socket.on('stop-all-audio', (data) => {
         const room = data?.roomId;
-        console.log(`[SERVER] Received stop request for room: ${room}`);
-
         if (room) {
             io.to(room).emit('sync-stop');
-            console.log(`[SERVER] Broadcast sent to all sockets in ${room}`);
-        } else {
-            console.error("[SERVER] Stop failed: roomId was missing in the packet.");
         }
     });
 
-    // Grid Update
     socket.on('update-entire-grid', ({ roomId, grid, numBars }) => {
         if (rooms[roomId]) {
             rooms[roomId].grid = grid;
@@ -169,42 +160,25 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Chat
     socket.on('send-message', (data) => {
         const room = socket.currentRoom;
-
         if( room ){
             socket.to(room).emit('chat-message', data);
-            console.log(`[CHAT] ${data.user} in ${room}: ${data.text}`);
         }
     });
 
-
-    // Disconnect
     socket.on('disconnect', () => {
         io.emit('room-list', getRoomListData());
     });
 });
 
-const cleanOldFiles = () => {
-    fs.readdir(uploadDir, (err, files) => {
-        files.forEach(file => {
-            const filePath = path.join(uploadDir, file);
-            const stats = fs.statSync(filePath);
-            if (Date.now() - stats.mtimeMs > 24 * 60 * 60 * 1000) {
-                fs.unlinkSync(filePath);
-            }
-        });
-    });
-};
-setInterval(cleanOldFiles, 3600000);
-
-// Catch all
+// Catch all route for React Router
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
-server.listen(4000, () =>{
-    console.log('Server started on port 4000');
+// Render dynamic port
+const PORT = process.env.PORT || 4000;
+server.listen(PORT, () =>{
+    console.log(`Server started on port ${PORT}`);
 });
-

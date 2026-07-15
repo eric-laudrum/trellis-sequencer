@@ -1,19 +1,14 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 import io from 'socket.io-client';
-import * as Tone from 'tone'; // <-- Ensure Tone is imported here
+import * as Tone from 'tone';
 import Lobby from "./components/Lobby.jsx";
-import './App.css'
 import StudioRoom from "./components/StudioRoom.jsx";
+import AuthModal from "./components/AuthModal.jsx";
+import './App.css';
 
-const NGROK_BACKEND = "https://stella-nonexpectant-nondeficiently.ngrok-free.dev";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
-// Logic to switch between local and tunnel
-const SOCKET_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:4000'
-    : NGROK_BACKEND;
-
-// Initialize transponders
-const socket = io(SOCKET_URL, {
+const socket = io(BACKEND_URL, {
     extraHeaders: {
         "ngrok-skip-browser-warning": "true"
     },
@@ -23,37 +18,61 @@ const socket = io(SOCKET_URL, {
 });
 
 function App() {
-    const [ roomName, setRoomName ] = useState(null);
+    const [roomName, setRoomName] = useState(null);
+    const [user, setUser] = useState(null);
+    const [showAuthModal, setShowAuthModal] = useState(false);
 
-
-    // Broadcast join
     const handleJoin = async (name) => {
-
-        // PROPER TONE.JS AUDIO UNLOCK
         try {
             await Tone.start();
-            console.log("[AUDIO] Tone.js Context unlocked by user gesture!");
         } catch (err) {
-            console.error("[AUDIO] Failed to start Tone context", err);
+            console.error("Audio context initialization failed.", err);
         }
 
-        // Existing socket/state logic
         socket.emit('join-room', name);
         setRoomName(name);
     };
 
-    // Start in the Lobby
-    if(!roomName){
-        return <Lobby socket={socket} onJoin={handleJoin}/>;
-    }
+    const handleLogout = () => {
+        localStorage.removeItem('trellis_token');
+        setUser(null);
+    };
 
     return (
-        <StudioRoom
-            roomName={roomName}
-            socket={socket}
-            onLeave={() => setRoomName(null)}
-        />
+        <div className="app-root">
+            <header style={{ position: 'absolute', top: 10, right: 10, zIndex: 100 }}>
+                {user ? (
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <span style={{ color: '#aaa', fontSize: '12px' }}>{user.email}</span>
+                        <button onClick={handleLogout} className="settings-btn">Logout</button>
+                    </div>
+                ) : (
+                    <button onClick={() => setShowAuthModal(true)} className="settings-btn">Login / Sign Up</button>
+                )}
+            </header>
 
+            {showAuthModal && (
+                <AuthModal
+                    onLoginSuccess={(userData) => {
+                        setUser(userData);
+                        setShowAuthModal(false);
+                    }}
+                    onClose={() => setShowAuthModal(false)}
+                    backendUrl={BACKEND_URL}
+                />
+            )}
+
+            {!roomName ? (
+                <Lobby socket={socket} onJoin={handleJoin} />
+            ) : (
+                <StudioRoom
+                    roomName={roomName}
+                    socket={socket}
+                    onLeave={() => setRoomName(null)}
+                    user={user}
+                />
+            )}
+        </div>
     );
 }
 
