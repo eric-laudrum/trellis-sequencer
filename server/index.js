@@ -173,8 +173,8 @@ io.on('connection', (socket) => {
 });
 
 // Catch all route for React Router
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+app.get('/:path*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
 });
 
 // Render dynamic port
