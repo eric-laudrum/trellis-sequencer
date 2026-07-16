@@ -172,13 +172,16 @@ io.on('connection', (socket) => {
     });
 });
 
-// Catch all route for React Router
-app.get('/:path*', (req, res) => {
+app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+        return next();
+    }
     res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
 });
 
 // Render dynamic port
 const PORT = process.env.PORT || 4000;
-server.listen(PORT, () =>{
-    console.log(`Server started on port ${PORT}`);
+
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server is running on port ${PORT}`);
 });
