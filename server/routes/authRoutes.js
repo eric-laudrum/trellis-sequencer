@@ -13,6 +13,7 @@ router.post('/register', async (req, res) => {
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });
+
         if (existingUser) {
             return res.status(400).json({ error: 'Email is already registered.' });
         }
@@ -33,8 +34,9 @@ router.post('/register', async (req, res) => {
         res.status(201).json({ message: 'User registration successful' });
 
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error during registration.' });
+        console.error("REGISTRATION FAILED:", err.message);
+        console.error("ERROR STACK:", err.stack);
+        res.status(500).json({ error: 'Server error during registration.', details: err.message });
     }
 });
 
@@ -76,7 +78,7 @@ router.post('/login', async (req, res) => {
         });
 
     } catch (err) {
-        console.error(err);
+        console.error("DEBUG ERROR:", err);
         res.status(500).json({ error: 'Server error during login.' });
     }
 });

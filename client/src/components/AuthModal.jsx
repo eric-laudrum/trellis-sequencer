@@ -4,6 +4,7 @@ const AuthModal = ({ onLoginSuccess, onClose, backendUrl }) => {
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -13,6 +14,11 @@ const AuthModal = ({ onLoginSuccess, onClose, backendUrl }) => {
         setLoading(true);
 
         const endpoint = isLogin ? '/api/user/login' : '/api/user/register';
+
+        if (!isLogin && password !== confirmPassword) {
+            setError("Passwords do not match.");
+            return;
+        }
 
         try {
             const response = await fetch(`${backendUrl}${endpoint}`, {
@@ -71,7 +77,7 @@ const AuthModal = ({ onLoginSuccess, onClose, backendUrl }) => {
                     marginBottom: '15px', textAlign: 'center', fontSize: '14px'
                 }}>{error}</div>}
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
                     <input
                         type="email"
                         placeholder="Email"
@@ -79,7 +85,7 @@ const AuthModal = ({ onLoginSuccess, onClose, backendUrl }) => {
                         onChange={(e) => setEmail(e.target.value)}
                         required
                         className="inline-input"
-                        style={{ padding: '10px', width: '100%' }}
+                        style={{padding: '10px', width: '100%'}}
                     />
                     <input
                         type="password"
@@ -88,20 +94,37 @@ const AuthModal = ({ onLoginSuccess, onClose, backendUrl }) => {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         className="inline-input"
-                        style={{ padding: '10px', width: '100%' }}
+                        style={{padding: '10px', width: '100%'}}
                     />
+                    {!isLogin && (
+                        <input
+                            type="password"
+                            placeholder="Confirm Password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            required
+                            className="inline-input"
+                            style={{padding: '10px', width: '100%'}}
+                        />
+                    )}
                     <button
                         type="submit"
                         disabled={loading}
                         className="settings-btn"
-                        style={{ backgroundColor: '#f5820a', color: 'black', padding: '10px', fontWeight: 'bold', width: '100%' }}
+                        style={{
+                            backgroundColor: '#f5820a',
+                            color: 'black',
+                            padding: '10px',
+                            fontWeight: 'bold',
+                            width: '100%'
+                        }}
                     >
                         {loading ? 'Processing...' : (isLogin ? 'LOGIN' : 'SIGN UP')}
                     </button>
                 </form>
 
-                <div style={{ marginTop: '20px', textAlign: 'center' }}>
-                    <span style={{ color: '#aaa', fontSize: '14px' }}>
+                <div style={{marginTop: '20px', textAlign: 'center'}}>
+                    <span style={{color: '#aaa', fontSize: '14px'}}>
                         {isLogin ? "Don't have an account? " : "Already have an account? "}
                     </span>
                     <button
