@@ -18,10 +18,8 @@ This project uses NPM Workspaces and Concurrently to run the front and backend s
 - Database / storage
   - MongoDB / PostgresSQL
 
-
 - Concurrently
 - CORS
-- 
 
 ## Run the application
 - Navigate to the root directory
@@ -32,12 +30,12 @@ This project uses NPM Workspaces and Concurrently to run the front and backend s
 bash
 npm install -g ngrok
 
-npm run server
+pnpm run server
 ngrok http 4000
 
 ### multer
 bash
-npm install multer --workspace=server
+pnpm install multer --workspace=server
 
 
   

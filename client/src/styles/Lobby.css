@@ -1,0 +1,117 @@
+.lobby{
+    border: 5px solid red;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.create-section{
+    border: 5px dashed blue;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 60%;
+}
+
+.room-name-input{
+    min-width: 20rem;
+    max-width: 40rem;
+}
+
+.create-button{
+    width: 5rem;
+    height: 5rem;
+    margin: 5px;
+}
+.create-button:hover{
+    background-color: rgba(250, 200, 109, 0.5);
+    box-shadow: 1px 1px 5px 5px rgba(250, 200, 109, 0.2);
+}
+
+.room-list{
+    display: flex;
+    flex-direction: column;
+    width: 80%;
+    align-items: center;
+
+
+    border: 5px dashed orange;
+}
+
+/* --- Lobby UI --- */
+.room-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    background: var(--bg-darker);
+
+    padding: 10px 20px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    border: 5px solid pink;
+    width: 80%;
+
+
+
+}
+
+.room-info{
+    display: flex;
+    flex-direction: row;
+
+    max-width: 75%;
+
+    border: 5px solid teal;
+
+    white-space: nowrap;
+
+}
+
+
+.room-name {
+    color: var(--primary);
+    font-weight: bold;
+    font-size: 1.1rem;
+
+    text-align: start;
+
+
+
+    white-space: nowrap;
+    text-overflow: ellipsis ;
+    overflow: hidden;
+    border: 1px solid white;
+
+
+
+
+
+
+}
+
+
+.room-actions{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+.room-count {
+    font-size: 0.8rem;
+    color: #777;
+    margin: 5px;
+}
+
+.join-btn {
+    background: var(--primary);
+    color: #000;
+    font-weight: bold;
+    border: none;
+    margin: 5px;
+}
+
+.join-btn:hover {
+    background: white;
+}

@@ -16,7 +16,7 @@
 
 #root {
   width: 100%;
-  max-width: 1280px;
+
   margin: 0 auto;
 
   text-align: center;
@@ -41,8 +41,8 @@ body {
 body, #root{
   margin: 0;
   padding: 0;
-  height: 100vh;
-  overflow: hidden;
+
+  overflow: auto;
   background-color: black;
 }
 
@@ -94,7 +94,7 @@ h1.main-title {
 
 .seq-main {
   display: grid;
-  grid-template-columns: 300px 1fr 280px; /* Sidebar, Grid Area, Chat */
+  grid-template-columns: 300px 1fr 280px;
   gap: 15px;
   flex: 1;
   padding: 10px;
@@ -105,7 +105,7 @@ h1.main-title {
 .sequencer-column {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+
   overflow: hidden;
   height: 100%;
 }
@@ -131,9 +131,6 @@ h1.main-title {
 
 /* --- Sample Settings & Controls --- */
 
-
-
-
 .sample-settings {
   display: flex;
   flex-direction: column;
@@ -153,10 +150,10 @@ h1.main-title {
   align-items: center;
   justify-content: flex-start;
   gap: 15px;
-  padding: 10px;
   background: rgba(0, 0, 0, 0.4);
   border-bottom: 1px solid #333;
   min-height: 50px;
+
 
 }
 
@@ -526,6 +523,9 @@ button:hover {
 .waveform-section{
 
   display: flex;
+  align-items: center;
+
+  border: 1px solid red;
 
 }
 
@@ -535,11 +535,10 @@ button:hover {
 .waveform-container {
   display: block;
   width: 100%;
-  height: 120px;
+  height: 6rem;
   background: #000 !important;
   border: 1px solid #444;
   margin: 10px 0;
-  position: relative;
   overflow: hidden;
   cursor: ew-resize;
 
@@ -577,6 +576,7 @@ button:hover {
 
   font-size: 1em;
 
+  border: 1px solid gold;
 
 }
 
@@ -585,12 +585,13 @@ button:hover {
   justify-content: center;
   align-items: center;
 
+
   width: 1em;
   height: 1em;
   margin: 2px;
   border-radius: 2px;
 
-  padding: 1.5em;
+  padding: 1em;
   background-color: rgba(255, 255, 255, 0.2);
 
   
@@ -608,50 +609,21 @@ button:hover {
   border: 0.5px solid orange;
 }
 
-/* --- Lobby UI --- */
-.room-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--bg-darker);
-  padding: 15px 20px;
-  margin-bottom: 10px;
-  border-radius: 8px;
-  border: 1px solid #333;
-}
 
 .room-header{
-  height: 80px;
+
   display: flex;
-  align-items: center;
   flex-direction: row;
+  align-items: center;
   justify-content: space-between;
-  padding: 5px 20px;
+
+  padding: 1em;
 
 }
 
 
-.room-name {
-  color: var(--primary);
-  font-weight: bold;
-  font-size: 1.1rem;
-}
 
-.room-count {
-  font-size: 0.8rem;
-  color: #777;
-}
 
-.join-btn {
-  background: var(--primary);
-  color: #000;
-  font-weight: bold;
-  border: none;
-}
-
-.join-btn:hover {
-  background: white;
-}
 
 /* Number of Bars */
 .bar-controls-row{
@@ -661,7 +633,7 @@ button:hover {
   align-items: center;
   flex-shrink: 0;
   width: 100%;
-  padding: 10px 0;
+
   background: var(--bg-darker);
   border-radius: 8px;
   z-index: 10;

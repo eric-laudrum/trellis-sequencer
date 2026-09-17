@@ -5,6 +5,7 @@ import Lobby from "./components/Lobby.jsx";
 import StudioRoom from "./components/StudioRoom.jsx";
 import AuthModal from "./components/AuthModal.jsx";
 import './App.css';
+import HomePage from "./pages/HomePage.jsx";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
@@ -39,7 +40,7 @@ function App() {
     };
 
     return (
-        <div className="app-root">
+        <div className="app-root" style={{border:'2px solid red', width: '100%'}}>
             <header style={{ position: 'absolute', top: 10, right: 10, zIndex: 100 }}>
                 {user ? (
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -50,6 +51,8 @@ function App() {
                     <button onClick={() => setShowAuthModal(true)} className="settings-btn">Login / Sign Up</button>
                 )}
             </header>
+
+            <HomePage />
 
             {showAuthModal && (
                 <AuthModal

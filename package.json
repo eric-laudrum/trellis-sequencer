@@ -3,15 +3,11 @@
   "version": "1.0.0",
   "description": "- React - Tone.js",
   "main": "index.js",
-  "workspaces": [
-    "client",
-    "server"
-  ],
   "scripts": {
-    "server": "npm start --workspace=server",
-    "client": "npm start --workspace=client",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "build": "npm run build --workspace=client"
+    "server": "pnpm --filter server start",
+    "client": "pnpm --filter client start",
+    "dev": "concurrently \"pnpm run server\" \"pnpm run client\"",
+    "build": "pnpm --filter client run build"
   },
   "repository": {
     "type": "git",
