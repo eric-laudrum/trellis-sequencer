@@ -209,18 +209,6 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                 </div>
                             </div>
 
-                            <button
-                                className="settings-btn"
-                                style={{
-                                    marginLeft: 'auto',
-                                    backgroundColor: '#f1ad36',
-                                    color: '#000',
-                                    fontWeight: 'bold'
-                                }}
-                                onClick={() => duplicateSample(currentSample.id)}
-                            >
-                                + CREATE SLICE
-                            </button>
                         </div>
 
                         {(() => {
@@ -314,7 +302,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                             </button>
                             <button className="stop-button" onClick={stopAll}>⏹</button>
 
-                            <div className="bpm-controls" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '20px' }}>
+                            <div className="bpm-controls">
                                 <button className="settings-btn" onClick={tapBpm}>
                                     TAP
                                 </button>
@@ -322,7 +310,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                     <input
                                         type="number"
                                         className="inline-input"
-                                        style={{ width: '60px', textAlign: 'center' }}
+
                                         value={tempBpm}
                                         onChange={(e) => setTempBpm(e.target.value)}
                                         onBlur={commitBpm}
