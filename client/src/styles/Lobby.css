@@ -1,5 +1,4 @@
 .lobby{
-    border: 5px solid red;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -7,7 +6,7 @@
 }
 
 .create-section{
-    border: 5px dashed blue;
+
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -37,7 +36,6 @@
     align-items: center;
 
 
-    border: 5px dashed orange;
 }
 
 /* --- Lobby UI --- */
@@ -51,7 +49,7 @@
     padding: 10px 20px;
     margin-bottom: 10px;
     border-radius: 8px;
-    border: 5px solid pink;
+
     width: 80%;
 
 
@@ -64,7 +62,6 @@
 
     max-width: 75%;
 
-    border: 5px solid teal;
 
     white-space: nowrap;
 
@@ -83,7 +80,6 @@
     white-space: nowrap;
     text-overflow: ellipsis ;
     overflow: hidden;
-    border: 1px solid white;
 
 
 

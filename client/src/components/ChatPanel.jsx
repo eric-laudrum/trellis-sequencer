@@ -1,31 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
-
+import "../styles/ChatPanel.css";
 
 export default function ChatPanel({ socket, roomName }) {
 
     const [ messages, setMessages ] = useState([]);
+    const [ collapsed, setCollapsed] = useState(false);
     const [ input, setInput ] = useState("");
     const scrollRef = useRef(null);
 
     // Listen for messages
     useEffect(() => {
-        if(!socket) return;
-
-        socket.on('chat-message', (message) => {
-            setMessages((prevMessages) => [...prevMessages, message]);
-        });
-
-        return () => socket.off('chat-message');
-    }, [ socket ]);
-
-
-    //
-    useEffect(() => {
         if (!socket) return;
 
         const handleMessage = (message) => {
-            // Debugging
-            console.log("New message received:", message);
             setMessages((prev) => [...prev, message]);
         };
 
@@ -35,6 +22,8 @@ export default function ChatPanel({ socket, roomName }) {
             socket.off('chat-message', handleMessage);
         };
     }, [socket]);
+
+
 
     // Send a message
     const sendMessage = (event) => {
@@ -56,29 +45,39 @@ export default function ChatPanel({ socket, roomName }) {
     };
 
     return(
-        <div className="chat-panel">
+        <div className={`chat-panel ${collapsed ? 'collapsed' : ''}`}>
 
-            <div className="chat-header">
-                <h2 className="chat-title">CHAT PANEL</h2>
+            <div className="chat-header" onClick={() => setCollapsed(!collapsed)}>
+                <h2 className="chat-title">
+                    CHAT PANEL
+                </h2>
+                <button className="collapse-toggle">
+                    {collapsed ? "+" : "−"}
+                </button>
             </div>
 
 
-            <div className="messages" ref={scrollRef}>
-                { messages.map((message, index) => (
-                    <div key={index} className="message">
-                        <span className="chat-user">[{message.user}]</span>
-                        <span className="chat-text">{message.text}</span>
+            {/* Conditionally render the body based on state */}
+            {!collapsed && (
+                <>
+                    <div className="messages" ref={scrollRef}>
+                        {messages.map((message, index) => (
+                            <div key={index} className="message">
+                                <span className="chat-user">[{message.user}]</span>
+                                <span className="chat-text">{message.text}</span>
+                            </div>
+                        ))}
                     </div>
-                ))}
-            </div>
-            <form onSubmit={sendMessage} className="chat-input-area">
-            <input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Enter Your Message" />
-                <button type="submit">→</button>
-            </form>
-
-
+                    <form onSubmit={sendMessage} className="chat-input-area">
+                        <input
+                            value={input}
+                            onChange={(event) => setInput(event.target.value)}
+                            placeholder="Enter Your Message"
+                        />
+                        <button type="submit">→</button>
+                    </form>
+                </>
+            )}
         </div>
     )
-
-
 }

@@ -6,13 +6,15 @@ import WaveformEditor from "./WaveformEditor.jsx";
 import { useSequencer } from "../hooks/useSequencer.js";
 import ChatPanel from "./ChatPanel.jsx";
 
+import "../styles/StudioRoom.css";
+
 export default function StudioRoom({ roomName, socket, onLeave }) {
 
-    const [padCount, setPadCount] = useState(16); // Controls 4x4 (16) or 8x8 (64)
+    const [padCount, setPadCount] = useState(64); // 8x8
 
     // tmp
     const [gridState, setGridState] = useState(
-        Array.from({ length: 16 }, () => ({ isActive: false, sampleId: null, userId: null }))
+        Array.from({ length: 64 }, () => ({ isActive: false, sampleId: null, userId: null }))
     );
 
     const gridDimension = Math.sqrt(padCount);
@@ -49,15 +51,6 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
     const [viewedBar, setViewedBar] = useState(0);
     const [followPlayhead, setFollowPlayhead] = useState(true);
 
-    // Listen for grid layout changes from other users
-    useEffect(() => {
-        const handleLayoutChange = ({ newPadCount, newGridState }) => {
-            setPadCount(newPadCount);
-            setGridState(newGridState);
-        };
-        socket.on('grid-layout-change', handleLayoutChange);
-        return () => socket.off('grid-layout-change', handleLayoutChange);
-    }, [socket]);
 
     // Auto-follow logic
     useEffect(() => {
@@ -72,7 +65,6 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
 
     const displayBar = Math.max(0, viewedBar);
     const startIndex = displayBar * padCount;
-
     const visiblePads = gridState ? gridState.slice(startIndex, startIndex + padCount) : [];
 
     const handleBarClick = (index) => {
@@ -84,33 +76,6 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
         const newVal = Number(tempBpm);
         if (!isNaN(newVal)) setBpm(newVal);
         setIsEditingBpm(false);
-    };
-
-    // Toggle grid dimensions and remap pads so they don't lose their data
-    const toggleGridLayout = () => {
-        const newPadCount = padCount === 16 ? 64 : 16;
-
-        setGridState(prev => {
-            const next = [];
-            const bars = Math.max(1, Math.floor(prev.length / padCount));
-
-            for (let i = 0; i < bars; i++) {
-                const oldBarStart = i * padCount;
-                const oldBar = prev.slice(oldBarStart, oldBarStart + padCount);
-
-                // Map old pads to the new array, filling empty slots if expanding
-                const newBar = Array.from({ length: newPadCount }, (_, idx) => {
-                    return oldBar[idx] || { isActive: false, sampleId: null, userId: null };
-                });
-
-                next.push(...newBar);
-            }
-
-            socket.emit('grid-layout-change', { roomName, newPadCount, newGridState: next });
-            return next;
-        });
-
-        setPadCount(newPadCount);
     };
 
     const handleToggle = (index) => {
@@ -126,7 +91,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                 ...next[index],
                 isActive: !currentIsActive,
                 sampleId: !currentIsActive ? selectedSampleId : null,
-                userId: !currentIsActive ? socket.id : null, // Record the user's socket ID
+                userId: !currentIsActive ? socket.id : null, // Record user's socket ID
             };
             next[index] = updatedPad;
 
@@ -244,16 +209,21 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                     >
                                         {i + 1}
                                     </button>
+
+                                    {/* The restored delete button */}
+                                    {numBars > 1 && (
+                                        <button
+                                            className="delete-bar-btn"
+                                            onClick={() => deleteBar(i)}
+                                        >
+                                            ×
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                             <button className="add-bar-btn" onClick={addBar}>+</button>
                             <button className={`follow-btn ${followPlayhead ? 'on' : ''}`}
                                     onClick={() => setFollowPlayhead(!followPlayhead)}>FOLLOW
-                            </button>
-
-                            <button className="settings-btn grid-toggle-btn" onClick={toggleGridLayout}
-                                    style={{marginLeft: 'auto'}}>
-                                {padCount === 16 ? 'Expand to 8x8' : 'Shrink to 4x4'}
                             </button>
                         </div>
                     </div>
@@ -269,7 +239,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                             />
                         </div>
 
-                        <div className='play-controls' style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <div className='play-controls' style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
                             <button className={`play-button ${isPlaying ? 'pause' : 'start'}`} onClick={togglePlayback}>
                                 {isPlaying ? '⏸︎' : '▶'}
                             </button>

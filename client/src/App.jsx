@@ -6,13 +6,11 @@ import StudioRoom from "./components/StudioRoom.jsx";
 import AuthModal from "./components/AuthModal.jsx";
 import './App.css';
 import HomePage from "./pages/HomePage.jsx";
+import AccountStatus from "./components/AccountStatus.jsx";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
 const socket = io(BACKEND_URL, {
-    extraHeaders: {
-        "ngrok-skip-browser-warning": "true"
-    },
     transports: ['websocket', 'polling'],
     reconnectionAttempts: 5,
     timeout: 10000
@@ -21,7 +19,7 @@ const socket = io(BACKEND_URL, {
 function App() {
     const [roomName, setRoomName] = useState(null);
     const [user, setUser] = useState(null);
-    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [view, setView] = useState('home');
 
     const handleJoin = async (name) => {
         try {
@@ -31,47 +29,40 @@ function App() {
         }
 
         socket.emit('join-room', name);
+
         setRoomName(name);
+        setView('studio');
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem('trellis_token');
-        setUser(null);
+    const handleLeave = () => {
+        setRoomName(null);
+        setView('lobby');
     };
+
 
     return (
-        <div className="app-root" style={{border:'2px solid red', width: '100%'}}>
-            <header style={{ position: 'absolute', top: 10, right: 10, zIndex: 100 }}>
-                {user ? (
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <span style={{ color: '#aaa', fontSize: '12px' }}>{user.email}</span>
-                        <button onClick={handleLogout} className="settings-btn">Logout</button>
-                    </div>
-                ) : (
-                    <button onClick={() => setShowAuthModal(true)} className="settings-btn">Login / Sign Up</button>
-                )}
-            </header>
+        <div className="app-root">
 
-            <HomePage />
+            <AccountStatus />
 
-            {showAuthModal && (
-                <AuthModal
-                    onLoginSuccess={(userData) => {
-                        setUser(userData);
-                        setShowAuthModal(false);
-                    }}
-                    onClose={() => setShowAuthModal(false)}
-                    backendUrl={BACKEND_URL}
+            {view === 'home' && (
+                <HomePage onEnterLobby={() => {
+                    console.log('-- go to lobby -- ');
+                    setView('lobby')
+
+                }}
                 />
             )}
 
-            {!roomName ? (
+            {view === 'lobby' && (
                 <Lobby socket={socket} onJoin={handleJoin} />
-            ) : (
+            )}
+
+            {view === 'studio' && (
                 <StudioRoom
                     roomName={roomName}
                     socket={socket}
-                    onLeave={() => setRoomName(null)}
+                    onLeave={handleLeave}
                     user={user}
                 />
             )}

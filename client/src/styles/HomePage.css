@@ -1,3 +1,13 @@
 .home-page{
-    border: 5px solid green;
+
+}
+
+.lobby-button{
+    width: 5rem;
+    height: 5rem;
+    margin: 5px;
+}
+.lobby-button:hover{
+    background-color: rgba(250, 200, 109, 0.5);
+    box-shadow: 1px 1px 5px 5px rgba(250, 200, 109, 0.2);
 }
