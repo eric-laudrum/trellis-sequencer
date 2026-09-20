@@ -12,9 +12,8 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
 
     const [padCount, setPadCount] = useState(64); // 8x8
 
-    // tmp
     const [gridState, setGridState] = useState(
-        Array.from({ length: 64 }, () => ({ isActive: false, sampleId: null, userId: null }))
+        Array.from({ length: 64 }, () => ({ isActive: false, sampleIds: [], userId: null }))
     );
 
     const gridDimension = Math.sqrt(padCount);
@@ -50,7 +49,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
     const [tempBpm, setTempBpm] = useState(bpm);
     const [viewedBar, setViewedBar] = useState(0);
     const [followPlayhead, setFollowPlayhead] = useState(true);
-
+    const [editTool, setEditTool] = useState('cursor');
 
     // Auto-follow logic
     useEffect(() => {
@@ -86,15 +85,38 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
 
         setGridState(prev => {
             const next = [...prev];
-            const currentIsActive = next[index]?.isActive;
-            const updatedPad = {
-                ...next[index],
-                isActive: !currentIsActive,
-                sampleId: !currentIsActive ? selectedSampleId : null,
-                userId: !currentIsActive ? socket.id : null, // Record user's socket ID
-            };
-            next[index] = updatedPad;
+            const pad = next[index] || { isActive: false, sampleIds: [], userId: null };
 
+            // Fallback for older server state migration
+            let currentIds = pad.sampleIds || [];
+            if (pad.sampleId && currentIds.length === 0) {
+                currentIds = [pad.sampleId];
+            }
+
+            let newIds = [...currentIds];
+
+            if (newIds.includes(selectedSampleId)) {
+                // Remove if already on pad
+                newIds = newIds.filter(id => id !== selectedSampleId);
+            } else {
+                // Add to pad (max 2 slots)
+                if (newIds.length < 2) {
+                    newIds.push(selectedSampleId);
+                } else {
+                    newIds[1] = selectedSampleId;
+                }
+            }
+
+            const updatedPad = {
+                ...pad,
+                isActive: newIds.length > 0,
+                sampleIds: newIds,
+                userId: newIds.length > 0 ? socket.id : null,
+            };
+
+            delete updatedPad.sampleId;
+
+            next[index] = updatedPad;
             socket.emit('pad-toggle', { index, newState: updatedPad });
 
             return next;
@@ -154,6 +176,39 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                 </select>
                             </div>
 
+                            {/* New Pad Color Selector */}
+                            <div className="sample-setting choke-select">
+                                <span style={{fontSize: '10px', color: 'gray', marginRight: '5px'}}>COLOR</span>
+                                <input
+                                    type="color"
+                                    className="color-picker-mini"
+                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
+                                    value={currentSample.color || "#f5820a"}
+                                    onChange={(e) => setSampleColor(currentSample.id, e.target.value)}
+                                />
+                            </div>
+
+                            {/* New Tool Toggle */}
+                            <div className="sample-setting choke-select" style={{ marginLeft: 'auto' }}>
+                                <span style={{fontSize: '10px', color: 'gray', marginRight: '5px'}}>TOOL</span>
+                                <div className="tool-toggle-group">
+                                    <button
+                                        className={`tool-btn ${editTool === 'cursor' ? 'active' : ''}`}
+                                        onClick={() => setEditTool('cursor')}
+                                        title="Move Start/End Markers"
+                                    >
+                                        👆
+                                    </button>
+                                    <button
+                                        className={`tool-btn ${editTool === 'scissors' ? 'active' : ''}`}
+                                        onClick={() => setEditTool('scissors')}
+                                        title="Slice / Add New Cut"
+                                    >
+                                        ✂️
+                                    </button>
+                                </div>
+                            </div>
+
                             <button
                                 className="settings-btn"
                                 style={{
@@ -168,16 +223,31 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                             </button>
                         </div>
 
-                        <WaveformEditor
-                            buffer={currentSample.buffer}
-                            startTime={currentSample.startTime || 0}
-                            endTime={currentSample.endTime || (currentSample.buffer ? currentSample.buffer.duration * 1000 : 1000)}
-                            onUpdateStart={(val) => setSampleStart(currentSample.id, val)}
-                            onUpdateEnd={(val) => setSampleEnd(currentSample.id, val)}
-                            isPlaying={isPlaying}
-                            lastTriggerTime={lastTriggerTime}
-                            lastTriggerRef={lastTriggerRef}
-                        />
+                        {(() => {
+                            // Collect all start markers for pads sharing this audio buffer
+                            const siblingMarkers = samples
+                                .filter(s => s.buffer === currentSample.buffer)
+                                .map(s => s.startTime || 0);
+
+                            return (
+                                <WaveformEditor
+                                    buffer={currentSample.buffer}
+                                    startTime={currentSample.startTime || 0}
+                                    endTime={currentSample.endTime || (currentSample.buffer ? currentSample.buffer.duration * 1000 : 1000)}
+                                    sliceMarkers={siblingMarkers}
+                                    editTool={editTool}
+                                    onUpdateStart={(val) => setSampleStart(currentSample.id, val)}
+                                    onUpdateEnd={(val) => setSampleEnd(currentSample.id, val)}
+                                    isPlaying={isPlaying}
+                                    lastTriggerTime={lastTriggerTime}
+                                    lastTriggerRef={lastTriggerRef}
+                                    onSlice={(cutTime) => {
+
+                                        duplicateSample(currentSample.id, cutTime);
+                                    }}
+                                />
+                            );
+                        })()}
                     </div>
                 ) : (
                     <div style={{padding: '20px', color: '#666', textAlign: 'center'}}>
@@ -190,7 +260,6 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                 <SampleSidebar
                     samples={samples}
                     duplicateSample={duplicateSample}
-                    onSetColor={setSampleColor}
                     onSetChokeGroup={setChokeGroup}
                     selectedId={selectedSampleId}
                     onSelect={setSelectedSampleId}

@@ -99,7 +99,7 @@ io.on('connection', (socket) => {
 
         if (!rooms[roomName]) {
             rooms[roomName] = {
-                grid: Array.from({ length: 64 }, () => ({ isActive: false, sampleId: null })),
+                grid: Array.from({ length: 64 }, () => ({ isActive: false, sampleId: [] })),
                 bpm: 88,
                 samples: [],
                 numBars: 1,

@@ -692,3 +692,32 @@ h1.main-title {
     padding-top: 20vh;
 }
 
+
+.tool-toggle-group {
+    display: flex;
+    gap: 4px;
+    background: #111;
+    border: 1px solid #444;
+    padding: 2px;
+    border-radius: 4px;
+}
+
+.tool-btn {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 2px;
+    padding: 4px 8px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.tool-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.tool-btn.active {
+    background: var(--primary);
+    color: #000;
+}

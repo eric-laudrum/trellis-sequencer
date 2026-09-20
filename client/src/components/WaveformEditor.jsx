@@ -2,15 +2,18 @@ import React, { useRef, useEffect, useState } from 'react';
 import * as Tone from 'tone';
 
 const WaveformEditor = ({
-    buffer,
-    startTime,
-    endTime,
-    onUpdateStart,
-    onUpdateEnd,
-    isPlaying,
-    lastTriggerTime,
-    lastTriggerRef
-}) => {
+                            buffer,
+                            startTime,
+                            endTime,
+                            sliceMarkers = [],
+                            onUpdateStart,
+                            onUpdateEnd,
+                            isPlaying,
+                            lastTriggerTime,
+                            lastTriggerRef,
+                            editTool = 'cursor',
+                            onSlice // New prop
+                        }) => {
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
 
@@ -19,6 +22,7 @@ const WaveformEditor = ({
     const [isDraggingStart, setIsDraggingStart] = useState(false);
     const [isDraggingEnd, setIsDraggingEnd] = useState(false);
     const [selection, setSelection] = useState(null);
+    const [hoverX, setHoverX] = useState(null); // Tracks mouse for scissors
 
     // Waveform Drawing logic
     useEffect(() => {
@@ -29,12 +33,10 @@ const WaveformEditor = ({
 
         let data;
         try {
-            // Bulletproof extraction:
-            // Tone.js buffers use .toArray(), Standard uploads use .getChannelData()
             data = buffer.toArray ? buffer.toArray(0) : buffer.getChannelData(0);
         } catch (err) {
             console.error("[WAVEFORM] Could not extract audio data for drawing", err);
-            return; // Exit silently if it's an invalid buffer
+            return;
         }
 
         const startIdx = Math.floor(zoomRange.start * data.length);
@@ -46,7 +48,6 @@ const WaveformEditor = ({
 
         ctx.fillStyle = '#050505';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-
         ctx.beginPath();
         ctx.strokeStyle = '#f5820a';
         ctx.lineWidth = 1.5;
@@ -64,10 +65,8 @@ const WaveformEditor = ({
         }
         ctx.stroke();
 
-        // Calculate overlays
         const startPct = (startTime / 1000) / buffer.duration;
         const endPct = (endTime / 1000) / buffer.duration;
-
         ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
 
         if (startPct > zoomRange.start) {
@@ -84,25 +83,20 @@ const WaveformEditor = ({
 
     // Playhead logic
     useEffect(() => {
+        if (!buffer || !lastTriggerRef) return;
+
         let animId;
         const loop = () => {
+            const triggerData = lastTriggerRef.current;
+            const triggerTime = triggerData?.time || 0;
+            const triggerOffset = triggerData?.offset !== undefined ? triggerData.offset : (startTime / 1000);
 
-            // Reset Playhead if stopped
-            if (!isPlaying) {
-                setPlayheadPos(-1);
-                animId = requestAnimationFrame(loop);
-                return;
-            }
-
-            const triggerTime = (lastTriggerRef && lastTriggerRef.current) ? lastTriggerRef.current : lastTriggerTime;
             const now = Tone.now();
-            const elapsed = now - lastTriggerTime;
+            const elapsed = now - triggerTime;
 
-            // Verify playhead is still active 
-            const isWithinSample = buffer && triggerTime > 0 && elapsed >= 0 && elapsed <= buffer.duration;
-
-            if (isWithinSample) {
-                const totalPercent = ((startTime / 1000) + elapsed) / buffer.duration;
+            if (triggerTime > 0 && elapsed >= 0 && elapsed <= buffer.duration) {
+                const currentPlayTime = triggerOffset + elapsed;
+                const totalPercent = currentPlayTime / buffer.duration;
                 const visiblePercent = (totalPercent - zoomRange.start) / (zoomRange.end - zoomRange.start);
 
                 if (visiblePercent >= 0 && visiblePercent <= 1) {
@@ -111,20 +105,15 @@ const WaveformEditor = ({
                     setPlayheadPos(-1);
                 }
             } else {
-                // Sample has finished / not started
                 setPlayheadPos(-1);
             }
+
             animId = requestAnimationFrame(loop);
         };
-        loop();
+
+        animId = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(animId);
-    }, [
-        buffer, 
-        lastTriggerTime, 
-        lastTriggerRef, 
-        startTime, 
-        zoomRange]
-    );
+    }, [buffer, startTime, zoomRange, lastTriggerRef]);
 
     const getTimeFromMouse = (x) => {
         if (!buffer) return 0;
@@ -143,24 +132,21 @@ const WaveformEditor = ({
 
         const startMarkerPct = (startTime / 1000) / buffer.duration;
         const playheadActive = playheadPos >= 0 && playheadPos <= 100;
-        
+
         const currentWidth = zoomRange.end - zoomRange.start;
         const newWidth = Math.max(0.001, Math.min(1, currentWidth * factor));
 
         let newStart, newEnd;
 
         if (playheadActive) {
-            // Anchor to current playhead
             const anchorPct = zoomRange.start + (playheadPos / 100) * currentWidth;
             newStart = anchorPct - (newWidth / 2);
             newEnd = anchorPct + (newWidth / 2);
         } else {
-            // Anchor to Start Line (keep it pinned slightly off left edge)
-            newStart = startMarkerPct - 0.01; 
+            newStart = startMarkerPct - 0.01;
             newEnd = newStart + newWidth;
         }
 
-        // Clamp boundaries
         if (newStart < 0) {
             newEnd = Math.min(1, newEnd - newStart);
             newStart = 0;
@@ -176,6 +162,12 @@ const WaveformEditor = ({
     const handleMouseDown = (e) => {
         const rect = containerRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
+
+        if (editTool === 'scissors') {
+            if (onSlice) onSlice(getTimeFromMouse(x));
+            return;
+        }
+
         const sPos = (getPos(startTime) / 100) * rect.width;
         const ePos = (getPos(endTime) / 100) * rect.width;
 
@@ -187,8 +179,12 @@ const WaveformEditor = ({
     const handleMouseMove = (e) => {
         const rect = containerRef.current.getBoundingClientRect();
         const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-        const newTime = getTimeFromMouse(x);
 
+        if (editTool === 'scissors') {
+            setHoverX(x);
+            return;
+        }
+        const newTime = getTimeFromMouse(x);
         if (isDraggingStart) onUpdateStart(Math.min(newTime, endTime - 10));
         else if (isDraggingEnd) onUpdateEnd(Math.max(newTime, startTime + 10));
         else if (selection) setSelection(prev => ({ ...prev, currentX: x }));
@@ -224,11 +220,34 @@ const WaveformEditor = ({
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
+                onMouseLeave={() => { handleMouseUp(); setHoverX(null); }}
                 onDoubleClick={() => setZoomRange({ start: 0, end: 1 })}
-                style={{ position: 'relative', overflow: 'hidden', cursor: 'crosshair' }}
+                style={{ position: 'relative', overflow: 'hidden', cursor: editTool === 'scissors' ? 'crosshair' : 'ew-resize' }}
             >
                 <canvas ref={canvasRef} width={600} height={120} />
+
+                {/* Draw all cuts/slices for this audio file */}
+                {sliceMarkers.map((markTime, idx) => {
+                    // Don't draw a ghost line if it overlaps with our active S marker
+                    if (Math.abs(markTime - startTime) < 5) return null;
+                    return (
+                        <div key={`slice-${idx}`} style={{
+                            position: 'absolute', left: `${getPos(markTime)}%`,
+                            top: 0, bottom: 0, width: '1px', backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                            zIndex: 10, pointerEvents: 'none'
+                        }} />
+                    )
+                })}
+
+                {/* Scissors Preview Line */}
+                {editTool === 'scissors' && hoverX !== null && (
+                    <div style={{
+                        position: 'absolute', top: 0, bottom: 0,
+                        left: hoverX, width: '1px',
+                        borderLeft: '2px dashed #f1ad36', zIndex: 15,
+                        pointerEvents: 'none'
+                    }} />
+                )}
 
                 {selection && (
                     <div style={{
@@ -241,12 +260,12 @@ const WaveformEditor = ({
                     }} />
                 )}
 
-                {/* Markers with improved hit areas */}
+                {/* Active Sample Markers */}
                 <div style={{
                     position: 'absolute', left: `${getPos(startTime)}%`,
-                    top: 0, bottom: 0, width: '12px', zIndex: 20, 
-                    cursor: 'col-resize', transform: 'translateX(-50%)',
-                    display: 'flex', justifyContent: 'center'
+                    top: 0, bottom: 0, width: '12px', zIndex: 20,
+                    cursor: editTool === 'cursor' ? 'col-resize' : 'crosshair',
+                    transform: 'translateX(-50%)', display: 'flex', justifyContent: 'center'
                 }}>
                     <div style={{ width: '4px', backgroundColor: 'red', height: '100%' }} />
                     <div style={{ position: 'absolute', top: 0, backgroundColor: 'red', color: 'white', fontSize: '9px', padding: '1px' }}>S</div>
@@ -254,9 +273,9 @@ const WaveformEditor = ({
 
                 <div style={{
                     position: 'absolute', left: `${getPos(endTime)}%`,
-                    top: 0, bottom: 0, width: '12px', zIndex: 20, 
-                    cursor: 'col-resize', transform: 'translateX(-50%)',
-                    display: 'flex', justifyContent: 'center'
+                    top: 0, bottom: 0, width: '12px', zIndex: 20,
+                    cursor: editTool === 'cursor' ? 'col-resize' : 'crosshair',
+                    transform: 'translateX(-50%)', display: 'flex', justifyContent: 'center'
                 }}>
                     <div style={{ width: '4px', backgroundColor: '#00ccff', height: '100%' }} />
                     <div style={{ position: 'absolute', top: 0, backgroundColor: '#00ccff', color: 'black', fontSize: '9px', padding: '1px' }}>E</div>

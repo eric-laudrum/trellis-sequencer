@@ -41,7 +41,7 @@ export const useSequencer = (
     const players = useRef({});
     const sampleRef = useRef([]);
     const gridRef = useRef(gridState);
-    const lastTriggerRef = useRef(0);
+    const lastTriggerRef = useRef({ time: 0, offset: 0 });
 
     const tapTimes = useRef([]);
     const [viewingBar, setViewingBar] = useState(0);
@@ -114,33 +114,34 @@ export const useSequencer = (
         loadStockSounds();
     }, []);
 
-    const triggerSample = useCallback((sampleId, time) => {
-        const player = players.current[sampleId];
-        const data = sampleRef.current.find(s => s.id === sampleId);
+    const triggerSample = useCallback((sampleIdOrArray, time) => {
+        const ids = Array.isArray(sampleIdOrArray) ? sampleIdOrArray : [sampleIdOrArray];
 
+        ids.forEach(sampleId => {
+            if (!sampleId) return;
+            const player = players.current[sampleId];
+            const data = sampleRef.current.find(s => s.id === sampleId);
 
-        if (player?.loaded && data) {
-
-            if (data.chokeGroup && data.chokeGroup !== 'none') {
-                sampleRef.current.forEach(otherSample => {
-                    // Sample in same group but not the active pad
-                    if (otherSample.chokeGroup === data.chokeGroup && otherSample.id !== sampleId) {
-                        const otherPlayer = players.current[otherSample.id];
-                        if (otherPlayer) {
-                            // Stop player when new one starts
-                            otherPlayer.stop(time);
+            if (player?.loaded && data) {
+                if (data.chokeGroup && data.chokeGroup !== 'none') {
+                    sampleRef.current.forEach(otherSample => {
+                        if (otherSample.chokeGroup === data.chokeGroup && otherSample.id !== sampleId) {
+                            const otherPlayer = players.current[otherSample.id];
+                            if (otherPlayer) {
+                                otherPlayer.stop(time);
+                            }
                         }
-                    }
-                });
+                    });
+                }
+
+                const offset = (data.startTime || 0) / 1000;
+                const duration = ((data.endTime || (player.buffer.duration * 1000)) / 1000) - offset;
+                player.start(time, offset, duration);
+
+                lastTriggerRef.current = { time, offset };
+                setLastTriggerTime(time);
             }
-
-            const offset = (data.startTime || 0) / 1000;
-            const duration = ((data.endTime || (player.buffer.duration * 1000)) / 1000) - offset;
-            player.start(time, offset, duration);
-
-            lastTriggerRef.current = time;
-            setLastTriggerTime(time);
-        }
+        });
     }, []);
 
     // Audio Engine Orchestration
@@ -216,8 +217,8 @@ export const useSequencer = (
         setIsPlaying(false);
         setActiveStep(-1);
 
-        setLastTriggerTime(0); 
-        lastTriggerRef.current = 0;
+        setLastTriggerTime(0);
+        lastTriggerRef.current = { time: 0, offset: 0 };
 
         Tone.getTransport().stop();
         Tone.getTransport().position = 0;
@@ -229,42 +230,35 @@ export const useSequencer = (
         }
     }, [socket, roomName]);
 
-    const duplicateSample = useCallback((sampleId) => {
-        // Find the source sample
+    const duplicateSample = useCallback((sampleId, cutTime = null) => {
         const sourceSample = samples.find(s => s.id === sampleId);
         if (!sourceSample) return;
 
-        // Generate new ID
         const newId = crypto.randomUUID();
+        const parentId = sourceSample.parentId || sourceSample.id;
 
-        // Increment Naming Logic
-        const baseNameMatch = sourceSample.name.match(/^(.*?)(?: (\d+))?$/);
-        const baseName = baseNameMatch[1];
-        const relatedSamples = samples.filter(s => s.name.startsWith(baseName));
+        const originalSample = samples.find(s => s.id === parentId) || sourceSample;
+        const baseName = originalSample.name;
 
-        let maxNum = 1;
-        relatedSamples.forEach(s => {
-            const match = s.name.match(/ (\d+)$/);
-            if (match) {
-                const num = parseInt(match[1], 10);
-                if (num > maxNum) maxNum = num;
-            }
-        });
+        const relatedSlices = samples.filter(s => s.parentId === parentId);
+        const sliceNumber = relatedSlices.length + 1;
+
+        const newStartTime = cutTime !== null ? cutTime : sourceSample.startTime;
+        const newEndTime = sourceSample.buffer ? sourceSample.buffer.duration * 1000 : sourceSample.endTime;
 
         const duplicatedSample = {
             ...sourceSample,
             id: newId,
-            name: `${baseName} ${maxNum + 1}`,
+            parentId: parentId,
+            name: `${baseName} - Slice ${sliceNumber}`,
             color: sourceSample.color || '#f1ad36',
-            startTime: sourceSample.startTime,
-            endTime: sourceSample.endTime,
+            startTime: newStartTime,
+            endTime: newEndTime,
         };
 
-        // Update References and State
         players.current[newId] = players.current[sampleId];
         setSamples(prev => [...prev, duplicatedSample]);
 
-        // Emit to server
         socket.emit('share-sample', {
             roomId: roomName,
             sampleData: {
@@ -311,8 +305,10 @@ export const useSequencer = (
         const sampleData = sampleRef.current.find(s => s.id === id);
         if (player?.loaded) {
             const now = Tone.now();
-            player.start(now, (sampleData.startTime || 0) / 1000);
-            lastTriggerRef.current = now;
+            const offset = (sampleData.startTime || 0) / 1000;
+
+            player.start(now, offset);
+            lastTriggerRef.current = { time: now, offset };
             setLastTriggerTime(now);
         }
     };
@@ -396,7 +392,7 @@ export const useSequencer = (
                     chokeGroup: sampleData.chokeGroup || "none"
                 }]);
             } else {
-                // If it's a brand new file for this client, download it
+
                 await addNewPlayer(sampleData.id, sampleData.url, sampleData.name);
             }
         });
@@ -409,7 +405,7 @@ export const useSequencer = (
             setActiveStep(-1);
 
             setLastTriggerTime(0);
-            lastTriggerRef.current = 0;
+            lastTriggerRef.current = { time: 0, offset: 0 };
 
             // Stop the Global Transport (Clock)
             Tone.getTransport().stop();

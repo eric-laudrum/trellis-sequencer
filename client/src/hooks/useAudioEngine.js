@@ -36,8 +36,11 @@ export const useAudioEngine = (bpm, numBars, isPlaying, gridRef, triggerSample, 
             Tone.Draw.schedule(() => setActiveStep(gridIndex), time);
 
             const cell = gridRef.current[gridIndex];
-            if (cell?.isActive && cell.sampleId) {
-                triggerSample(cell.sampleId, time);
+            if (cell?.isActive) {
+                const sampleIds = cell.sampleIds || (cell.sampleId ? [cell.sampleId] : []);
+                if (sampleIds.length > 0) {
+                    triggerSample(sampleIds, time);
+                }
             }
         }, Array.from({ length: totalSteps }, (_, i) => i), "8n");
 
