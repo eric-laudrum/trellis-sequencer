@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-
+import "../styles/SampleSidebar.css";
 export default function SampleSidebar({
-                                          samples,
-                                          duplicateSample,
-                                          selectedId,
-                                          onSelect,
-                                          onUpload,
-                                          onPlaySolo
-                                      }) {
+    samples,
+    duplicateSample,
+    deleteSample,
+    selectedId,
+    onSelect,
+    onUpload,
+    onPlaySolo
+    }) {
     const [expandedParents, setExpandedParents] = useState({});
 
     const toggleExpand = (parentId) => {
@@ -51,13 +52,14 @@ export default function SampleSidebar({
                             <div
                                 className={`sample-item ${selectedId === parent.id ? 'active' : ''}`}
                                 onClick={() => onSelect(parent.id)}
+                                style={{borderLeft: `6px solid ${parent.color || '#f1ad36'}`}}
                             >
-                                <div className="sample-name">{parent.name}</div>
+                                <div className="sample-name">1. {parent.name}</div>
 
                                 <div className="sample-options" onClick={e => e.stopPropagation()}>
                                     <button
                                         className="preview-btn"
-                                        style={{ display: 'block' }}
+                                        style={{display: 'block'}}
                                         onClick={() => onPlaySolo(parent.id)}
                                     >
                                         ▶
@@ -68,11 +70,30 @@ export default function SampleSidebar({
                                     >
                                         +
                                     </button>
+                                    <button
+                                        className="settings-btn"
+                                        style={{
+                                            background: 'transparent',
+                                            display: 'block',
+                                            padding: '5px',
+                                            color: '#ff4444',
+                                            border: 'none',
+                                            cursor: 'pointer'
+                                        }}
+                                        onClick={() => deleteSample(parent.id)}
+                                    >
+                                        ×
+                                    </button>
                                     {childSlices.length > 0 && (
                                         <button
                                             onClick={() => toggleExpand(parent.id)}
                                             className="settings-btn"
-                                            style={{ border: 'none', background: 'transparent', display: 'block', padding: '0 5px' }}
+                                            style={{
+                                                border: 'none',
+                                                background: 'transparent',
+                                                display: 'block',
+                                                padding: '0 5px'
+                                            }}
                                         >
                                             {isExpanded ? '▼' : '▶'}
                                         </button>
@@ -80,22 +101,22 @@ export default function SampleSidebar({
                                 </div>
                             </div>
 
-                            {isExpanded && childSlices.map(slice => (
+                            {isExpanded && childSlices.map((slice, index) => (
                                 <div
                                     key={slice.id}
                                     className={`sample-item slice-item ${selectedId === slice.id ? 'active' : ''}`}
                                     onClick={() => onSelect(slice.id)}
                                     style={{
                                         paddingLeft: '25px',
-                                        borderLeft: '2px solid #f1ad36',
+                                        borderLeft: `6px solid ${slice.color || parent.color || '#f1ad36'}`,
                                         backgroundColor: 'rgba(255, 165, 0, 0.05)'
                                     }}
                                 >
-                                    <div className="sample-name">{slice.name}</div>
+                                    <div className="sample-name">{index + 2}. {slice.name}</div>
                                     <div className="sample-options" onClick={e => e.stopPropagation()}>
                                         <button
                                             className="preview-btn"
-                                            style={{ display: 'block' }}
+                                            style={{display: 'block'}}
                                             onClick={() => onPlaySolo(slice.id)}
                                         >
                                             ▶
@@ -105,6 +126,20 @@ export default function SampleSidebar({
                                             onClick={() => duplicateSample(slice.id)}
                                         >
                                             +
+                                        </button>
+                                        <button
+                                            className="settings-btn"
+                                            style={{
+                                                background: 'transparent',
+                                                display: 'block',
+                                                padding: '5px',
+                                                color: '#ff4444',
+                                                border: 'none',
+                                                cursor: 'pointer'
+                                            }}
+                                            onClick={() => deleteSample(slice.id)}
+                                        >
+                                            ×
                                         </button>
                                     </div>
                                 </div>

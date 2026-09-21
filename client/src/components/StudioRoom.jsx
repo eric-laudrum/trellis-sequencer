@@ -44,6 +44,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
         setChokeGroup,
         deleteMode,
         setDeleteMode,
+        deleteSample,
 
     } = useSequencer(gridState, setGridState, socket, roomName, gridDimension, gridDimension);
 
@@ -256,6 +257,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                 <SampleSidebar
                     samples={samples}
                     duplicateSample={duplicateSample}
+                    deleteSample={deleteSample}
                     onSetChokeGroup={setChokeGroup}
                     selectedId={selectedSampleId}
                     onSelect={setSelectedSampleId}

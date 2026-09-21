@@ -35,11 +35,21 @@ const TrellisGrid = ({ gridState, onToggle, activeStep, padCount, samples, selec
                         style={bgStyle ? { background: bgStyle } : {}}
                         onClick={() => onToggle(i)}
                     >
-                        {familySamples.map((s, idx) => (
-                            <span key={idx} className="sample-name">
-                                {s.name}
-                            </span>
-                        ))}
+                        {familySamples.map((s, idx) => {
+                            const familyId = s.parentId || s.id;
+                            const parent = samples.find(x => x.id === familyId);
+                            const children = samples
+                                .filter(x => x.parentId === familyId)
+                                .sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
+                            const fullFamily = parent ? [parent, ...children] : children;
+                            const sampleNumber = fullFamily.findIndex(x => x.id === s.id) + 1;
+
+                            return (
+                                <span key={idx} className="sample-name" style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+                                    {sampleNumber}
+                                </span>
+                            );
+                        })}
                     </div>
                 );
             })}

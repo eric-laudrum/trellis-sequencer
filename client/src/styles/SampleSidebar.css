@@ -1,0 +1,110 @@
+/* --- Sidebar & Lists --- */
+.sample-sidebar {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+
+    width: 500px;
+    height: 100%;
+    border-radius: 8px;
+    box-sizing: border-box;
+    padding: 0 10px;
+    background: rgba(35, 35, 35, 0.95);
+
+    border: 5px solid red;
+
+
+
+}
+
+.sample-name {
+    display: block;
+    font-weight: 500;
+    color: #eee;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sample-time{
+    align-content: center;
+    margin: 5px;
+    display: none;
+}
+
+.sample-list {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    border-radius: 10px;
+    background-color: rgba(169, 169, 169, 0.06);
+
+    padding: 2px;
+}
+
+.sample-item {
+    display: flex;
+    justify-content: space-between;
+    width: auto;
+    box-sizing: border-box;
+    align-items: center;
+    padding: 10px 10px;
+    margin: 2px 4px;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    cursor: pointer;
+    overflow: hidden;
+    border-radius: 4px;
+}
+
+.sample-options {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+
+
+.sample-item .sample-name {
+    font-size: 0.9rem;
+    color: #ccc;
+    text-align: left;
+}
+
+.sample-item button,
+.sample-item .choke-select {
+    display: none;
+}
+
+
+.sample-item:hover {
+    background: rgba(241, 173, 54, 0.1);
+    border-color: rgba(241, 173, 54, 0.5);
+}
+
+.sample-item.active {
+    border: 1px solid var(--primary);
+    background: rgba(255, 165, 0, 0.1);
+
+}
+
+.duplicate-btn {
+    display: flex !important;
+    width: 24px;
+    height: 24px;
+    background-color: #333;
+    color: #f1ad36;
+    border: 1px solid #555;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.duplicate-btn:hover {
+    background-color: #444;
+    border-color: #f1ad36;
+}

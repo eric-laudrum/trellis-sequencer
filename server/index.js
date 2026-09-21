@@ -124,6 +124,14 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('delete-sample', (sampleId) => {
+        const room = socket.currentRoom;
+        if (room && rooms[room]) {
+            rooms[room].samples = rooms[room].samples.filter(s => s.id !== sampleId);
+            socket.to(room).emit('remove-sample', sampleId);
+        }
+    });
+
     socket.on('transport-toggle', ({ isPlaying }) => {
         if (socket.currentRoom) {
             socket.to(socket.currentRoom).emit('update-transport', { isPlaying });

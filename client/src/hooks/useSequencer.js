@@ -17,7 +17,7 @@ const STOCK_SOUNDS = [
     {
         id: 'stock-break',
         name: '80BPM Break',
-        color: '#ff4444',
+        color: '#007AFF',
         url: drumBreak,
         chokeGroup: 'none'
     }
@@ -194,6 +194,37 @@ export const useSequencer = (
             return newBars;
         });
     }, [rows, cols, emitEvent, setGridState]);
+
+    const deleteSample = useCallback((sampleId) => {
+        setSamples(prev => prev.filter(s => s.id !== sampleId));
+
+        if (players.current[sampleId]) {
+            players.current[sampleId].stop();
+            delete players.current[sampleId];
+        }
+
+        setGridState(prevGrid => {
+            const newGrid = prevGrid.map(pad => {
+                const currentIds = pad.sampleIds || [];
+                if (currentIds.includes(sampleId)) {
+                    const newIds = currentIds.filter(id => id !== sampleId);
+                    return {
+                        ...pad,
+                        sampleIds: newIds,
+                        isActive: newIds.length > 0
+                    };
+                }
+                return pad;
+            });
+
+            emitEvent('update-entire-grid', { grid: newGrid, numBars });
+            return newGrid;
+        });
+
+        setSelectedSampleId(prev => prev === sampleId ? null : prev);
+
+        socket.emit('delete-sample', sampleId);
+    }, [emitEvent, numBars, setGridState, socket]);
 
     const clearPad = useCallback((index)=>{
         setGridState(prevGrid => {
@@ -433,6 +464,25 @@ export const useSequencer = (
             }
         });
 
+        socket.on('remove-sample', (id) => {
+            setSamples(prev => prev.filter(s => s.id !== id));
+            if (players.current[id]) {
+                players.current[id].stop();
+                delete players.current[id];
+            }
+            setGridState(prevGrid => {
+                return prevGrid.map(pad => {
+                    const currentIds = pad.sampleIds || [];
+                    if (currentIds.includes(id)) {
+                        const newIds = currentIds.filter(sampleId => sampleId !== id);
+                        return { ...pad, sampleIds: newIds, isActive: newIds.length > 0 };
+                    }
+                    return pad;
+                });
+            });
+            setSelectedSampleId(prev => prev === id ? null : prev);
+        });
+
         return () => {
             socket.off('update-state')
             socket.off('update-bpm');
@@ -441,11 +491,11 @@ export const useSequencer = (
             socket.off('initial-state');
             socket.off('download-sample');
             socket.off('sync-stop');
+            socket.off('remove-sample');
         };
     }, [socket, shouldIgnoreServer, setGridState, roomName ]);
 
-    const addNewPlayer = async (id, url, name) => {
-
+    const addNewPlayer = async (id, url, name, color = '#f5820a') => {
         if (players.current[id]) return;
 
         try {
@@ -463,7 +513,8 @@ export const useSequencer = (
             setSamples(prev => [...prev, {
                 id, name, url, buffer: newPlayer.buffer,
                 startTime: 0, endTime: newPlayer.buffer.duration * 1000,
-                chokeGroup: "none"
+                chokeGroup: "none",
+                color: color
             }]);
         } catch (err) {
             console.error(`[AUDIO] Failed to load ${url}:`, err);
@@ -491,10 +542,16 @@ export const useSequencer = (
             console.log("[UPLOAD] Server responded with URL:", data.url);
 
             const id = crypto.randomUUID();
-            await addNewPlayer(id, data.url, data.name);
+
+            // Generate a random bright UI color from a palette
+            const PALETTE = ['#FF3B30', '#FF9500', '#FFCC00', '#4CD964', '#5AC8FA', '#007AFF', '#5856D6', '#FF2D55', '#E040FB'];
+            const newColor = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+
+            await addNewPlayer(id, data.url, data.name, newColor);
+
             socket.emit('share-sample', {
                 roomId: roomName,
-                sampleData: { url: data.url, name: data.name, id: id }
+                sampleData: { url: data.url, name: data.name, id: id, color: newColor }
             });
             console.log("[SOCKET] Broadcast 'share-sample' sent to server");
 
@@ -527,6 +584,7 @@ export const useSequencer = (
         deleteBar,
         stopAll,
         duplicateSample,
+        deleteSample,
         tapBpm,
         loadFile,
         setBpm: updateBpmGlobal,
