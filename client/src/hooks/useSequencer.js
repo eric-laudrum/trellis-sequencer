@@ -37,6 +37,7 @@ export const useSequencer = (
     const [bpm, setBpm] = useState(120);
     const [numBars, setNumBars] = useState(1);
     const [lastTriggerTime, setLastTriggerTime] = useState(0);
+    const [deleteMode, setDeleteMode] = useState(false);
 
     const players = useRef({});
     const sampleRef = useRef([]);
@@ -193,6 +194,16 @@ export const useSequencer = (
             return newBars;
         });
     }, [rows, cols, emitEvent, setGridState]);
+
+    const clearPad = useCallback((index)=>{
+        setGridState(prevGrid => {
+            const newGrid = [...prevGrid];
+            newGrid[index] = {isActive: false, sampleId: null};
+
+            emitEvent('update-state', {index, newState: newGrid[index]});
+            return newGrid;
+        })
+    }, [setGridState, emitEvent]);
 
     const togglePlayback = useCallback(async () => {
         if (Tone.getContext().state !== 'running') await Tone.start();
@@ -494,6 +505,9 @@ export const useSequencer = (
     const currentBarIdx = activeStep === -1 ? 0 : Math.floor(activeStep / (rows * cols));
 
     return {
+        deleteMode,
+        setDeleteMode,
+        clearPad,
         activeStep,
         viewingBar,
         isFollowEnabled,

@@ -1,7 +1,7 @@
 import React from 'react';
 import './TrellisGrid.css';
 
-const TrellisGrid = ({ gridState, onToggle, activeStep, padCount, samples }) => {
+const TrellisGrid = ({ gridState, onToggle, activeStep, padCount, samples, selectedFamilyId }) => {
     const cols = Math.sqrt(padCount);
 
     return (
@@ -16,27 +16,26 @@ const TrellisGrid = ({ gridState, onToggle, activeStep, padCount, samples }) => 
                 const isPlaying = activeStep === i;
 
                 const currentIds = cell.sampleIds || (cell.sampleId ? [cell.sampleId] : []);
-                const padSamples = currentIds.map(id => samples.find(s => s.id === id)).filter(Boolean);
+
+                const familySamples = currentIds
+                    .map(id => samples.find(s => s.id === id))
+                    .filter(s => s && selectedFamilyId && (s.id === selectedFamilyId || s.parentId === selectedFamilyId));
+
+                const isPadActive = cell.isActive && familySamples.length > 0;
 
                 let bgStyle = '';
-                if (cell.isActive && padSamples.length > 0) {
-                    if (padSamples.length === 1) {
-                        bgStyle = padSamples[0].color || '#f5820a';
-                    } else if (padSamples.length === 2) {
-                        const color1 = padSamples[0].color || '#f5820a';
-                        const color2 = padSamples[1].color || '#f5820a';
-                        bgStyle = `linear-gradient(135deg, ${color1} 50%, ${color2} 50%)`;
-                    }
+                if (isPadActive) {
+                    bgStyle = familySamples[0].color || '#f5820a';
                 }
 
                 return (
                     <div
                         key={i}
-                        className={`pad ${cell.isActive ? 'active' : ''} ${isPlaying ? 'playing' : ''}`}
-                        style={{ background: bgStyle || undefined }}
+                        className={`pad ${isPadActive ? 'active' : ''} ${isPlaying ? 'playing' : ''}`}
+                        style={bgStyle ? { background: bgStyle } : {}}
                         onClick={() => onToggle(i)}
                     >
-                        {padSamples.map((s, idx) => (
+                        {familySamples.map((s, idx) => (
                             <span key={idx} className="sample-name">
                                 {s.name}
                             </span>

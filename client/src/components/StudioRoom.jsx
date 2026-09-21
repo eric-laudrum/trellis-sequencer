@@ -42,6 +42,8 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
         setSampleEnd,
         setSampleColor,
         setChokeGroup,
+        deleteMode,
+        setDeleteMode,
 
     } = useSequencer(gridState, setGridState, socket, roomName, gridDimension, gridDimension);
 
@@ -78,6 +80,17 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
     };
 
     const handleToggle = (index) => {
+        if (deleteMode) {
+            setGridState(prev => {
+                const next = [...prev];
+                const clearedPad = { isActive: false, sampleIds: [], userId: null };
+                next[index] = clearedPad;
+                socket.emit('pad-toggle', { index, newState: clearedPad });
+                return next;
+            });
+            return;
+        }
+
         if (!selectedSampleId) {
             alert("Select a sample from the library");
             return;
@@ -87,11 +100,8 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
             const next = [...prev];
             const pad = next[index] || { isActive: false, sampleIds: [], userId: null };
 
-            // Fallback for older server state migration
             let currentIds = pad.sampleIds || [];
-            if (pad.sampleId && currentIds.length === 0) {
-                currentIds = [pad.sampleId];
-            }
+            if (pad.sampleId && currentIds.length === 0) currentIds = [pad.sampleId];
 
             let newIds = [...currentIds];
 
@@ -99,12 +109,8 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                 // Remove if already on pad
                 newIds = newIds.filter(id => id !== selectedSampleId);
             } else {
-                // Add to pad (max 2 slots)
-                if (newIds.length < 2) {
-                    newIds.push(selectedSampleId);
-                } else {
-                    newIds[1] = selectedSampleId;
-                }
+                // Add to pad (No Limit)
+                newIds.push(selectedSampleId);
             }
 
             const updatedPad = {
@@ -113,7 +119,6 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                 sampleIds: newIds,
                 userId: newIds.length > 0 ? socket.id : null,
             };
-
             delete updatedPad.sampleId;
 
             next[index] = updatedPad;
@@ -124,6 +129,9 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
     };
 
     const currentSample = samples.find(s => s.id === selectedSampleId);
+
+    const selectedFamilyId = currentSample ? (currentSample.parentId || currentSample.id) : null;
+
 
     return (
         <div className='app-container'>
@@ -260,6 +268,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                         <div className="bar-navigation">
                             {Array.from({length: numBars || 1}).map((_, i) => (
                                 <div key={i} className="bar-btn-wrapper">
+
                                     <button
                                         onClick={() => handleBarClick(i)}
                                         className={`bar-btn ${displayBar === i ? 'viewing' : ''} ${(currentBarIdx || 0) === i ? 'playing' : ''}`}
@@ -267,7 +276,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                         {i + 1}
                                     </button>
 
-                                    {/* The restored delete button */}
+                                    {/* delete bar */}
                                     {numBars > 1 && (
                                         <button
                                             className="delete-bar-btn"
@@ -278,9 +287,20 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                     )}
                                 </div>
                             ))}
+
                             <button className="add-bar-btn" onClick={addBar}>+</button>
+
                             <button className={`follow-btn ${followPlayhead ? 'on' : ''}`}
                                     onClick={() => setFollowPlayhead(!followPlayhead)}>FOLLOW
+                            </button>
+
+                            <button
+                                className={`follow-btn ${deleteMode ? 'on' : ''}`}
+
+                                onClick={() => setDeleteMode(!deleteMode)}
+                                title="Click pads to instantly clear them"
+                            >
+                                {deleteMode ? '🗑' : '🗑'}
                             </button>
                         </div>
                     </div>
@@ -293,6 +313,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                 onToggle={(localIdx) => handleToggle(localIdx + startIndex)}
                                 padCount={padCount}
                                 samples={samples}
+                                selectedFamilyId={selectedFamilyId}
                             />
                         </div>
 

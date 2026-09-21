@@ -616,7 +616,10 @@ h1.main-title {
 
 .bar-btn-wrapper {
     position: relative;
-    display: inline-block;
+
+    display: flex;
+
+
 
 
 
