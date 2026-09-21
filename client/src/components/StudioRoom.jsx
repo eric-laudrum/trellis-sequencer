@@ -45,6 +45,8 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
         deleteMode,
         setDeleteMode,
         deleteSample,
+        setPlaybackMode,
+        setPadHold
 
     } = useSequencer(gridState, setGridState, socket, roomName, gridDimension, gridDimension);
 
@@ -84,7 +86,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
         if (deleteMode) {
             setGridState(prev => {
                 const next = [...prev];
-                const clearedPad = { isActive: false, sampleIds: [], userId: null };
+                const clearedPad = { isActive: false, sampleIds: [], userId: null, holds: {} };
                 next[index] = clearedPad;
                 socket.emit('pad-toggle', { index, newState: clearedPad });
                 return next;
@@ -105,21 +107,22 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
             if (pad.sampleId && currentIds.length === 0) currentIds = [pad.sampleId];
 
             let newIds = [...currentIds];
+            const updatedPad = { ...pad };
 
             if (newIds.includes(selectedSampleId)) {
-                // Remove if already on pad
                 newIds = newIds.filter(id => id !== selectedSampleId);
+                const familyId = currentSample ? (currentSample.parentId || currentSample.id) : selectedSampleId;
+                if (updatedPad.holds) {
+                    updatedPad.holds = { ...updatedPad.holds };
+                    delete updatedPad.holds[familyId];
+                }
             } else {
-                // Add to pad (No Limit)
                 newIds.push(selectedSampleId);
             }
 
-            const updatedPad = {
-                ...pad,
-                isActive: newIds.length > 0,
-                sampleIds: newIds,
-                userId: newIds.length > 0 ? socket.id : null,
-            };
+            updatedPad.isActive = newIds.length > 0;
+            updatedPad.sampleIds = newIds;
+            updatedPad.userId = newIds.length > 0 ? socket.id : null;
             delete updatedPad.sampleId;
 
             next[index] = updatedPad;
@@ -191,14 +194,26 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                 <input
                                     type="color"
                                     className="color-picker-mini"
-                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
+                                    style={{border: 'none', background: 'transparent', cursor: 'pointer'}}
                                     value={currentSample.color || "#f5820a"}
                                     onChange={(e) => setSampleColor(currentSample.id, e.target.value)}
                                 />
                             </div>
 
+                            <div className="sample-setting choke-select">
+                                <span style={{fontSize: '10px', color: 'gray', marginRight: '5px'}}>MODE</span>
+                                <select
+                                    className="group-select"
+                                    value={currentSample.playbackMode || "oneshot"}
+                                    onChange={(e) => setPlaybackMode(currentSample.id, e.target.value)}
+                                >
+                                    <option value="oneshot">One-Shot</option>
+                                    <option value="hold">Hold</option>
+                                </select>
+                            </div>
+
                             {/* New Tool Toggle */}
-                            <div className="sample-setting choke-select" style={{ marginLeft: 'auto' }}>
+                            <div className="sample-setting choke-select" style={{marginLeft: 'auto'}}>
                                 <span style={{fontSize: '10px', color: 'gray', marginRight: '5px'}}>TOOL</span>
                                 <div className="tool-toggle-group">
                                     <button
@@ -316,6 +331,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                 padCount={padCount}
                                 samples={samples}
                                 selectedFamilyId={selectedFamilyId}
+                                onSetHold={setPadHold}
                             />
                         </div>
 

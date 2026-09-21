@@ -115,7 +115,7 @@ export const useSequencer = (
         loadStockSounds();
     }, []);
 
-    const triggerSample = useCallback((sampleIdOrArray, time) => {
+    const triggerSample = useCallback((sampleIdOrArray, time, stepIndex) => {
         const ids = Array.isArray(sampleIdOrArray) ? sampleIdOrArray : [sampleIdOrArray];
 
         ids.forEach(sampleId => {
@@ -136,7 +136,34 @@ export const useSequencer = (
                 }
 
                 const offset = (data.startTime || 0) / 1000;
-                const duration = ((data.endTime || (player.buffer.duration * 1000)) / 1000) - offset;
+                let duration = ((data.endTime || (player.buffer.duration * 1000)) / 1000) - offset;
+
+                if (data.playbackMode === 'hold') {
+                    let currentStep = stepIndex;
+                    if (currentStep === undefined) {
+                        const ticks = Tone.Transport.getTicksAtTime(time);
+                        const stepTicks = Tone.Time("16n").toTicks();
+                        currentStep = Math.round(ticks / stepTicks) % gridRef.current.length;
+                    }
+
+                    const pad = gridRef.current[currentStep];
+                    const familyId = data.parentId || data.id;
+                    const holdEndIndex = pad?.holds?.[familyId];
+                    const stepDuration = 60 / Tone.Transport.bpm.value / 4;
+
+                    let stepsHeld = 1;
+                    if (holdEndIndex !== undefined) {
+                        if (holdEndIndex >= currentStep) {
+                            stepsHeld = (holdEndIndex - currentStep) + 1;
+                        } else {
+                            stepsHeld = (gridRef.current.length - currentStep) + holdEndIndex + 1;
+                        }
+                    }
+
+                    duration = Math.min(duration, stepsHeld * stepDuration);
+                    player.stop(time + duration);
+                }
+
                 player.start(time, offset, duration);
 
                 lastTriggerRef.current = { time, offset };
@@ -318,10 +345,28 @@ export const useSequencer = (
         emitEvent('update-sample-color', { sampleId, color });
     };
 
+    const setPlaybackMode = (sampleId, mode) => {
+        setSamples(prev => prev.map(s => s.id === sampleId ? { ...s, playbackMode: mode } : s));
+    };
 
 
+    const setPadHold = useCallback((startIndex, endIndex, sampleId) => {
+        setGridState(prev => {
+            const next = [...prev];
+            if (!next[startIndex].sampleIds?.includes(sampleId)) return prev;
 
-    // Sample Control Logic
+            next[startIndex] = {
+                ...next[startIndex],
+                holds: {
+                    ...(next[startIndex].holds || {}),
+                    [sampleId]: endIndex
+                }
+            };
+            emitEvent('update-state', { index: startIndex, newState: next[startIndex] });
+            return next;
+        });
+    }, [emitEvent, setGridState]);
+
     const setSampleStart = (sampleId, newStart) => {
         setSamples(prev => prev.map(s =>
             s.id === sampleId ? { ...s, startTime: newStart } : s
@@ -452,7 +497,7 @@ export const useSequencer = (
             // Stop the Global Transport (Clock)
             Tone.getTransport().stop();
             Tone.getTransport().position = 0;
-            Tone.getTransport().cancel(); // This clears any scheduled events
+            Tone.getTransport().cancel();
 
             // Force stop every individual sample player immediately
             if (players.current) {
@@ -595,6 +640,8 @@ export const useSequencer = (
         doubleBpm: () => updateBpmGlobal(bpm * 2),
         halfBpm: () => updateBpmGlobal(bpm / 2),
         setSampleColor,
+        setPlaybackMode,
+        setPadHold
         
     };
 };

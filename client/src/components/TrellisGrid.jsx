@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './TrellisGrid.css';
 
-const TrellisGrid = ({ gridState, onToggle, activeStep, padCount, samples, selectedFamilyId }) => {
+const TrellisGrid = ({ gridState, onToggle, activeStep, padCount, samples, selectedFamilyId, onSetHold }) => {
     const cols = Math.sqrt(padCount);
+    const [dragStartIdx, setDragStartIdx] = useState(null);
+    const [dragEnterIdx, setDragEnterIdx] = useState(null);
 
     return (
         <div
@@ -14,7 +16,6 @@ const TrellisGrid = ({ gridState, onToggle, activeStep, padCount, samples, selec
         >
             {gridState.map((cell, i) => {
                 const isPlaying = activeStep === i;
-
                 const currentIds = cell.sampleIds || (cell.sampleId ? [cell.sampleId] : []);
 
                 const familySamples = currentIds
@@ -22,17 +23,71 @@ const TrellisGrid = ({ gridState, onToggle, activeStep, padCount, samples, selec
                     .filter(s => s && selectedFamilyId && (s.id === selectedFamilyId || s.parentId === selectedFamilyId));
 
                 const isPadActive = cell.isActive && familySamples.length > 0;
+                const canDragHold = isPadActive && familySamples[0]?.playbackMode === 'hold';
+                const isRowEnd = (i + 1) % cols === 0;
+
+                const activeHolds = [];
+
+                if (selectedFamilyId) {
+                    gridState.forEach((c, startIdx) => {
+                        const holdEnd = c.holds?.[selectedFamilyId];
+                        if (holdEnd !== undefined && holdEnd > startIdx) {
+                            activeHolds.push({ start: startIdx, end: holdEnd });
+                        }
+                    });
+                }
+                if (dragStartIdx !== null && dragEnterIdx !== null && dragEnterIdx > dragStartIdx) {
+                    activeHolds.push({ start: dragStartIdx, end: dragEnterIdx, isPreview: true });
+                }
+
+                let holdStyle = '';
+                let holdLineColor = '#fff';
+                const activeHold = activeHolds.find(h => i >= h.start && i <= h.end);
+
+                if (activeHold) {
+                    if (i === activeHold.start) holdStyle = 'hold-start';
+                    else if (i === activeHold.end) holdStyle = 'hold-end';
+                    else holdStyle = 'hold-mid';
+
+                    if (activeHold.isPreview) holdStyle += ' preview';
+
+                    const startCell = gridState[activeHold.start];
+                    const startSampleId = startCell?.sampleIds?.find(id => samples.find(x => x.id === id && (x.id === selectedFamilyId || x.parentId === selectedFamilyId)));
+                    const startSample = samples.find(s => s.id === startSampleId);
+                    holdLineColor = startSample?.color || '#f5820a';
+                }
 
                 let bgStyle = '';
                 if (isPadActive) {
                     bgStyle = familySamples[0].color || '#f5820a';
+                } else if (holdStyle === 'hold-end') {
+                    bgStyle = holdLineColor;
                 }
 
                 return (
                     <div
                         key={i}
-                        className={`pad ${isPadActive ? 'active' : ''} ${isPlaying ? 'playing' : ''}`}
-                        style={bgStyle ? { background: bgStyle } : {}}
+                        draggable={canDragHold}
+                        onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', '');
+                            if (canDragHold) setDragStartIdx(i);
+                        }}
+                        onDragEnter={() => {
+                            if (dragStartIdx !== null) setDragEnterIdx(i);
+                        }}
+                        onDragEnd={() => {
+                            if (dragStartIdx !== null && dragEnterIdx !== null && dragEnterIdx >= dragStartIdx) {
+                                if (selectedFamilyId) onSetHold(dragStartIdx, dragEnterIdx, selectedFamilyId);
+                            }
+                            setDragStartIdx(null);
+                            setDragEnterIdx(null);
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        className={`pad ${isPadActive || holdStyle === 'hold-end' ? 'active' : ''} ${isPlaying ? 'playing' : ''} ${holdStyle} ${isRowEnd ? 'row-end' : ''}`}
+                        style={{
+                            ...(bgStyle ? { background: bgStyle } : {}),
+                            ...(activeHold ? { '--hold-color': holdLineColor } : {})
+                        }}
                         onClick={() => onToggle(i)}
                     >
                         {familySamples.map((s, idx) => {

@@ -45,6 +45,49 @@
     box-shadow: 0 0 12px #f5820a;
 }
 
+.pad.hold-start::after,
+.pad.hold-mid::after,
+.pad.hold-end::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    height: 6px;
+    background-color: var(--hold-color);
+    z-index: 1;
+    transform: translateY(-50%);
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.pad.hold-start::after {
+    width: calc(50% + 4px);
+    left: 50%;
+}
+
+.pad.hold-mid::after {
+    width: calc(100% + 4px);
+    left: 0;
+}
+
+.pad.hold-end::after {
+    width: 50%;
+    left: 0;
+}
+
+.pad.hold-start.preview::after,
+.pad.hold-mid.preview::after,
+.pad.hold-end.preview::after {
+    background-color: transparent;
+    border-bottom: 4px dashed var(--hold-color);
+    height: 0;
+}
+
+
+.pad.hold-start.row-end::after,
+.pad.hold-mid.row-end::after {
+    width: 50%;
+}
+
 /* User Identity Tag */
 .pad-user-label {
     position: absolute;

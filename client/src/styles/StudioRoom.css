@@ -74,7 +74,6 @@ h1.main-title {
     overflow: hidden;
     height: 100%;
 
-    border: 5px solid blue;
 }
 
 .sequencer-column {
@@ -85,7 +84,6 @@ h1.main-title {
     overflow: hidden;
     height: 100%;
 
-    border: 5px solid gold;
 }
 
 .grid-and-controls-wrapper {
@@ -335,7 +333,7 @@ h1.main-title {
 }
 
 .sample-name{
-    border: 5px solid purple;
+
 }
 .pad .sample-name {
     font-size: 9px;
@@ -384,7 +382,6 @@ h1.main-title {
     padding-left: 10px;
     overflow: visible;
 
-    border: 5px solid greenyellow;
 
 }
 
@@ -505,7 +502,6 @@ h1.main-title {
     border-radius: 8px;
     z-index: 10;
 
-    border: 2px dashed red;
 }
 
 
