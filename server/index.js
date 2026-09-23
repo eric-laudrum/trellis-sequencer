@@ -72,13 +72,16 @@ const io = new Server(server, {
 });
 
 const getRoomListData = () => {
-    return Object.keys(rooms).map(roomName => {
+    const list = Object.keys(rooms).map(roomName => {
         const activeSocketRoom = io.sockets.adapter.rooms.get(roomName);
         return {
             name: roomName,
             count: activeSocketRoom ? activeSocketRoom.size : 0
         };
     });
+
+    console.log("[SOCKET] Broadcasting room list:", list);
+    return list;
 };
 
 io.on('connection', (socket) => {
