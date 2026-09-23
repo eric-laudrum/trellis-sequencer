@@ -3,26 +3,23 @@ import * as Tone from 'tone';
 import { useSocketManager } from "./useSocketManager.js";
 import { useAudioEngine } from "./useAudioEngine.js";
 
-import everydaySample from '../assets/audio/AugustineTwins-EverydayOfMyLife-1967.wav';
-import drumBreak from '/src/assets/audio/80 BPM Side Stick Stop.wav';
 
 const STOCK_SOUNDS = [
     {
         id: 'stock-sample',
         name: 'Everyday of My Life',
         color: '#ff4444',
-        url: everydaySample,
+        url: 'https://res.cloudinary.com/dwzfulzjm/video/upload/v1790130923/AugustineTwins-EverydayOfMyLife-1967_joey5h.wav',
         chokeGroup: 'none'
     },
     {
         id: 'stock-break',
         name: '80BPM Break',
         color: '#007AFF',
-        url: drumBreak,
+        url: 'https://res.cloudinary.com/dwzfulzjm/video/upload/v1790130915/80_BPM_Side_Stick_Stop_nlh5yo.wav',
         chokeGroup: 'none'
     }
 ];
-
 
 export const useSequencer = (
     gridState,
