@@ -568,7 +568,9 @@ export const useSequencer = (
         const formData = new FormData();
         formData.append('file', file);
 
-        const serverUrl = window.location.hostname === 'localhost' ? 'http://localhost:4000' : window.location.origin;
+        const serverUrl = window.location.hostname === 'localhost'
+            ? 'http://localhost:4000'
+            : 'https://trellis-sequencer.onrender.com';
 
         try {
             const response = await fetch(`${serverUrl}/upload-sample`, {
