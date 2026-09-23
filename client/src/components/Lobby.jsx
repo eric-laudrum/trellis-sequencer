@@ -6,13 +6,25 @@ import '../styles/Lobby.css';
 export default function Lobby({socket, onJoin }){
     const [ rooms, setRooms ] = useState([]);
     const [ input, setInput ] = useState('');
+    const [ isConnected, setIsConnected ] = useState(socket?.connected || false);
+
 
     useEffect(() =>{
         if(!socket) return;
 
         // Use socket from App.js
         const onConnect = () => {
+            setIsConnected(true);
             socket.emit('get-rooms');
+        };
+
+        const onDisconnect = () => {
+            setIsConnected(false);
+        };
+
+        const onRoomList = (list) => {
+            console.log("[Lobby] Received room list update:", list);
+            setRooms(list);
         };
 
         if (socket.connected) {
@@ -20,11 +32,13 @@ export default function Lobby({socket, onJoin }){
         }
 
         socket.on('connect', onConnect);
-        socket.on('room-list', (list) => setRooms(list));
+        socket.on('disconnect', onDisconnect);
+        socket.on('room-list', onRoomList);
 
 
         return () => {
             socket.off('connect', onConnect);
+            socket.off('disconnect', onDisconnect);
             socket.off('room-list');
         };
 

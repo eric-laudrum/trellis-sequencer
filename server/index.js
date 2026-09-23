@@ -115,6 +115,14 @@ io.on('connection', (socket) => {
         io.emit('room-list', getRoomListData());
     });
 
+    socket.on('leave-room', (roomName) => {
+        socket.leave(roomName);
+        socket.currentRoom = null;
+
+        // Broadcast the updated list to everyone in the lobby
+        io.emit('room-list', getRoomListData());
+    });
+
     socket.on('pad-toggle', ({ index, newState }) => {
         const room = socket.currentRoom;
         if (room && rooms[room]) {

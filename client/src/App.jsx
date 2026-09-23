@@ -35,6 +35,9 @@ function App() {
     };
 
     const handleLeave = () => {
+        if(roomName) {
+            socket.emit('leave-room', roomName);
+        }
         setRoomName(null);
         setView('lobby');
     };
