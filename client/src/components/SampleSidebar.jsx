@@ -7,7 +7,9 @@ export default function SampleSidebar({
     selectedId,
     onSelect,
     onUpload,
-    onPlaySolo
+    onPlaySolo,
+    isRecording,
+    onToggleRecording,
     }) {
     const [expandedParents, setExpandedParents] = useState({});
 
@@ -22,21 +24,40 @@ export default function SampleSidebar({
 
     return (
         <div className="sample-sidebar">
-            <div style={{ padding: '10px 0', textAlign: 'center' }}>
+            <div style={{
+                padding: '10px 0',
+                textAlign: 'center',
+                display: 'flex',
+                gap: '10px',
+                justifyContent: 'center'
+            }}>
                 <input
                     type="file"
                     onChange={onUpload}
                     accept="audio/*"
                     id="upload-input"
-                    style={{ display: 'none' }}
+                    style={{display: 'none'}}
                 />
                 <label
                     htmlFor="upload-input"
                     className="settings-btn"
-                    style={{ border: '1px solid #f1ad36', cursor: 'pointer', display: 'block' }}
+                    style={{border: '1px solid #f1ad36', cursor: 'pointer', display: 'block', flex: 1}}
                 >
                     + UPLOAD SAMPLE
                 </label>
+                <button
+                    className="settings-btn"
+                    style={{
+                        flex: 1,
+                        border: `1px solid ${isRecording ? '#ff4444' : '#f1ad36'}`,
+                        backgroundColor: isRecording ? 'rgba(255, 68, 68, 0.2)' : 'transparent',
+                        color: isRecording ? '#ff4444' : '#fff',
+                        cursor: 'pointer'
+                    }}
+                    onClick={onToggleRecording}
+                >
+                    {isRecording ? '■ STOP REC' : '● REC SAMPLE'}
+                </button>
             </div>
 
             <div className="sample-list">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './TrellisGrid.css';
+import '../styles/TrellisGrid.css';
 
 const TrellisGrid = ({ gridState, onToggle, activeStep, padCount, samples, selectedFamilyId, onSetHold }) => {
     const cols = Math.sqrt(padCount);

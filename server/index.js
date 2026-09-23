@@ -25,8 +25,7 @@ const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'trellis-sequencer/users',
-        resource_type: 'auto',
-        allowed_formats: ['mp3', 'wav', 'ogg', 'm4a']
+        resource_type: 'auto'
     },
 });
 

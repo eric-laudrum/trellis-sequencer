@@ -466,7 +466,6 @@ export const useSequencer = (
 
         socket.on('download-sample', async (sampleData) => {
             console.log(`[RECEIVE] New sample notification: ${sampleData.name}`);
-            // Check if we already have a player for this URL to avoid re-fetching
             const existingPlayerEntry = Object.entries(players.current).find(([id, p]) => p.url === sampleData.url);
 
             if (existingPlayerEntry) {

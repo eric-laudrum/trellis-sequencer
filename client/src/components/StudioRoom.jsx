@@ -1,5 +1,5 @@
 // StudioRoom.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import TrellisGrid  from './TrellisGrid.jsx';
 import SampleSidebar from "./SampleSidebar.jsx";
 import WaveformEditor from "./WaveformEditor.jsx";
@@ -55,6 +55,45 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
     const [viewedBar, setViewedBar] = useState(0);
     const [followPlayhead, setFollowPlayhead] = useState(true);
     const [editTool, setEditTool] = useState('cursor');
+
+    const [isRecording, setIsRecording] = useState(false);
+    const mediaRecorderRef = useRef(null);
+    const audioChunksRef = useRef([]);
+
+    const toggleRecording = async () => {
+        if (isRecording) {
+            if (mediaRecorderRef.current) {
+                mediaRecorderRef.current.stop();
+            }
+            setIsRecording(false);
+        } else {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const mediaRecorder = new MediaRecorder(stream);
+                mediaRecorderRef.current = mediaRecorder;
+                audioChunksRef.current = [];
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunksRef.current.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                    const file = new File([audioBlob], `Recording-${Math.floor(Math.random() * 10000)}.webm`, { type: 'audio/webm' });
+                    loadFile(file);
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                mediaRecorder.start();
+                setIsRecording(true);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+    };
+
+
+
 
     // Auto-follow logic
     useEffect(() => {
@@ -278,6 +317,8 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                     onSelect={setSelectedSampleId}
                     onUpload={(e) => e.target.files[0] && loadFile(e.target.files[0])}
                     onPlaySolo={playSampleSolo}
+                    isRecording={isRecording}
+                    onToggleRecording={toggleRecording}
                 />
 
                 <div className="sequencer-column">
