@@ -9,6 +9,9 @@ import HomePage from "./pages/HomePage.jsx";
 import AccountStatus from "./components/AccountStatus.jsx";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+console.log("Vite injected URL:", import.meta.env.VITE_BACKEND_URL);
+console.log("Socket is trying to connect to:", BACKEND_URL);
+
 
 const socket = io(BACKEND_URL, {
     transports: ['websocket', 'polling'],
