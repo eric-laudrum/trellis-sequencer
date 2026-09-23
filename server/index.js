@@ -44,8 +44,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// Serve static frontend files (if building React into 'client/dist')
-app.use(express.static(path.join(__dirname, '../client/dist')));
 
 // API Routes
 app.use('/api/user', authRoute);
@@ -187,12 +185,11 @@ io.on('connection', (socket) => {
     });
 });
 
-app.use((req, res, next) => {
-    if (req.path.startsWith('/api')) {
-        return next();
-    }
-    res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
+// Health check
+app.get('/', (req, res) => {
+    res.send('Trellis Backend is running.');
 });
+
 
 // Render dynamic port
 const PORT = process.env.PORT || 4000;
