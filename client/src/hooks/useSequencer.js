@@ -40,12 +40,34 @@ export const useSequencer = (
     const sampleRef = useRef([]);
     const gridRef = useRef(gridState);
     const lastTriggerRef = useRef({ time: 0, offset: 0 });
+    const bpmRef = useRef(bpm);
+    useEffect(() => { bpmRef.current = bpm; }, [bpm]);
 
     const tapTimes = useRef([]);
     const [viewingBar, setViewingBar] = useState(0);
     const [isFollowEnabled, setIsFollowEnabled] = useState(true);
 
     const { shouldIgnoreServer, emitEvent } = useSocketManager(socket, roomName);
+
+    const getSeqStep = useCallback((domIdx) => {
+        const stepsPerBar = rows * cols;
+        const barOffset = Math.floor(domIdx / stepsPerBar) * stepsPerBar;
+        const localIdx = domIdx % stepsPerBar;
+        const col = localIdx % cols;
+        const domRow = Math.floor(localIdx / cols);
+        const seqRow = (rows - 1) - domRow;
+        return barOffset + (seqRow * cols) + col;
+    }, [rows, cols]);
+
+    const getDomIdx = useCallback((seqStep) => {
+        const stepsPerBar = rows * cols;
+        const barOffset = Math.floor(seqStep / stepsPerBar) * stepsPerBar;
+        const localStep = seqStep % stepsPerBar;
+        const col = localStep % cols;
+        const seqRow = Math.floor(localStep / cols);
+        const domRow = (rows - 1) - seqRow;
+        return barOffset + (domRow * cols) + col;
+    }, [rows, cols]);
 
 
     // Sync refs for audio engine
@@ -112,6 +134,30 @@ export const useSequencer = (
         loadStockSounds();
     }, []);
 
+    const movePad = useCallback((sourceIndex, targetIndex) => {
+        if (sourceIndex === targetIndex) return;
+
+        setGridState(prev => {
+            const next = [...prev];
+            const sourcePad = next[sourceIndex];
+
+            // Don't do anything if the pad is empty
+            if (!sourcePad || !sourcePad.isActive) return prev;
+
+            const clearedSourcePad = { isActive: false, sampleIds: [], userId: null, holds: {} };
+            const newTargetPad = { ...sourcePad };
+
+            next[sourceIndex] = clearedSourcePad;
+            next[targetIndex] = newTargetPad;
+
+            // Emit two toggle events to sync the move to other players in the room
+            emitEvent('pad-toggle', { index: sourceIndex, newState: clearedSourcePad });
+            emitEvent('pad-toggle', { index: targetIndex, newState: newTargetPad });
+
+            return next;
+        });
+    }, [setGridState, emitEvent]);
+
     const triggerSample = useCallback((sampleIdOrArray, time, stepIndex) => {
         const ids = Array.isArray(sampleIdOrArray) ? sampleIdOrArray : [sampleIdOrArray];
 
@@ -125,9 +171,7 @@ export const useSequencer = (
                     sampleRef.current.forEach(otherSample => {
                         if (otherSample.chokeGroup === data.chokeGroup && otherSample.id !== sampleId) {
                             const otherPlayer = players.current[otherSample.id];
-                            if (otherPlayer) {
-                                otherPlayer.stop(time);
-                            }
+                            if (otherPlayer) otherPlayer.stop(time);
                         }
                     });
                 }
@@ -136,38 +180,57 @@ export const useSequencer = (
                 let duration = ((data.endTime || (player.buffer.duration * 1000)) / 1000) - offset;
 
                 if (data.playbackMode === 'hold') {
-                    let currentStep = stepIndex;
-                    if (currentStep === undefined) {
-                        const ticks = Tone.Transport.getTicksAtTime(time);
-                        const stepTicks = Tone.Time("16n").toTicks();
-                        currentStep = Math.round(ticks / stepTicks) % gridRef.current.length;
-                    }
-
-                    const pad = gridRef.current[currentStep];
                     const familyId = data.parentId || data.id;
-                    const holdEndIndex = pad?.holds?.[familyId];
-                    const stepDuration = 60 / Tone.Transport.bpm.value / 4;
+                    let currentStep = stepIndex;
 
-                    let stepsHeld = 1;
-                    if (holdEndIndex !== undefined) {
-                        if (holdEndIndex >= currentStep) {
-                            stepsHeld = (holdEndIndex - currentStep) + 1;
-                        } else {
-                            stepsHeld = (gridRef.current.length - currentStep) + holdEndIndex + 1;
+                    let pad = gridRef.current[currentStep];
+
+                    const stepActuallyHasSample = pad?.sampleIds?.some(id => {
+                        const s = sampleRef.current.find(x => x.id === id);
+                        return s && (s.parentId === familyId || s.id === familyId);
+                    });
+
+                    if (!stepActuallyHasSample) {
+                        const correctIndex = gridRef.current.findIndex(p => p?.holds?.[familyId] !== undefined);
+                        if (correctIndex !== -1) {
+                            currentStep = correctIndex;
+                            pad = gridRef.current[currentStep];
                         }
                     }
 
-                    duration = Math.min(duration, stepsHeld * stepDuration);
-                    player.stop(time + duration);
+                    const holdEndIndex = pad?.holds?.[familyId];
+
+                    let stepsHeld = 1;
+                    if (holdEndIndex !== undefined) {
+                        const startSeq = getSeqStep(currentStep);
+                        const endSeq = getSeqStep(holdEndIndex);
+                        if (endSeq > startSeq) {
+                            stepsHeld = (endSeq - startSeq) + 2;
+                        }
+                    }
+
+                    const currentBPM = bpmRef.current;
+                    const stepDurationSeconds = 60 / currentBPM / 2;
+                    const requestedHoldSeconds = stepsHeld * stepDurationSeconds;
+
+                    player.start(time, offset);
+                    player.stop(time + requestedHoldSeconds);
+
+                    console.log(`[AUDIO DEBUG] Holding ${stepsHeld} upward pads at ${currentBPM} BPM = ${requestedHoldSeconds.toFixed(2)}s`);
+
+                    lastTriggerRef.current = { time, offset };
+                    setLastTriggerTime(time);
+                    return;
                 }
 
+                player.fadeOut = 0.05;
                 player.start(time, offset, duration);
 
                 lastTriggerRef.current = { time, offset };
                 setLastTriggerTime(time);
             }
         });
-    }, []);
+    }, [getSeqStep]);
 
     // Audio Engine Orchestration
     useAudioEngine(
@@ -348,21 +411,59 @@ export const useSequencer = (
 
 
     const setPadHold = useCallback((startIndex, endIndex, sampleId) => {
+        const startSeq = getSeqStep(startIndex);
+        const endSeq = getSeqStep(endIndex);
+
+        if (endSeq <= startSeq) return;
+
         setGridState(prev => {
             const next = [...prev];
-            if (!next[startIndex].sampleIds?.includes(sampleId)) return prev;
+            const pad = next[startIndex];
+
+            if (!pad) return prev;
+
+            console.log(`[GRID] Saving Upward Hold! Pad ${startIndex} to ${endIndex} for family ${sampleId}`);
 
             next[startIndex] = {
-                ...next[startIndex],
+                ...pad,
                 holds: {
-                    ...(next[startIndex].holds || {}),
+                    ...(pad.holds || {}),
                     [sampleId]: endIndex
                 }
             };
-            emitEvent('update-state', { index: startIndex, newState: next[startIndex] });
+
+            emitEvent('pad-toggle', { index: startIndex, newState: next[startIndex] });
+
+            const stepsToClear = endSeq - startSeq;
+
+            for (let i = 1; i <= stepsToClear; i++) {
+                const clearSeqIdx = startSeq + i;
+                const clearIdx = getDomIdx(clearSeqIdx) % next.length;
+                const intermediatePad = next[clearIdx];
+
+                if (intermediatePad) {
+                    const currentIds = intermediatePad.sampleIds || (intermediatePad.sampleId ? [intermediatePad.sampleId] : []);
+
+                    if (currentIds.length > 0) {
+                        const newIds = currentIds.filter(id => {
+                            const s = sampleRef.current.find(x => x.id === id);
+                            return !(s && (s.parentId === sampleId || s.id === sampleId));
+                        });
+
+                        next[clearIdx] = {
+                            ...intermediatePad,
+                            sampleIds: newIds,
+                            isActive: newIds.length > 0
+                        };
+                        emitEvent('pad-toggle', { index: clearIdx, newState: next[clearIdx] });
+                    }
+                }
+            }
+
             return next;
         });
-    }, [emitEvent, setGridState]);
+    }, [emitEvent, setGridState, getSeqStep, getDomIdx]);
+
 
     const setSampleStart = (sampleId, newStart) => {
         setSamples(prev => prev.map(s =>
@@ -605,6 +706,7 @@ export const useSequencer = (
     const currentBarIdx = activeStep === -1 ? 0 : Math.floor(activeStep / (rows * cols));
 
     return {
+        movePad,
         deleteMode,
         setDeleteMode,
         clearPad,

@@ -46,7 +46,8 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
         setDeleteMode,
         deleteSample,
         setPlaybackMode,
-        setPadHold
+        setPadHold,
+        movePad,
 
     } = useSequencer(gridState, setGridState, socket, roomName, gridDimension, gridDimension);
 
@@ -369,10 +370,11 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                 gridState={visiblePads}
                                 activeStep={currentBarIdx === displayBar ? activeStep % padCount : -1}
                                 onToggle={(localIdx) => handleToggle(localIdx + startIndex)}
+                                onMovePad={(sourceLocalIdx, targetLocalIdx) => movePad(sourceLocalIdx + startIndex, targetLocalIdx + startIndex)} // <-- Add this
                                 padCount={padCount}
                                 samples={samples}
                                 selectedFamilyId={selectedFamilyId}
-                                onSetHold={setPadHold}
+                                onSetHold={(startIdx, endIdx, famId) => setPadHold(startIdx + startIndex, endIdx + startIndex, famId)}
                             />
                         </div>
 
