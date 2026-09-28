@@ -379,7 +379,7 @@ export const useSequencer = (
             ...sourceSample,
             id: newId,
             parentId: parentId,
-            name: `${baseName} - Slice ${sliceNumber}`,
+            name: `${baseName}`,
             color: sourceSample.color || '#f1ad36',
             startTime: newStartTime,
             endTime: newEndTime,
