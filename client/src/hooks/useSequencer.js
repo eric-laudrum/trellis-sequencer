@@ -232,6 +232,26 @@ export const useSequencer = (
         });
     }, [getSeqStep]);
 
+    const [isLoopMode, setIsLoopMode] = useState(false);
+    const [loopRange, setLoopRange] = useState(null);
+
+    const toggleLoopMode = () => {
+        setIsLoopMode(prev => {
+            if (prev) setLoopRange(null);
+            return !prev;
+        });
+    };
+
+    const handleLoopPointSelect = useCallback((domIdx) => {
+        const seqStep = getSeqStep(domIdx);
+        setLoopRange(prev => {
+            if (!prev || prev.length === 2) return [seqStep];
+            const start = prev[0];
+            return [Math.min(start, seqStep), Math.max(start, seqStep)];
+        });
+    }, [getSeqStep]);
+
+
     // Audio Engine Orchestration
     useAudioEngine(
         bpm,
@@ -241,7 +261,9 @@ export const useSequencer = (
         triggerSample,
         setActiveStep,
         rows,
-        cols
+        cols,
+        isLoopMode,
+        loopRange
     );
 
     const updateBpmGlobal = (val) => {
@@ -409,7 +431,6 @@ export const useSequencer = (
         setSamples(prev => prev.map(s => s.id === sampleId ? { ...s, playbackMode: mode } : s));
     };
 
-
     const setPadHold = useCallback((startIndex, endIndex, sampleId) => {
         const startSeq = getSeqStep(startIndex);
         const endSeq = getSeqStep(endIndex);
@@ -463,6 +484,7 @@ export const useSequencer = (
             return next;
         });
     }, [emitEvent, setGridState, getSeqStep, getDomIdx]);
+
 
 
     const setSampleStart = (sampleId, newStart) => {
@@ -741,7 +763,11 @@ export const useSequencer = (
         halfBpm: () => updateBpmGlobal(bpm / 2),
         setSampleColor,
         setPlaybackMode,
-        setPadHold
+        setPadHold,
+        isLoopMode,
+        loopRange,
+        toggleLoopMode,
+        handleLoopPointSelect,
         
     };
 };

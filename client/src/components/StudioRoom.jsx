@@ -48,6 +48,10 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
         setPlaybackMode,
         setPadHold,
         movePad,
+        isLoopMode,
+        loopRange,
+        toggleLoopMode,
+        handleLoopPointSelect,
 
     } = useSequencer(gridState, setGridState, socket, roomName, gridDimension, gridDimension);
 
@@ -123,6 +127,11 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
     };
 
     const handleToggle = (index) => {
+        if (isLoopMode && (!loopRange || loopRange.length < 2)) {
+            handleLoopPointSelect(index);
+            return;
+        }
+
         if (deleteMode) {
             setGridState(prev => {
                 const next = [...prev];
@@ -354,6 +363,14 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                             </button>
 
                             <button
+                                className={`follow-btn ${isLoopMode ? 'on' : ''}`}
+                                onClick={toggleLoopMode}
+                                title="Toggle Loop (Select start and end pads)"
+                            >
+                                🔁
+                            </button>
+
+                            <button
                                 className={`follow-btn ${deleteMode ? 'on' : ''}`}
 
                                 onClick={() => setDeleteMode(!deleteMode)}
@@ -366,16 +383,42 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
 
                     <div className="grid-and-controls-wrapper">
                         <div className="grid-container">
-                            <TrellisGrid
-                                gridState={visiblePads}
-                                activeStep={currentBarIdx === displayBar ? activeStep % padCount : -1}
-                                onToggle={(localIdx) => handleToggle(localIdx + startIndex)}
-                                onMovePad={(sourceLocalIdx, targetLocalIdx) => movePad(sourceLocalIdx + startIndex, targetLocalIdx + startIndex)} // <-- Add this
-                                padCount={padCount}
-                                samples={samples}
-                                selectedFamilyId={selectedFamilyId}
-                                onSetHold={(startIdx, endIdx, famId) => setPadHold(startIdx + startIndex, endIdx + startIndex, famId)}
-                            />
+                            {(() => {
+                                let localLoopRange = null;
+                                if (loopRange && loopRange.length === 2) {
+                                    const [startSeq, endSeq] = loopRange;
+                                    const barStartSeq = displayBar * padCount;
+                                    const barEndSeq = barStartSeq + padCount - 1;
+
+                                    const visStart = Math.max(startSeq, barStartSeq);
+                                    const visEnd = Math.min(endSeq, barEndSeq);
+
+                                    if (visStart <= visEnd) {
+                                        localLoopRange = [visStart - barStartSeq, visEnd - barStartSeq];
+                                    }
+                                } else if (loopRange && loopRange.length === 1) {
+                                    const startSeq = loopRange[0];
+                                    const barStartSeq = displayBar * padCount;
+                                    const barEndSeq = barStartSeq + padCount - 1;
+                                    if (startSeq >= barStartSeq && startSeq <= barEndSeq) {
+                                        localLoopRange = [startSeq - barStartSeq, startSeq - barStartSeq];
+                                    }
+                                }
+
+                                return (
+                                    <TrellisGrid
+                                        gridState={visiblePads}
+                                        activeStep={currentBarIdx === displayBar ? activeStep % padCount : -1}
+                                        onToggle={(localIdx) => handleToggle(localIdx + startIndex)}
+                                        onMovePad={(sourceLocalIdx, targetLocalIdx) => movePad(sourceLocalIdx + startIndex, targetLocalIdx + startIndex)}
+                                        padCount={padCount}
+                                        samples={samples}
+                                        selectedFamilyId={selectedFamilyId}
+                                        onSetHold={(startIdx, endIdx, famId) => setPadHold(startIdx + startIndex, endIdx + startIndex, famId)}
+                                        localLoopRange={localLoopRange}
+                                    />
+                                );
+                            })()}
                         </div>
 
                         <div className='play-controls' style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
@@ -401,7 +444,13 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                     />
                                 ) : (
                                     <span
-                                        style={{ cursor: 'pointer', fontFamily: 'monospace', fontSize: '1.2rem', color: '#f5820a', fontWeight: 'bold' }}
+                                        style={{
+                                            cursor: 'pointer',
+                                            fontFamily: 'monospace',
+                                            fontSize: '1.2rem',
+                                            color: '#f5820a',
+                                            fontWeight: 'bold'
+                                        }}
                                         onClick={() => setIsEditingBpm(true)}
                                         title="Click to edit BPM"
                                     >

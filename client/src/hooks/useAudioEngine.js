@@ -1,17 +1,15 @@
 import { useEffect } from "react";
 import * as Tone from "tone";
 
-export const useAudioEngine = (bpm, numBars, isPlaying, gridRef, triggerSample, setActiveStep, rows, cols) => {
+export const useAudioEngine = (bpm, numBars, isPlaying, gridRef, triggerSample, setActiveStep, rows, cols, isLoopMode, loopRange) => {
     const transport = Tone.getTransport();
 
-    // BPM Control
     useEffect(() => {
         if (Number.isFinite(bpm) && bpm > 0) {
             transport.bpm.rampTo(bpm, 0.1);
         }
-    }, [bpm]);
+    }, [bpm, transport]);
 
-    // Sequence
     useEffect(() => {
         if (!isPlaying) {
             transport.stop();
@@ -22,6 +20,19 @@ export const useAudioEngine = (bpm, numBars, isPlaying, gridRef, triggerSample, 
 
         const stepsPerBar = rows * cols;
         const totalSteps = stepsPerBar * numBars;
+
+        let stepArray = [];
+
+        if (isLoopMode && loopRange && loopRange.length === 2) {
+            const [startSeq, endSeq] = loopRange;
+            for (let i = startSeq; i <= endSeq; i++) {
+                stepArray.push(i);
+            }
+        } else {
+            stepArray = Array.from({ length: totalSteps }, (_, i) => i);
+        }
+
+        if (stepArray.length === 0) return;
 
         const seq = new Tone.Sequence((time, stepIdx) => {
             const currentBar = Math.floor(stepIdx / stepsPerBar);
@@ -39,10 +50,10 @@ export const useAudioEngine = (bpm, numBars, isPlaying, gridRef, triggerSample, 
             if (cell?.isActive) {
                 const sampleIds = cell.sampleIds || (cell.sampleId ? [cell.sampleId] : []);
                 if (sampleIds.length > 0) {
-                    triggerSample(sampleIds, time);
+                    triggerSample(sampleIds, time, gridIndex);
                 }
             }
-        }, Array.from({ length: totalSteps }, (_, i) => i), "8n");
+        }, stepArray, "8n");
 
         transport.start();
         seq.start(0);
@@ -50,5 +61,5 @@ export const useAudioEngine = (bpm, numBars, isPlaying, gridRef, triggerSample, 
         return () => {
             seq.dispose();
         };
-    }, [bpm, numBars, isPlaying, triggerSample, setActiveStep, rows, cols]);
+    }, [bpm, numBars, isPlaying, triggerSample, setActiveStep, rows, cols, isLoopMode, loopRange, transport, gridRef]);
 };

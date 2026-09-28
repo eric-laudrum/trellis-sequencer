@@ -1,7 +1,7 @@
 import React, {useRef, useState} from 'react';
 import '../styles/TrellisGrid.css';
 
-const TrellisGrid = ({ gridState, onToggle, activeStep, padCount, samples, selectedFamilyId, onSetHold, onMovePad }) => {
+const TrellisGrid = ({ gridState, onToggle, activeStep, padCount, samples, selectedFamilyId, onSetHold, onMovePad, localLoopRange }) => {
     const cols = Math.sqrt(padCount);
     const rows = cols;
 
@@ -104,6 +104,61 @@ const TrellisGrid = ({ gridState, onToggle, activeStep, padCount, samples, selec
                     }
                     return lines;
                 })}
+
+                {localLoopRange && (() => {
+                    const lines = [];
+                    const startSeq = localLoopRange[0];
+                    const endSeq = localLoopRange[1];
+
+                    for (let s = startSeq; s < endSeq; s++) {
+                        const p1 = getDomIdx(s);
+                        const p2 = getDomIdx(s + 1);
+
+                        const col1 = p1 % cols;
+                        const col2 = p2 % cols;
+                        const row1 = Math.floor(p1 / cols);
+                        const row2 = Math.floor(p2 / cols);
+
+                        if (col1 === cols - 1 && col2 === 0) continue;
+
+                        const x1 = (col1 + 0.5) * (100 / cols);
+                        const y1 = (row1 + 0.5) * (100 / rows);
+                        const x2 = (col2 + 0.5) * (100 / cols);
+                        const y2 = (row2 + 0.5) * (100 / rows);
+
+                        lines.push(
+                            <line
+                                key={`loop-${s}`}
+                                x1={`${x1}%`} y1={`${y1}%`}
+                                x2={`${x2}%`} y2={`${y2}%`}
+                                stroke="#4CD964"
+                                strokeWidth="16"
+                                strokeLinecap="round"
+                                opacity={0.3}
+                            />
+                        );
+                    }
+
+                    if (startSeq === endSeq) {
+                        const p = getDomIdx(startSeq);
+                        const col = p % cols;
+                        const row = Math.floor(p / cols);
+                        const x = (col + 0.5) * (100 / cols);
+                        const y = (row + 0.5) * (100 / rows);
+                        lines.push(
+                            <circle
+                                key={`loop-single`}
+                                cx={`${x}%`} cy={`${y}%`}
+                                r="4%"
+                                fill="#4CD964"
+                                opacity={0.5}
+                            />
+                        );
+                    }
+                    return lines;
+                })()}
+
+
             </svg>
 
             <div
