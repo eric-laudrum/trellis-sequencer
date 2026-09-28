@@ -80,17 +80,18 @@ export const useSequencer = (
             const loadedSamples = [];
 
             for (const sound of STOCK_SOUNDS) {
-                // 1. Check if it exists OR is currently loading
                 if (!players.current[sound.id]) {
 
-                    // 2. IMMEDIATELY lock it synchronously so the 2nd React render ignores it
+                    // Lock it synchronously so the 2nd React render ignores it
                     players.current[sound.id] = "loading";
 
                     try {
                         const newPlayer = new Tone.Player().toDestination();
                         await newPlayer.load(sound.url);
 
-                        // 3. Overwrite the "loading" lock with the actual loaded player
+                        newPlayer.url = sound.url;
+
+                        // Overwrite the "loading" lock with the actual loaded player
                         players.current[sound.id] = newPlayer;
 
                         loadedSamples.push({
@@ -606,16 +607,25 @@ export const useSequencer = (
 
         socket.on('initial-state', async (data) => {
             if (data.samples) {
-                // First, load all the audio buffers
                 for (const s of data.samples) {
-                    if (!players.current[s.id]) await addNewPlayer(s.id, s.url, s.name);
-                }
+                    if (!players.current[s.id]) {
+                        // Check if another sample already loaded this URL
+                        const existingPlayer = Object.values(players.current).find(p => p.url === s.url);
 
-                // Merge metadata back to local state to overwrite the defaults created by addNewPlayer
-                setSamples(prev => prev.map(localSample => {
-                    const serverMeta = data.samples.find(server => server.id === localSample.id);
-                    return serverMeta ? { ...localSample, ...serverMeta, buffer: localSample.buffer } : localSample;
-                }));
+                        if (existingPlayer && existingPlayer.buffer) {
+                            players.current[s.id] = existingPlayer; // reuse!
+                            setSamples(prev => {
+                                if (prev.find(x => x.id === s.id)) return prev;
+                                return [...prev, {
+                                    ...s,
+                                    buffer: existingPlayer.buffer
+                                }];
+                            });
+                        } else {
+                            await addNewPlayer(s);
+                        }
+                    }
+                }
             }
             if (data.grid) setGridState(data.grid);
             if (data.numBars) setNumBars(data.numBars);
@@ -624,20 +634,22 @@ export const useSequencer = (
 
         socket.on('download-sample', async (sampleData) => {
             console.log(`[RECEIVE] New sample notification: ${sampleData.name}`);
-            const existingPlayerEntry = Object.entries(players.current).find(([id, p]) => p.url === sampleData.url);
+            const existingPlayer = Object.values(players.current).find(p => p.url === sampleData.url);
 
-            if (existingPlayerEntry) {
+            if (existingPlayer && existingPlayer.buffer) {
                 // Reuse existing buffer/player for the new ID
-                players.current[sampleData.id] = existingPlayerEntry[1];
-                
-                setSamples(prev => [...prev, {
-                    ...sampleData,
-                    buffer: existingPlayerEntry[1].buffer,
-                    chokeGroup: sampleData.chokeGroup || "none"
-                }]);
-            } else {
+                players.current[sampleData.id] = existingPlayer;
 
-                await addNewPlayer(sampleData.id, sampleData.url, sampleData.name);
+                setSamples(prev => {
+                    if (prev.find(x => x.id === sampleData.id)) return prev;
+                    return [...prev, {
+                        ...sampleData,
+                        buffer: existingPlayer.buffer,
+                        chokeGroup: sampleData.chokeGroup || "none"
+                    }];
+                });
+            } else {
+                await addNewPlayer(sampleData);
             }
         });
 
@@ -725,29 +737,34 @@ export const useSequencer = (
         };
     }, [socket, shouldIgnoreServer, setGridState, roomName ]);
 
-    const addNewPlayer = async (id, url, name, color = '#f5820a') => {
-        if (players.current[id]) return;
+    const addNewPlayer = async (sampleData) => {
+        if (players.current[sampleData.id]) return;
 
         try {
-            console.log(`[AUDIO] Decoding buffer for: ${name} ...`);
+            console.log(`[AUDIO] Decoding buffer for: ${sampleData.name} ...`);
             const startTime = performance.now();
 
             const newPlayer = new Tone.Player().toDestination();
-            await newPlayer.load(url);
+            await newPlayer.load(sampleData.url);
+
+            // 🚨 CRITICAL: Tag the player with the URL so duplicates can find and reuse it later
+            newPlayer.url = sampleData.url;
+
+            players.current[sampleData.id] = newPlayer;
 
             const duration = (performance.now() - startTime).toFixed(2);
-            players.current[id] = newPlayer;
-
-            console.log(`[AUDIO] ${name} ready! Load time: ${duration}ms`);
+            console.log(`[AUDIO] ${sampleData.name} ready! Load time: ${duration}ms`);
 
             setSamples(prev => [...prev, {
-                id, name, url, buffer: newPlayer.buffer,
-                startTime: 0, endTime: newPlayer.buffer.duration * 1000,
-                chokeGroup: "none",
-                color: color
+                ...sampleData,
+                buffer: newPlayer.buffer,
+                startTime: sampleData.startTime !== undefined ? sampleData.startTime : 0,
+                endTime: sampleData.endTime !== undefined ? sampleData.endTime : newPlayer.buffer.duration * 1000,
+                chokeGroup: sampleData.chokeGroup || "none",
+                color: sampleData.color || '#f5820a'
             }]);
         } catch (err) {
-            console.error(`[AUDIO] Failed to load ${url}:`, err);
+            console.error(`[AUDIO] Failed to load ${sampleData.url}:`, err);
         }
     };
 
@@ -789,11 +806,13 @@ export const useSequencer = (
             const PALETTE = ['#FF3B30', '#FF9500', '#FFCC00', '#4CD964', '#5AC8FA', '#007AFF', '#5856D6', '#FF2D55', '#E040FB'];
             const newColor = PALETTE[Math.floor(Math.random() * PALETTE.length)];
 
-            await addNewPlayer(id, data.url, data.name, newColor);
+            const sampleDataPayload = { id, url: data.url, name: data.name, color: newColor };
+
+            await addNewPlayer(sampleDataPayload);
 
             socket.emit('share-sample', {
                 roomId: roomName,
-                sampleData: { url: data.url, name: data.name, id: id, color: newColor }
+                sampleData: sampleDataPayload
             });
             console.log("[SOCKET] Broadcast 'share-sample' sent to server");
 
