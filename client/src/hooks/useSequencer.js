@@ -507,6 +507,22 @@ export const useSequencer = (
         ));
     };
 
+    const setSampleVolume = (sampleIds, volume) => {
+        const ids = Array.isArray(sampleIds) ? sampleIds : [sampleIds];
+
+        setSamples(prev => prev.map(s => ids.includes(s.id) ? { ...s, volume } : s));
+
+        ids.forEach(id => {
+            const player = players.current[id];
+            if (player) {
+                const db = volume <= 0 ? -60 : 20 * Math.log10(volume / 100);
+                player.volume.value = db;
+            }
+        });
+
+        emitEvent('update-sample-volume', { sampleIds: ids, volume });
+    };
+
     const playSampleSolo = (id) => {
         const player = players.current[id];
         const sampleData = sampleRef.current.find(s => s.id === id);
@@ -656,6 +672,18 @@ export const useSequencer = (
             setSelectedSampleId(prev => prev === id ? null : prev);
         });
 
+        socket.on('update-sample-volume', ({ sampleIds, volume }) => {
+            if (shouldIgnoreServer()) return;
+            setSamples(prev => prev.map(s => sampleIds.includes(s.id) ? { ...s, volume } : s));
+
+            sampleIds.forEach(id => {
+                if (players.current[id]) {
+                    const db = volume <= 0 ? -60 : 20 * Math.log10(volume / 100);
+                    players.current[id].volume.value = db;
+                }
+            });
+        });
+
         return () => {
             socket.off('update-state')
             socket.off('update-bpm');
@@ -665,6 +693,7 @@ export const useSequencer = (
             socket.off('download-sample');
             socket.off('sync-stop');
             socket.off('remove-sample');
+            socket.off('update-sample-volume');
         };
     }, [socket, shouldIgnoreServer, setGridState, roomName ]);
 
@@ -767,6 +796,7 @@ export const useSequencer = (
         setChokeGroup,
         setSampleStart,
         setSampleEnd,
+        setSampleVolume,
         playSampleSolo,
         stopSampleSolo,
         doubleBpm: () => updateBpmGlobal(bpm * 2),

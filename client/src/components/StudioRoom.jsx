@@ -39,6 +39,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
         setBpm,
         playSampleSolo,
         stopSampleSolo,
+        setSampleVolume,
         setSampleStart,
         setSampleEnd,
         setSampleColor,
@@ -329,6 +330,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                     onUpload={(e) => e.target.files[0] && loadFile(e.target.files[0])}
                     onPlaySolo={playSampleSolo}
                     onStopSolo={stopSampleSolo}
+                    onVolumeChange={setSampleVolume}
                     isRecording={isRecording}
                     onToggleRecording={toggleRecording}
                 />

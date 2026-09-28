@@ -1,22 +1,29 @@
 import React, {useEffect, useRef, useState} from 'react';
 import "../styles/SampleSidebar.css";
 export default function SampleSidebar({
-    samples,
-    duplicateSample,
-    deleteSample,
-    selectedId,
-    onSelect,
-    onUpload,
-    onPlaySolo,
-    onStopSolo,
-    isRecording,
-    onToggleRecording,
-    }) {
-
+                                          samples,
+                                          duplicateSample,
+                                          deleteSample,
+                                          selectedId,
+                                          onSelect,
+                                          onUpload,
+                                          onPlaySolo,
+                                          onStopSolo,
+                                          onVolumeChange,
+                                          isRecording,
+                                          onToggleRecording,
+                                      }) {
     const [expandedParents, setExpandedParents] = useState({});
     const [playingIds, setPlayingIds] = useState({});
+    const [multiSelected, setMultiSelected] = useState([]);
     const timersRef = useRef({});
     const prevSamplesRef = useRef(samples);
+
+    useEffect(() => {
+        if (selectedId && !multiSelected.includes(selectedId)) {
+            setMultiSelected([selectedId]);
+        }
+    }, [selectedId]);
 
     useEffect(() => {
         const prevSamples = prevSamplesRef.current;
@@ -32,6 +39,25 @@ export default function SampleSidebar({
         }
         prevSamplesRef.current = samples;
     }, [samples]);
+
+    const handleItemSelect = (id, e) => {
+        if (e.shiftKey) {
+            e.preventDefault();
+            setMultiSelected(prev => {
+                if (prev.includes(id)) return prev.filter(x => x !== id);
+                return [...prev, id];
+            });
+        } else {
+            setMultiSelected([id]);
+            onSelect(id);
+        }
+    };
+
+    const handleVolumeChange = (id, val) => {
+        const idsToUpdate = multiSelected.includes(id) ? multiSelected : [id];
+        onVolumeChange(idsToUpdate, val);
+    };
+
 
     const handlePreviewClick = (sample, e) => {
         e.stopPropagation();
@@ -118,11 +144,22 @@ export default function SampleSidebar({
                     return (
                         <React.Fragment key={parent.id}>
                             <div
-                                className={`sample-item ${selectedId === parent.id ? 'active' : ''}`}
-                                onClick={() => onSelect(parent.id)}
-                                style={{borderLeft: `6px solid ${parent.color || '#f1ad36'}`}}
+                                className={`sample-item ${multiSelected.includes(parent.id) ? 'active' : ''}`}
+                                onClick={(e) => handleItemSelect(parent.id, e)}
+                                style={{borderLeft: `6px solid ${parent.color || '#f1ad36'}`, display: 'flex', alignItems: 'center'}}
                             >
-                                <div className="sample-name">1. {parent.name}</div>
+                                <div className="sample-name" style={{flex: 1}}>1. {parent.name}</div>
+
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={parent.volume !== undefined ? parent.volume : 100}
+                                    onChange={(e) => handleVolumeChange(parent.id, Number(e.target.value))}
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{ width: '50px', margin: '0 10px' }}
+                                    title="Volume"
+                                />
 
                                 <div className="sample-options" onClick={e => e.stopPropagation()}>
                                     <button
@@ -172,15 +209,29 @@ export default function SampleSidebar({
                             {isExpanded && childSlices.map((slice, index) => (
                                 <div
                                     key={slice.id}
-                                    className={`sample-item slice-item ${selectedId === slice.id ? 'active' : ''}`}
-                                    onClick={() => onSelect(slice.id)}
+                                    className={`sample-item slice-item ${multiSelected.includes(slice.id) ? 'active' : ''}`}
+                                    onClick={(e) => handleItemSelect(slice.id, e)}
                                     style={{
                                         paddingLeft: '25px',
                                         borderLeft: `6px solid ${slice.color || parent.color || '#f1ad36'}`,
-                                        backgroundColor: 'rgba(255, 165, 0, 0.05)'
+                                        backgroundColor: 'rgba(255, 165, 0, 0.05)',
+                                        display: 'flex',
+                                        alignItems: 'center'
                                     }}
                                 >
-                                    <div className="sample-name">{index + 2}. {slice.name}</div>
+                                    <div className="sample-name" style={{flex: 1}}>{index + 2}. {slice.name}</div>
+
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={slice.volume !== undefined ? slice.volume : 100}
+                                        onChange={(e) => handleVolumeChange(slice.id, Number(e.target.value))}
+                                        onClick={(e) => e.stopPropagation()}
+                                        style={{ width: '50px', margin: '0 10px' }}
+                                        title="Volume"
+                                    />
+
                                     <div className="sample-options" onClick={e => e.stopPropagation()}>
                                         <button
                                             className="preview-btn"
