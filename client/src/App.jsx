@@ -49,7 +49,7 @@ function App() {
     return (
         <div className="app-root">
 
-            <AccountStatus />
+            {!roomName && <AccountStatus />}
 
             {view === 'home' && (
                 <HomePage onEnterLobby={() => {

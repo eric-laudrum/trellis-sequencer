@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../styles/ChatPanel.css";
 
-export default function ChatPanel({ socket, roomName }) {
+export default function ChatPanel({ socket, roomName, userName, userColor }) {
 
     const [ messages, setMessages ] = useState([]);
     const [ collapsed, setCollapsed] = useState(false);
@@ -34,11 +34,12 @@ export default function ChatPanel({ socket, roomName }) {
             roomName,
             text: input,
             user: socket.id.substring(0, 5),
+            userName: userName,
+            userColor: userColor,
             timestamp: new Date().toLocaleTimeString([],
                 { hour: '2-digit', minute: '2-digit' }),
         };
 
-        // Send message and reset fields
         socket.emit('send-message', messageData);
         setMessages((prevMessages) => [...prevMessages, messageData]);
         setInput('');
@@ -63,7 +64,9 @@ export default function ChatPanel({ socket, roomName }) {
                     <div className="messages" ref={scrollRef}>
                         {messages.map((message, index) => (
                             <div key={index} className="message">
-                                <span className="chat-user">[{message.user}]</span>
+                                <span className="chat-user" style={{color: message.userColor || '#f5820a'}}>
+                                    [{message.userName || message.user}]
+                                </span>
                                 <span className="chat-text">{message.text}</span>
                             </div>
                         ))}

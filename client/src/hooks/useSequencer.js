@@ -724,6 +724,16 @@ export const useSequencer = (
     };
 
     const loadFile = async (file) => {
+        if (!file.type.startsWith('audio/')) {
+            alert("Invalid file type. Please upload an audio file.");
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            alert("File is too large. Maximum size is 10MB.");
+            return;
+        }
+
+        console.log(`[UPLOAD] Starting upload for: ${file.name}`);
         console.log(`[UPLOAD] Starting upload for: ${file.name}`);
 
         const formData = new FormData();

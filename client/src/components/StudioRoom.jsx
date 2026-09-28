@@ -5,6 +5,7 @@ import SampleSidebar from "./SampleSidebar.jsx";
 import WaveformEditor from "./WaveformEditor.jsx";
 import { useSequencer } from "../hooks/useSequencer.js";
 import ChatPanel from "./ChatPanel.jsx";
+import AccountStatus from "./AccountStatus.jsx";
 
 import "../styles/StudioRoom.css";
 
@@ -66,6 +67,45 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
     const [isRecording, setIsRecording] = useState(false);
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
+
+    const [showProfile, setShowProfile] = useState(false);
+
+    const [userName, setUserName] = useState(() => {
+        const storedUser = localStorage.getItem('trellis_user');
+        if (storedUser) {
+            try {
+                const parsed = JSON.parse(storedUser);
+                const savedCustomName = localStorage.getItem(`trellis_custom_name_${parsed.email}`);
+                if (savedCustomName) return savedCustomName;
+                return parsed.email ? parsed.email.split('@')[0] : 'User';
+            } catch (e) {}
+        }
+        return localStorage.getItem('trellis_guest_name') || `Guest-${Math.floor(Math.random() * 10000)}`;
+    });
+
+    const [userColor] = useState(() => {
+        const storedColor = localStorage.getItem('trellis_guest_color');
+        if (storedColor) return storedColor;
+
+        const colors = ['#FF6B6B', '#FFB347', '#FFCE54', '#A0D468', '#4FC1E9', '#5D9CEC', '#AC92EC', '#EC87C0', '#F5D76E'];
+        const newColor = colors[Math.floor(Math.random() * colors.length)];
+        localStorage.setItem('trellis_guest_color', newColor);
+        return newColor;
+    });
+
+    useEffect(() => {
+        const storedUser = localStorage.getItem('trellis_user');
+        if (storedUser) {
+            try {
+                const parsed = JSON.parse(storedUser);
+                localStorage.setItem(`trellis_custom_name_${parsed.email}`, userName);
+            } catch (e) {}
+        } else {
+            localStorage.setItem('trellis_guest_name', userName);
+        }
+        window.dispatchEvent(new Event('userNameUpdated'));
+    }, [userName]);
+
 
     const toggleRecording = async () => {
         if (isRecording) {
@@ -192,8 +232,74 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
         <div className='app-container'>
             <div className="room-header">
                 <h1 className='main-title'>STUDIO: {roomName}</h1>
-                <button className="settings-btn" onClick={onLeave}>← EXIT</button>
+                <div style={{display: 'flex', gap: '15px', alignItems: 'center'}}>
+                    <button
+                        className="settings-btn"
+                        style={{display: 'flex', alignItems: 'center', gap: '8px', border: `1px solid ${userColor}`}}
+                        onClick={() => setShowProfile(true)}
+                    >
+                        <div style={{width: '12px', height: '12px', borderRadius: '50%', backgroundColor: userColor}}/>
+                        {userName}
+                    </button>
+                    <button className="settings-btn" onClick={onLeave}>← EXIT</button>
+                </div>
             </div>
+
+            {/* -- Profile Pop Up Window -- */}
+            {showProfile && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1000,
+                    display: 'flex', justifyContent: 'center', alignItems: 'center'
+                }}>
+                    <div style={{
+                        backgroundColor: '#1a1a1a', padding: '30px', borderRadius: '8px',
+                        border: '1px solid #333', width: '400px', maxWidth: '90%'
+                    }}>
+
+                        <div style={{marginBottom: '20px'}}>
+                            <label style={{display: 'block', marginBottom: '8px', color: '#888', fontSize: '0.9rem'}}>
+                                Screen Name
+                            </label>
+                            <input
+                                type="text"
+                                value={userName}
+                                onChange={(e) => setUserName(e.target.value)}
+                                style={{
+                                    width: '100%', padding: '10px', backgroundColor: '#0a0a0a',
+                                    border: '1px solid #444', color: '#fff', borderRadius: '4px'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{
+                            marginBottom: '20px',
+                            padding: '15px',
+                            backgroundColor: '#0a0a0a',
+                            borderRadius: '4px',
+                            border: '1px solid #222'
+                        }}>
+                            <p style={{margin: '0 0 10px 0', color: '#888', fontSize: '0.9rem'}}>Future Features</p>
+                            <ul style={{margin: 0, paddingLeft: '20px', color: '#555', fontSize: '0.85rem'}}>
+                                <li>Save room sounds and state</li>
+                                <li>Exported audio library</li>
+                                <li>Friends list & lobby tracking</li>
+                            </ul>
+                        </div>
+
+                        <div style={{display: 'flex', justifyContent: 'flex-end'}}>
+                            <button
+                                className="settings-btn"
+                                onClick={() => setShowProfile(false)}
+                                style={{backgroundColor: '#f1ad36', color: '#000', border: 'none'}}
+                            >
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
 
             <div className="seq-header">
                 {currentSample ? (
@@ -466,7 +572,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                     </div>
                 </div>
 
-                <ChatPanel socket={socket} roomName={roomName}/>
+                <ChatPanel socket={socket} roomName={roomName} userName={userName} userColor={userColor} />
             </div>
         </div>
     );
