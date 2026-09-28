@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import "../styles/SampleSidebar.css";
 export default function SampleSidebar({
     samples,
@@ -8,10 +8,57 @@ export default function SampleSidebar({
     onSelect,
     onUpload,
     onPlaySolo,
+    onStopSolo,
     isRecording,
     onToggleRecording,
     }) {
+
     const [expandedParents, setExpandedParents] = useState({});
+    const [playingIds, setPlayingIds] = useState({});
+    const timersRef = useRef({});
+    const prevSamplesRef = useRef(samples);
+
+    useEffect(() => {
+        const prevSamples = prevSamplesRef.current;
+        if (samples.length > prevSamples.length) {
+            const newSamples = samples.filter(s => !prevSamples.find(p => p.id === s.id));
+            const updates = {};
+            newSamples.forEach(s => {
+                if (s.parentId) updates[s.parentId] = true;
+            });
+            if (Object.keys(updates).length > 0) {
+                setExpandedParents(prev => ({ ...prev, ...updates }));
+            }
+        }
+        prevSamplesRef.current = samples;
+    }, [samples]);
+
+    const handlePreviewClick = (sample, e) => {
+        e.stopPropagation();
+        if (playingIds[sample.id]) {
+            if (onStopSolo) onStopSolo(sample.id);
+            clearTimeout(timersRef.current[sample.id]);
+            setPlayingIds(prev => ({ ...prev, [sample.id]: false }));
+        } else {
+            onPlaySolo(sample.id);
+            setPlayingIds(prev => ({ ...prev, [sample.id]: true }));
+
+            const startMs = sample.startTime || 0;
+            let endMs = sample.endTime;
+            if (endMs === undefined || endMs === null) {
+                endMs = sample.buffer ? sample.buffer.duration * 1000 : 1000;
+            }
+
+            const durationMs = Math.max(50, endMs - startMs);
+
+            clearTimeout(timersRef.current[sample.id]);
+            timersRef.current[sample.id] = setTimeout(() => {
+                setPlayingIds(prev => ({ ...prev, [sample.id]: false }));
+                if (onStopSolo) onStopSolo(sample.id);
+            }, durationMs);
+        }
+    };
+
 
     const toggleExpand = (parentId) => {
         setExpandedParents(prev => ({
@@ -81,9 +128,9 @@ export default function SampleSidebar({
                                     <button
                                         className="preview-btn"
                                         style={{display: 'block'}}
-                                        onClick={() => onPlaySolo(parent.id)}
+                                        onClick={(e) => handlePreviewClick(parent, e)}
                                     >
-                                        ▶
+                                        {playingIds[parent.id] ? '⏸' : '▶'}
                                     </button>
                                     <button
                                         className="duplicate-btn"
@@ -138,9 +185,9 @@ export default function SampleSidebar({
                                         <button
                                             className="preview-btn"
                                             style={{display: 'block'}}
-                                            onClick={() => onPlaySolo(slice.id)}
+                                            onClick={(e) => handlePreviewClick(slice, e)}
                                         >
-                                            ▶
+                                            {playingIds[slice.id] ? '⏸' : '▶'}
                                         </button>
                                         <button
                                             className="duplicate-btn"

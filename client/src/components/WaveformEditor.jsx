@@ -79,7 +79,7 @@ const WaveformEditor = ({
             ctx.fillRect(x, 0, canvas.width - x, canvas.height);
         }
 
-    }, [buffer, zoomRange, startTime, endTime, playheadPos]);
+    }, [buffer, zoomRange, startTime, endTime]);
 
     // Playhead logic
     useEffect(() => {

@@ -520,6 +520,15 @@ export const useSequencer = (
         }
     };
 
+    const stopSampleSolo = (id) => {
+        const player = players.current[id];
+        if (player?.loaded) {
+            player.stop();
+            lastTriggerRef.current = { time: 0, offset: 0 };
+            setLastTriggerTime(0);
+        }
+    };
+
     const tapBpm = () => {
         const now = Date.now();
         const newTapTimes = [...tapTimes.current, now].slice(-4);
@@ -759,6 +768,7 @@ export const useSequencer = (
         setSampleStart,
         setSampleEnd,
         playSampleSolo,
+        stopSampleSolo,
         doubleBpm: () => updateBpmGlobal(bpm * 2),
         halfBpm: () => updateBpmGlobal(bpm / 2),
         setSampleColor,
