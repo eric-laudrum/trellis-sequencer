@@ -491,12 +491,18 @@ export const useSequencer = (
         setSamples(prev => prev.map(s =>
             s.id === sampleId ? { ...s, startTime: newStart } : s
         ));
+        if (socket) {
+            socket.emit('update-sample-bounds', { roomId: roomName, sampleId, startTime: newStart });
+        }
     };
 
     const setSampleEnd = (sampleId, newEnd) => {
         setSamples(prev => prev.map(s =>
             s.id === sampleId ? { ...s, endTime: newEnd } : s
         ));
+        if (socket) {
+            socket.emit('update-sample-bounds', { roomId: roomName, sampleId, endTime: newEnd });
+        }
     };
 
     const setChokeGroup = (sampleId, group) => {
@@ -600,9 +606,16 @@ export const useSequencer = (
 
         socket.on('initial-state', async (data) => {
             if (data.samples) {
+                // First, load all the audio buffers
                 for (const s of data.samples) {
                     if (!players.current[s.id]) await addNewPlayer(s.id, s.url, s.name);
                 }
+
+                // Merge metadata back to local state to overwrite the defaults created by addNewPlayer
+                setSamples(prev => prev.map(localSample => {
+                    const serverMeta = data.samples.find(server => server.id === localSample.id);
+                    return serverMeta ? { ...localSample, ...serverMeta, buffer: localSample.buffer } : localSample;
+                }));
             }
             if (data.grid) setGridState(data.grid);
             if (data.numBars) setNumBars(data.numBars);
@@ -651,6 +664,21 @@ export const useSequencer = (
                     }
                 });
             }
+        });
+
+        socket.on('update-sample-bounds', (data) => {
+
+            // Update server's saved state array to sync users
+            if (rooms[data.roomId]) {
+                const sample = rooms[data.roomId].samples.find(s => s.id === data.sampleId);
+                if (sample) {
+                    if (data.startTime !== undefined) sample.startTime = data.startTime;
+                    if (data.endTime !== undefined) sample.endTime = data.endTime;
+                }
+            }
+
+            // Broadcast the change to the room
+            socket.to(data.roomId).emit('update-sample-bounds', data);
         });
 
         socket.on('remove-sample', (id) => {
