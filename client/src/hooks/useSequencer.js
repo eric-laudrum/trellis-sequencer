@@ -580,9 +580,7 @@ export const useSequencer = (
         });
 
         socket.on('update-transport', ({ isPlaying: remoteIsPlaying }) => {
-
             console.log(`[SYNC] Remote transport change: ${remoteIsPlaying ? 'PLAY' : 'PAUSE'}`);
-
             setIsPlaying(remoteIsPlaying);
 
             // Start/Stop audio clock
@@ -591,12 +589,10 @@ export const useSequencer = (
             } else {
                 Tone.getTransport().pause();
             }
-
         });
 
         socket.on('update-state', ({ index, newState }) =>{
             if(shouldIgnoreServer()) return;
-
             console.log(`[SYNC] Updating pad at index ${index}`);
             setGridState(prevGrid => {
                 const newGrid = [...prevGrid];
@@ -655,20 +651,14 @@ export const useSequencer = (
 
         socket.on('sync-stop', () => {
             console.log("[SOCKET] Global Sync-Stop received. Killing all audio.");
-
-            // Reset the UI State
             setIsPlaying(false);
             setActiveStep(-1);
-
             setLastTriggerTime(0);
             lastTriggerRef.current = { time: 0, offset: 0 };
-
-            // Stop the Global Transport (Clock)
             Tone.getTransport().stop();
             Tone.getTransport().position = 0;
             Tone.getTransport().cancel();
 
-            // Force stop every individual sample player immediately
             if (players.current) {
                 Object.values(players.current).forEach(p => {
                     if (p && typeof p.stop === 'function') {
@@ -678,19 +668,18 @@ export const useSequencer = (
             }
         });
 
-        socket.on('update-sample-bounds', (data) => {
-
-            // Update server's saved state array to sync users
-            if (rooms[data.roomId]) {
-                const sample = rooms[data.roomId].samples.find(s => s.id === data.sampleId);
-                if (sample) {
-                    if (data.startTime !== undefined) sample.startTime = data.startTime;
-                    if (data.endTime !== undefined) sample.endTime = data.endTime;
+        socket.on('update-sample-bounds', ({ sampleId, startTime, endTime }) => {
+            if (shouldIgnoreServer()) return;
+            setSamples(prev => prev.map(s => {
+                if (s.id === sampleId) {
+                    return {
+                        ...s,
+                        ...(startTime !== undefined && { startTime }),
+                        ...(endTime !== undefined && { endTime })
+                    };
                 }
-            }
-
-            // Broadcast the change to the room
-            socket.to(data.roomId).emit('update-sample-bounds', data);
+                return s;
+            }));
         });
 
         socket.on('remove-sample', (id) => {
@@ -725,13 +714,14 @@ export const useSequencer = (
         });
 
         return () => {
-            socket.off('update-state')
             socket.off('update-bpm');
             socket.off('sync-entire-grid');
             socket.off('update-transport');
+            socket.off('update-state');
             socket.off('initial-state');
             socket.off('download-sample');
             socket.off('sync-stop');
+            socket.off('update-sample-bounds');
             socket.off('remove-sample');
             socket.off('update-sample-volume');
         };
@@ -747,7 +737,6 @@ export const useSequencer = (
             const newPlayer = new Tone.Player().toDestination();
             await newPlayer.load(sampleData.url);
 
-            // 🚨 CRITICAL: Tag the player with the URL so duplicates can find and reuse it later
             newPlayer.url = sampleData.url;
 
             players.current[sampleData.id] = newPlayer;
