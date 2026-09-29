@@ -29,7 +29,11 @@ const storage = new CloudinaryStorage({
     },
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({
+    dest: 'uploads/',
+    limits: { fileSize: 30 * 1024 * 1024 }
+});
+
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)

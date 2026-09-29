@@ -762,8 +762,8 @@ export const useSequencer = (
             alert("Invalid file type. Please upload an audio file.");
             return;
         }
-        if (file.size > 10 * 1024 * 1024) {
-            alert("File is too large. Maximum size is 10MB.");
+        if (file.size > 30 * 1024 * 1024) {
+            alert("File is too large. Maximum size is 30MB.");
             return;
         }
 
