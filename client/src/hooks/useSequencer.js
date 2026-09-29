@@ -425,7 +425,7 @@ export const useSequencer = (
             s.id === sampleId ? { ...s, color } : s
         ));
         // Sync colour with the room
-        emitEvent('update-sample-color', { sampleId, color });
+        emitEvent('update-sample-color', { roomId: roomName, sampleId, color });
     };
 
     const setPlaybackMode = (sampleId, mode) => {
@@ -527,7 +527,7 @@ export const useSequencer = (
             }
         });
 
-        emitEvent('update-sample-volume', { sampleIds: ids, volume });
+        emitEvent('update-sample-volume', { roomId: roomName, sampleIds: ids, volume });
     };
 
     const playSampleSolo = (id) => {

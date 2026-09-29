@@ -165,6 +165,44 @@ io.on('connection', (socket) => {
         socket.to(roomId).emit('download-sample', sampleData);
     });
 
+    socket.on('update-sample-bounds', (data) => {
+        const { roomId, sampleId, startTime, endTime } = data;
+
+        if (rooms[roomId]) {
+            const sample = rooms[roomId].samples.find(s => s.id === sampleId);
+            if (sample) {
+                if (startTime !== undefined) sample.startTime = startTime;
+                if (endTime !== undefined) sample.endTime = endTime;
+            }
+        }
+
+        socket.to(roomId).emit('update-sample-bounds', data);
+    });
+
+    socket.on('update-sample-volume', (data) => {
+        const { roomId, sampleIds, volume } = data;
+
+        if (rooms[roomId]) {
+            sampleIds.forEach(id => {
+                const sample = rooms[roomId].samples.find(s => s.id === id);
+                if (sample) sample.volume = volume;
+            });
+        }
+
+        socket.to(roomId).emit('update-sample-volume', data);
+    });
+
+    socket.on('update-sample-color', (data) => {
+        const { roomId, sampleId, color } = data;
+
+        if (rooms[roomId]) {
+            const sample = rooms[roomId].samples.find(s => s.id === sampleId);
+            if (sample) sample.color = color;
+        }
+
+        socket.to(roomId).emit('update-sample-color', data);
+    });
+
     socket.on('stop-all-audio', (data) => {
         const room = data?.roomId;
         if (room) {
