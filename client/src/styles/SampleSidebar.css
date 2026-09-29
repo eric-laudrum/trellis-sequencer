@@ -106,3 +106,9 @@
     background-color: #444;
     border-color: #f1ad36;
 }
+
+@keyframes pulse {
+    0% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+    100% { opacity: 0.4; }
+}

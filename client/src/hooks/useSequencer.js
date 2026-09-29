@@ -487,6 +487,7 @@ export const useSequencer = (
     }, [emitEvent, setGridState, getSeqStep, getDomIdx]);
 
 
+    const [isUploading, setIsUploading] = useState(false);
 
     const setSampleStart = (sampleId, newStart) => {
         setSamples(prev => prev.map(s =>
@@ -768,7 +769,7 @@ export const useSequencer = (
         }
 
         console.log(`[UPLOAD] Starting upload for: ${file.name}`);
-        console.log(`[UPLOAD] Starting upload for: ${file.name}`);
+        setIsUploading(true); // START LOADING
 
         const formData = new FormData();
         formData.append('file', file);
@@ -791,7 +792,6 @@ export const useSequencer = (
 
             const id = crypto.randomUUID();
 
-            // Generate a random bright UI color from a palette
             const PALETTE = ['#FF3B30', '#FF9500', '#FFCC00', '#4CD964', '#5AC8FA', '#007AFF', '#5856D6', '#FF2D55', '#E040FB'];
             const newColor = PALETTE[Math.floor(Math.random() * PALETTE.length)];
 
@@ -805,7 +805,11 @@ export const useSequencer = (
             });
             console.log("[SOCKET] Broadcast 'share-sample' sent to server");
 
-        } catch (err) { console.error("Upload error:", err); }
+        } catch (err) {
+            console.error("Upload error:", err);
+        } finally {
+            setIsUploading(false); // STOP LOADING
+        }
     };
 
     // Derived State
@@ -854,6 +858,7 @@ export const useSequencer = (
         loopRange,
         toggleLoopMode,
         handleLoopPointSelect,
+        isUploading
         
     };
 };

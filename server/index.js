@@ -30,7 +30,7 @@ const storage = new CloudinaryStorage({
 });
 
 const upload = multer({
-    dest: 'uploads/',
+    storage: storage,
     limits: { fileSize: 30 * 1024 * 1024 }
 });
 

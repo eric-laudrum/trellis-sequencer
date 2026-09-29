@@ -55,6 +55,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
         loopRange,
         toggleLoopMode,
         handleLoopPointSelect,
+        isUploading,
 
     } = useSequencer(gridState, setGridState, socket, roomName, gridDimension, gridDimension);
 
@@ -439,6 +440,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                     onVolumeChange={setSampleVolume}
                     isRecording={isRecording}
                     onToggleRecording={toggleRecording}
+                    isUploading={isUploading}
                 />
 
                 <div className="sequencer-column">

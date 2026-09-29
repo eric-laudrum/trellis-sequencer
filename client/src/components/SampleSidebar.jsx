@@ -12,6 +12,7 @@ export default function SampleSidebar({
                                           onVolumeChange,
                                           isRecording,
                                           onToggleRecording,
+                                          isUploading,
                                       }) {
     const [expandedParents, setExpandedParents] = useState({});
     const [playingIds, setPlayingIds] = useState({});
@@ -266,6 +267,26 @@ export default function SampleSidebar({
                         </React.Fragment>
                     );
                 })}
+
+                {/* Loading Indicator */}
+                {isUploading && (
+                    <div
+                        className="sample-item"
+                        style={{
+                            borderLeft: '6px solid #555',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            opacity: 0.7,
+                            backgroundColor: 'rgba(255,255,255,0.02)',
+                            animation: 'pulse 1.5s infinite ease-in-out'
+                        }}
+                    >
+                        <div className="sample-name" style={{fontStyle: 'italic', color: '#aaa', padding: '10px 0'}}>
+                            Loading sample...
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
