@@ -17,12 +17,19 @@
 
 #root {
   width: 100%;
-
   margin: 0 auto;
-
   text-align: center;
-  display: flex;
-  justify-content: center;
+  display: block;
+}
+
+body {
+  margin: 0;
+  background-color: #0f0f0f;
+  color: #eee;
+  display: block;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .app-root{
@@ -33,19 +40,6 @@
 
 }
 
-body {
-  margin: 0;
-  background-color: #0f0f0f;
-  color: #eee;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
-  min-height: 100vh;
-  width: 100%;
-
-  overflow-x: hidden;
-}
 
 body, #root{
   margin: 0;
@@ -82,6 +76,12 @@ button:hover {
 
 /* --- Mobile Responsiveness --- */
 @media (max-width: 850px) {
+  .app-container {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: visible;
+  }
+
   .seq-main {
     flex-direction: column;
     overflow-y: auto;

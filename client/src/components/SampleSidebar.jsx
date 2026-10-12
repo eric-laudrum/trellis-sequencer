@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import "../styles/SampleSidebar.css";
+
 export default function SampleSidebar({
                                           samples,
                                           duplicateSample,
@@ -96,6 +97,8 @@ export default function SampleSidebar({
 
     const parents = samples.filter(s => !s.parentId);
 
+    console.log("SIDEBAR RENDERED");
+
     return (
         <div className="sample-sidebar">
             <div style={{
@@ -103,7 +106,7 @@ export default function SampleSidebar({
                 textAlign: 'center',
                 display: 'flex',
                 gap: '10px',
-                justifyContent: 'center'
+                justifyContent: 'center',
             }}>
                 <input
                     type="file"
@@ -126,7 +129,7 @@ export default function SampleSidebar({
                         border: `1px solid ${isRecording ? '#ff4444' : '#f1ad36'}`,
                         backgroundColor: isRecording ? 'rgba(255, 68, 68, 0.2)' : 'transparent',
                         color: isRecording ? '#ff4444' : '#fff',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
                     }}
                     onClick={onToggleRecording}
                 >

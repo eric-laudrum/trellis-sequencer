@@ -643,3 +643,32 @@ h1.main-title {
     background: var(--primary);
     color: #000;
 }
+
+
+
+@media (max-width: 850px) {
+    .sample-sidebar {
+        width: 100%;
+        height: auto;
+        min-height: 100px;
+        max-height: 250px;
+        flex: 0 0 auto;
+
+
+    }
+
+    .sample-list {
+        height: auto;
+        flex: 1 1 auto;
+        overflow-y: auto;
+        min-height: 0;
+
+    }
+
+    .app-container {
+        width: 100%;
+        padding: 0;
+        margin: 0;
+        box-sizing: border-box;
+    }
+}

@@ -445,51 +445,53 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
 
                 <div className="sequencer-column">
                     <div className="bar-controls-row">
-                        <div className="bar-navigation">
-                            {Array.from({length: numBars || 1}).map((_, i) => (
-                                <div key={i} className="bar-btn-wrapper">
+                        <div className="bar-navigation" style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '10px',
+                            width: '100%',
+                            padding: '5px'
+                        }}>
 
-                                    <button
-                                        onClick={() => handleBarClick(i)}
-                                        className={`bar-btn ${displayBar === i ? 'viewing' : ''} ${(currentBarIdx || 0) === i ? 'playing' : ''}`}
-                                    >
-                                        {i + 1}
-                                    </button>
+                            <div className="bar-navigation-utils"
+                                 style={{display: 'flex', gap: '8px', justifyContent: 'center', width: '100%'}}>
+                                <button className={`follow-btn ${followPlayhead ? 'on' : ''}`}
+                                        onClick={() => setFollowPlayhead(!followPlayhead)}>
+                                    FOLLOW
+                                </button>
+                                <button className={`follow-btn ${isLoopMode ? 'on' : ''}`} onClick={toggleLoopMode}>
+                                    🔁
+                                </button>
+                                <button className={`follow-btn ${deleteMode ? 'on' : ''}`}
+                                        onClick={() => setDeleteMode(!deleteMode)}>
+                                    🗑
+                                </button>
+                            </div>
 
-                                    {/* delete bar */}
-                                    {numBars > 1 && (
+                            <div className="bar-navigation-pages" style={{
+                                display: 'flex',
+                                gap: '8px',
+                                flexWrap: 'wrap',
+                                justifyContent: 'center',
+                                width: '100%'
+                            }}>
+                                {Array.from({length: numBars || 1}).map((_, i) => (
+                                    <div key={i} className="bar-btn-wrapper">
                                         <button
-                                            className="delete-bar-btn"
-                                            onClick={() => deleteBar(i)}
+                                            onClick={() => handleBarClick(i)}
+                                            className={`bar-btn ${displayBar === i ? 'viewing' : ''} ${(currentBarIdx || 0) === i ? 'playing' : ''}`}
                                         >
-                                            ×
+                                            {i + 1}
                                         </button>
-                                    )}
-                                </div>
-                            ))}
+                                        {numBars > 1 && (
+                                            <button className="delete-bar-btn" onClick={() => deleteBar(i)}>×</button>
+                                        )}
+                                    </div>
+                                ))}
+                                <button className="add-bar-btn" onClick={addBar}>+</button>
+                            </div>
 
-                            <button className="add-bar-btn" onClick={addBar}>+</button>
-
-                            <button className={`follow-btn ${followPlayhead ? 'on' : ''}`}
-                                    onClick={() => setFollowPlayhead(!followPlayhead)}>FOLLOW
-                            </button>
-
-                            <button
-                                className={`follow-btn ${isLoopMode ? 'on' : ''}`}
-                                onClick={toggleLoopMode}
-                                title="Toggle Loop (Select start and end pads)"
-                            >
-                                🔁
-                            </button>
-
-                            <button
-                                className={`follow-btn ${deleteMode ? 'on' : ''}`}
-
-                                onClick={() => setDeleteMode(!deleteMode)}
-                                title="Click pads to instantly clear them"
-                            >
-                                {deleteMode ? '🗑' : '🗑'}
-                            </button>
                         </div>
                     </div>
 
@@ -574,7 +576,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                     </div>
                 </div>
 
-                <ChatPanel socket={socket} roomName={roomName} userName={userName} userColor={userColor} />
+                <ChatPanel socket={socket} roomName={roomName} userName={userName} userColor={userColor}/>
             </div>
         </div>
     );

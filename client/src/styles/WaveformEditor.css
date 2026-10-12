@@ -1,0 +1,21 @@
+
+
+@media (max-width: 850px) {
+    body, #root, .app-root, .app-container {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        overflow-x: hidden;
+    }
+
+    .waveform-section {
+        flex-direction: row;
+    }
+
+    .zoom-section {
+        flex-direction: column;
+        margin-bottom: 0;
+    }
+}

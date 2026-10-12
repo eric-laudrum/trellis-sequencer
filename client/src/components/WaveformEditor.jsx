@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as Tone from 'tone';
+import '../../src/styles/WaveformEditor.css';
 
 const WaveformEditor = ({
                             buffer,
@@ -206,6 +207,14 @@ const WaveformEditor = ({
         setIsDraggingEnd(false);
     };
 
+    const handleTouchStart = (e) => {
+        handleMouseDown({ clientX: e.touches[0].clientX, shiftKey: false });
+    };
+
+    const handleTouchMove = (e) => {
+        handleMouseMove({ clientX: e.touches[0].clientX });
+    };
+
     return (
         <div className="waveform-section">
             <div className="zoom-section">
@@ -220,11 +229,22 @@ const WaveformEditor = ({
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
-                onMouseLeave={() => { handleMouseUp(); setHoverX(null); }}
-                onDoubleClick={() => setZoomRange({ start: 0, end: 1 })}
-                style={{ position: 'relative', overflow: 'hidden', cursor: editTool === 'scissors' ? 'crosshair' : 'ew-resize' }}
+                onMouseLeave={() => {
+                    handleMouseUp();
+                    setHoverX(null);
+                }}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleMouseUp}
+                onDoubleClick={() => setZoomRange({start: 0, end: 1})}
+                style={{
+                    position: 'relative',
+                    overflow: 'hidden',
+                    cursor: editTool === 'scissors' ? 'crosshair' : 'ew-resize',
+                    touchAction: 'none'
+                }}
             >
-                <canvas ref={canvasRef} width={600} height={120} />
+                <canvas ref={canvasRef} width={600} height={120}/>
 
                 {/* Draw all cuts/slices for this audio file */}
                 {sliceMarkers.map((markTime, idx) => {
@@ -235,7 +255,7 @@ const WaveformEditor = ({
                             position: 'absolute', left: `${getPos(markTime)}%`,
                             top: 0, bottom: 0, width: '1px', backgroundColor: 'rgba(255, 255, 255, 0.4)',
                             zIndex: 10, pointerEvents: 'none'
-                        }} />
+                        }}/>
                     )
                 })}
 
@@ -246,7 +266,7 @@ const WaveformEditor = ({
                         left: hoverX, width: '1px',
                         borderLeft: '2px dashed #f1ad36', zIndex: 15,
                         pointerEvents: 'none'
-                    }} />
+                    }}/>
                 )}
 
                 {selection && (
@@ -257,7 +277,7 @@ const WaveformEditor = ({
                         backgroundColor: 'rgba(255, 255, 255, 0.2)',
                         border: '1px solid rgba(255, 255, 255, 0.5)',
                         pointerEvents: 'none', zIndex: 5
-                    }} />
+                    }}/>
                 )}
 
                 {/* Active Sample Markers */}
@@ -267,8 +287,16 @@ const WaveformEditor = ({
                     cursor: editTool === 'cursor' ? 'col-resize' : 'crosshair',
                     transform: 'translateX(-50%)', display: 'flex', justifyContent: 'center'
                 }}>
-                    <div style={{ width: '4px', backgroundColor: 'red', height: '100%' }} />
-                    <div style={{ position: 'absolute', top: 0, backgroundColor: 'red', color: 'white', fontSize: '9px', padding: '1px' }}>S</div>
+                    <div style={{width: '4px', backgroundColor: 'red', height: '100%'}}/>
+                    <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        backgroundColor: 'red',
+                        color: 'white',
+                        fontSize: '9px',
+                        padding: '1px'
+                    }}>S
+                    </div>
                 </div>
 
                 <div style={{
@@ -277,8 +305,16 @@ const WaveformEditor = ({
                     cursor: editTool === 'cursor' ? 'col-resize' : 'crosshair',
                     transform: 'translateX(-50%)', display: 'flex', justifyContent: 'center'
                 }}>
-                    <div style={{ width: '4px', backgroundColor: '#00ccff', height: '100%' }} />
-                    <div style={{ position: 'absolute', top: 0, backgroundColor: '#00ccff', color: 'black', fontSize: '9px', padding: '1px' }}>E</div>
+                    <div style={{width: '4px', backgroundColor: '#00ccff', height: '100%'}}/>
+                    <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        backgroundColor: '#00ccff',
+                        color: 'black',
+                        fontSize: '9px',
+                        padding: '1px'
+                    }}>E
+                    </div>
                 </div>
 
                 {playheadPos >= 0 && playheadPos <= 100 && (
@@ -286,7 +322,7 @@ const WaveformEditor = ({
                         position: 'absolute', left: `${playheadPos}%`,
                         top: 0, bottom: 0, width: '2px', backgroundColor: 'white',
                         zIndex: 11, pointerEvents: 'none', boxShadow: '0 0 10px white'
-                    }} />
+                    }}/>
                 )}
             </div>
         </div>

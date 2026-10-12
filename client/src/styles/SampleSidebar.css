@@ -1,18 +1,14 @@
-/* --- Sidebar & Lists --- */
 .sample-sidebar {
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-
     width: 500px;
     height: 100%;
     border-radius: 8px;
     box-sizing: border-box;
     padding: 0 10px;
     background: rgba(35, 35, 35, 0.95);
-
-
-
+    min-height: 0;
 }
 
 .sample-name {
@@ -22,9 +18,12 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-right: 10px;
 }
 
-.sample-time{
+.sample-time {
     align-content: center;
     margin: 5px;
     display: none;
@@ -36,20 +35,19 @@
     min-height: 0;
     border-radius: 10px;
     background-color: rgba(169, 169, 169, 0.06);
-
     padding: 2px;
 }
 
 .sample-item {
     display: flex;
     justify-content: space-between;
-    width: auto;
+    width: 100%;
     box-sizing: border-box;
     align-items: center;
-    padding: 10px 10px;
-    margin: 2px 4px;
+    padding: 10px;
+    margin: 2px 0;
     background: rgba(255, 255, 255, 0.02);
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     cursor: pointer;
     overflow: hidden;
     border-radius: 4px;
@@ -59,10 +57,8 @@
     display: flex;
     align-items: center;
     gap: 5px;
-    flex-shrink: 0;
+    flex: 0 0 auto;
 }
-
-
 
 .sample-item .sample-name {
     font-size: 0.9rem;
@@ -75,7 +71,6 @@
     display: none;
 }
 
-
 .sample-item:hover {
     background: rgba(241, 173, 54, 0.1);
     border-color: rgba(241, 173, 54, 0.5);
@@ -84,13 +79,13 @@
 .sample-item.active {
     border: 1px solid var(--primary);
     background: rgba(255, 165, 0, 0.1);
-
 }
 
-.duplicate-btn {
+.duplicate-btn, .preview-btn {
     display: flex !important;
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
+    padding: 0;
     background-color: #333;
     color: #f1ad36;
     border: 1px solid #555;
@@ -98,11 +93,12 @@
     align-items: center;
     justify-content: center;
     border-radius: 4px;
-    font-size: 18px;
+    font-size: 14px;
     font-weight: bold;
+    line-height: 1;
 }
 
-.duplicate-btn:hover {
+.duplicate-btn:hover, .preview-btn:hover {
     background-color: #444;
     border-color: #f1ad36;
 }
@@ -111,4 +107,64 @@
     0% { opacity: 0.4; }
     50% { opacity: 0.8; }
     100% { opacity: 0.4; }
+}
+
+@media (max-width: 850px) {
+    .sample-sidebar {
+        width: 100%;
+        height: auto;
+        min-height: 100px;
+        max-height: 250px;
+        flex: 0 0 auto;
+    }
+
+    .sample-list {
+        height: auto;
+        flex: 1 1 auto;
+        overflow-y: auto;
+        min-height: 0;
+    }
+
+    .sample-item {
+        flex-wrap: wrap;
+    }
+
+    .sample-name {
+        flex: 0 0 100% !important;
+        margin-bottom: 8px;
+    }
+
+    .bar-controls-row {
+        width: 100%;
+        min-width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .bar-navigation {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        width: 100%;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .follow-btn {
+        order: 1;
+        margin: 0;
+    }
+
+    .bar-navigation::before {
+        content: "";
+        flex-basis: 100%;
+        order: 2;
+    }
+
+    .bar-btn-wrapper,
+    .add-bar-btn {
+        order: 3;
+        margin: 0;
+    }
 }
