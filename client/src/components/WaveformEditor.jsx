@@ -13,7 +13,8 @@ const WaveformEditor = ({
                             lastTriggerTime,
                             lastTriggerRef,
                             editTool = 'cursor',
-                            onSlice // New prop
+                            onSlice,
+                            color
                         }) => {
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
@@ -47,10 +48,12 @@ const WaveformEditor = ({
         const step = Math.max(1, Math.ceil(visibleData.length / canvas.width));
         const amp = canvas.height / 2;
 
-        ctx.fillStyle = '#050505';
+        ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = color || '#f1ad36';
+
         ctx.beginPath();
-        ctx.strokeStyle = '#f5820a';
         ctx.lineWidth = 1.5;
 
         for (let i = 0; i < canvas.width; i++) {
@@ -80,7 +83,7 @@ const WaveformEditor = ({
             ctx.fillRect(x, 0, canvas.width - x, canvas.height);
         }
 
-    }, [buffer, zoomRange, startTime, endTime]);
+    }, [buffer, zoomRange, startTime, endTime, color]);
 
     // Playhead logic
     useEffect(() => {
@@ -248,7 +251,7 @@ const WaveformEditor = ({
 
                 {/* Draw all cuts/slices for this audio file */}
                 {sliceMarkers.map((markTime, idx) => {
-                    // Don't draw a ghost line if it overlaps with our active S marker
+
                     if (Math.abs(markTime - startTime) < 5) return null;
                     return (
                         <div key={`slice-${idx}`} style={{

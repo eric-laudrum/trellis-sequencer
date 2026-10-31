@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import "../styles/SampleSidebar.css";
 
 export default function SampleSidebar({
@@ -20,6 +20,59 @@ export default function SampleSidebar({
     const [multiSelected, setMultiSelected] = useState([]);
     const timersRef = useRef({});
     const prevSamplesRef = useRef(samples);
+
+    /* Draggable sidebar */
+    const [width, setWidth] = useState(500);
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    const isDragging = useRef(false);
+
+    const MIN_WIDTH = 250;
+    const COLLAPSE_THRESHOLD = 150;
+
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (!isDragging.current) return;
+
+            const newWidth = e.clientX;
+
+            if (newWidth < COLLAPSE_THRESHOLD) {
+                setIsCollapsed(true);
+                setWidth(40);
+            } else if (newWidth < MIN_WIDTH) {
+                setIsCollapsed(false);
+                setWidth(MIN_WIDTH);
+            } else {
+                setIsCollapsed(false);
+                setWidth(newWidth);
+            }
+        };
+
+        const handleMouseUp = () => {
+            isDragging.current = false;
+            document.body.style.cursor = 'default';
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, []);
+
+    const handleMouseDown = (e) => {
+        e.preventDefault();
+        isDragging.current = true;
+        document.body.style.cursor = 'col-resize';
+    };
+
+    const handleExpand = () => {
+        if (isCollapsed) {
+            setIsCollapsed(false);
+            setWidth(500);
+        }
+    };
 
     useEffect(() => {
         if (selectedId && !multiSelected.includes(selectedId)) {
@@ -60,7 +113,6 @@ export default function SampleSidebar({
         onVolumeChange(idsToUpdate, val);
     };
 
-
     const handlePreviewClick = (sample, e) => {
         e.stopPropagation();
         if (playingIds[sample.id]) {
@@ -74,9 +126,11 @@ export default function SampleSidebar({
             const startMs = sample.startTime || 0;
             let endMs = sample.endTime;
             if (endMs === undefined || endMs === null) {
+                // Fixed broken math here
                 endMs = sample.buffer ? sample.buffer.duration * 1000 : 1000;
             }
 
+            // Fixed broken math here
             const durationMs = Math.max(50, endMs - startMs);
 
             clearTimeout(timersRef.current[sample.id]);
@@ -87,7 +141,6 @@ export default function SampleSidebar({
         }
     };
 
-
     const toggleExpand = (parentId) => {
         setExpandedParents(prev => ({
             ...prev,
@@ -97,200 +150,216 @@ export default function SampleSidebar({
 
     const parents = samples.filter(s => !s.parentId);
 
-    console.log("SIDEBAR RENDERED");
-
     return (
-        <div className="sample-sidebar">
-            <div style={{
-                padding: '10px 0',
-                textAlign: 'center',
-                display: 'flex',
-                gap: '10px',
-                justifyContent: 'center',
-            }}>
-                <input
-                    type="file"
-                    onChange={onUpload}
-                    accept="audio/*"
-                    id="upload-input"
-                    style={{display: 'none'}}
-                />
-                <label
-                    htmlFor="upload-input"
-                    className="settings-btn"
-                    style={{border: '1px solid #f1ad36', cursor: 'pointer', display: 'block', flex: 1}}
-                >
-                    + UPLOAD SAMPLE
-                </label>
-                <button
-                    className="settings-btn"
-                    style={{
-                        flex: 1,
-                        border: `1px solid ${isRecording ? '#ff4444' : '#f1ad36'}`,
-                        backgroundColor: isRecording ? 'rgba(255, 68, 68, 0.2)' : 'transparent',
-                        color: isRecording ? '#ff4444' : '#fff',
-                        cursor: 'pointer',
-                    }}
-                    onClick={onToggleRecording}
-                >
-                    {isRecording ? '■ STOP REC' : '● REC SAMPLE'}
-                </button>
-            </div>
+        <div
+            className={`sample-sidebar ${isCollapsed ? 'collapsed' : ''}`}
+            style={{ width: `${width}px` }}
+            onClick={isCollapsed ? handleExpand : undefined}
+        >
+            {isCollapsed ? (
+                <div style={{ color: 'var(--primary)', transform: 'rotate(-90deg)' }}>
+                    LIBRARY
+                </div>
+            ) : (
+                <>
+                    <div style={{
+                        padding: '10px 0',
+                        textAlign: 'center',
+                        display: 'flex',
+                        gap: '10px',
+                        justifyContent: 'center',
+                    }}>
+                        <input
+                            type="file"
+                            onChange={onUpload}
+                            accept="audio/*"
+                            id="upload-input"
+                            style={{ display: 'none' }}
+                        />
+                        <label
+                            htmlFor="upload-input"
+                            className="settings-btn"
+                            style={{ border: '1px solid #f1ad36', cursor: 'pointer', display: 'block', flex: 1 }}
+                        >
+                            + UPLOAD SAMPLE
+                        </label>
+                        <button
+                            className="settings-btn"
+                            style={{
+                                flex: 1,
+                                border: `1px solid ${isRecording ? '#ff4444' : '#f1ad36'}`,
+                                backgroundColor: isRecording ? 'rgba(255, 68, 68, 0.2)' : 'transparent',
+                                color: isRecording ? '#ff4444' : '#fff',
+                                cursor: 'pointer',
+                            }}
+                            onClick={onToggleRecording}
+                        >
+                            {isRecording ? '■ STOP REC' : '● REC SAMPLE'}
+                        </button>
+                    </div>
 
-            <div className="sample-list">
-                {parents.map(parent => {
-                    const childSlices = samples
-                        .filter(s => s.parentId === parent.id)
-                        .sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
+                    <div className="sample-list">
+                        {parents.map(parent => {
+                            const childSlices = samples
+                                .filter(s => s.parentId === parent.id)
+                                .sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
 
-                    const isExpanded = expandedParents[parent.id];
+                            const isExpanded = expandedParents[parent.id];
 
-                    return (
-                        <React.Fragment key={parent.id}>
-                            <div
-                                className={`sample-item ${multiSelected.includes(parent.id) ? 'active' : ''}`}
-                                onClick={(e) => handleItemSelect(parent.id, e)}
-                                style={{borderLeft: `6px solid ${parent.color || '#f1ad36'}`, display: 'flex', alignItems: 'center'}}
-                            >
-                                <div className="sample-name" style={{flex: 1}}>1. {parent.name}</div>
-
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="100"
-                                    value={parent.volume !== undefined ? parent.volume : 100}
-                                    onChange={(e) => handleVolumeChange(parent.id, Number(e.target.value))}
-                                    onClick={(e) => e.stopPropagation()}
-                                    style={{ width: '50px', margin: '0 10px' }}
-                                    title="Volume"
-                                />
-
-                                <div className="sample-options" onClick={e => e.stopPropagation()}>
-                                    <button
-                                        className="preview-btn"
-                                        style={{display: 'block'}}
-                                        onClick={(e) => handlePreviewClick(parent, e)}
-                                    >
-                                        {playingIds[parent.id] ? '⏸' : '▶'}
-                                    </button>
-                                    <button
-                                        className="duplicate-btn"
-                                        onClick={() => duplicateSample(parent.id)}
-                                    >
-                                        +
-                                    </button>
-                                    <button
-                                        className="settings-btn"
+                            return (
+                                <React.Fragment key={parent.id}>
+                                    <div
+                                        className={`sample-item ${multiSelected.includes(parent.id) ? 'active' : ''}`}
+                                        onClick={(e) => handleItemSelect(parent.id, e)}
                                         style={{
-                                            background: 'transparent',
-                                            display: 'block',
-                                            padding: '5px',
-                                            color: '#ff4444',
-                                            border: 'none',
-                                            cursor: 'pointer'
+                                            borderLeft: `6px solid ${parent.color || '#f1ad36'}`,
+                                            display: 'flex',
+                                            alignItems: 'center'
                                         }}
-                                        onClick={() => deleteSample(parent.id)}
                                     >
-                                        ×
-                                    </button>
-                                    {childSlices.length > 0 && (
-                                        <button
-                                            onClick={() => toggleExpand(parent.id)}
-                                            className="settings-btn"
+                                        <div className="sample-name" style={{ flex: 1 }}>{parent.name}</div>
+
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            value={parent.volume !== undefined ? parent.volume : 100}
+                                            onChange={(e) => handleVolumeChange(parent.id, Number(e.target.value))}
+                                            onClick={(e) => e.stopPropagation()}
+                                            style={{ width: '50px', margin: '0 10px' }}
+                                            title="Volume"
+                                        />
+
+                                        <div className="sample-options" onClick={e => e.stopPropagation()}>
+                                            <button
+                                                className="preview-btn"
+                                                style={{ display: 'block' }}
+                                                onClick={(e) => handlePreviewClick(parent, e)}
+                                            >
+                                                {playingIds[parent.id] ? '⏸' : '▶'}
+                                            </button>
+                                            <button
+                                                className="duplicate-btn"
+                                                onClick={() => duplicateSample(parent.id)}
+                                            >
+                                                +
+                                            </button>
+                                            <button
+                                                className="settings-btn"
+                                                style={{
+                                                    background: 'transparent',
+                                                    display: 'block',
+                                                    padding: '5px',
+                                                    color: '#ff4444',
+                                                    border: 'none',
+                                                    cursor: 'pointer'
+                                                }}
+                                                onClick={() => deleteSample(parent.id)}
+                                            >
+                                                ×
+                                            </button>
+                                            {childSlices.length > 0 && (
+                                                <button
+                                                    onClick={() => toggleExpand(parent.id)}
+                                                    className="settings-btn"
+                                                    style={{
+                                                        border: 'none',
+                                                        background: 'transparent',
+                                                        display: 'block',
+                                                        padding: '0 5px'
+                                                    }}
+                                                >
+                                                    {isExpanded ? '▼' : '▶'}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {isExpanded && childSlices.map((slice, index) => (
+                                        <div
+                                            key={slice.id}
+                                            className={`sample-item slice-item ${multiSelected.includes(slice.id) ? 'active' : ''}`}
+                                            onClick={(e) => handleItemSelect(slice.id, e)}
                                             style={{
-                                                border: 'none',
-                                                background: 'transparent',
-                                                display: 'block',
-                                                padding: '0 5px'
+                                                paddingLeft: '25px',
+                                                borderLeft: `6px solid ${slice.color || parent.color || '#f1ad36'}`,
+                                                backgroundColor: 'rgba(255, 165, 0, 0.05)',
+                                                display: 'flex',
+                                                alignItems: 'center'
                                             }}
                                         >
-                                            {isExpanded ? '▼' : '▶'}
-                                        </button>
-                                    )}
+                                            <div className="sample-name" style={{ flex: 1 }}>{index + 2}. {slice.name}</div>
+
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="100"
+                                                value={slice.volume !== undefined ? slice.volume : 100}
+                                                onChange={(e) => handleVolumeChange(slice.id, Number(e.target.value))}
+                                                onClick={(e) => e.stopPropagation()}
+                                                style={{ width: '50px', margin: '0 10px' }}
+                                                title="Volume"
+                                            />
+
+                                            <div className="sample-options" onClick={e => e.stopPropagation()}>
+                                                <button
+                                                    className="preview-btn"
+                                                    style={{ display: 'block' }}
+                                                    onClick={(e) => handlePreviewClick(slice, e)}
+                                                >
+                                                    {playingIds[slice.id] ? '⏸' : '▶'}
+                                                </button>
+                                                <button
+                                                    className="duplicate-btn"
+                                                    onClick={() => duplicateSample(slice.id)}
+                                                >
+                                                    +
+                                                </button>
+                                                <button
+                                                    className="settings-btn"
+                                                    style={{
+                                                        background: 'transparent',
+                                                        display: 'block',
+                                                        padding: '5px',
+                                                        color: '#ff4444',
+                                                        border: 'none',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                    onClick={() => deleteSample(slice.id)}
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </React.Fragment>
+                            );
+                        })}
+
+                        {isUploading && (
+                            <div
+                                className="sample-item"
+                                style={{
+                                    borderLeft: '6px solid #555',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    opacity: 0.7,
+                                    backgroundColor: 'rgba(255,255,255,0.02)',
+                                    animation: 'pulse 1.5s infinite ease-in-out'
+                                }}
+                            >
+                                <div className="sample-name" style={{ fontStyle: 'italic', color: '#aaa', padding: '10px 0' }}>
+                                    Loading sample...
                                 </div>
                             </div>
-
-                            {isExpanded && childSlices.map((slice, index) => (
-                                <div
-                                    key={slice.id}
-                                    className={`sample-item slice-item ${multiSelected.includes(slice.id) ? 'active' : ''}`}
-                                    onClick={(e) => handleItemSelect(slice.id, e)}
-                                    style={{
-                                        paddingLeft: '25px',
-                                        borderLeft: `6px solid ${slice.color || parent.color || '#f1ad36'}`,
-                                        backgroundColor: 'rgba(255, 165, 0, 0.05)',
-                                        display: 'flex',
-                                        alignItems: 'center'
-                                    }}
-                                >
-                                    <div className="sample-name" style={{flex: 1}}>{index + 2}. {slice.name}</div>
-
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="100"
-                                        value={slice.volume !== undefined ? slice.volume : 100}
-                                        onChange={(e) => handleVolumeChange(slice.id, Number(e.target.value))}
-                                        onClick={(e) => e.stopPropagation()}
-                                        style={{ width: '50px', margin: '0 10px' }}
-                                        title="Volume"
-                                    />
-
-                                    <div className="sample-options" onClick={e => e.stopPropagation()}>
-                                        <button
-                                            className="preview-btn"
-                                            style={{display: 'block'}}
-                                            onClick={(e) => handlePreviewClick(slice, e)}
-                                        >
-                                            {playingIds[slice.id] ? '⏸' : '▶'}
-                                        </button>
-                                        <button
-                                            className="duplicate-btn"
-                                            onClick={() => duplicateSample(slice.id)}
-                                        >
-                                            +
-                                        </button>
-                                        <button
-                                            className="settings-btn"
-                                            style={{
-                                                background: 'transparent',
-                                                display: 'block',
-                                                padding: '5px',
-                                                color: '#ff4444',
-                                                border: 'none',
-                                                cursor: 'pointer'
-                                            }}
-                                            onClick={() => deleteSample(slice.id)}
-                                        >
-                                            ×
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </React.Fragment>
-                    );
-                })}
-
-                {/* Loading Indicator */}
-                {isUploading && (
-                    <div
-                        className="sample-item"
-                        style={{
-                            borderLeft: '6px solid #555',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            opacity: 0.7,
-                            backgroundColor: 'rgba(255,255,255,0.02)',
-                            animation: 'pulse 1.5s infinite ease-in-out'
-                        }}
-                    >
-                        <div className="sample-name" style={{fontStyle: 'italic', color: '#aaa', padding: '10px 0'}}>
-                            Loading sample...
-                        </div>
+                        )}
                     </div>
-                )}
-            </div>
+
+                    {/* Added the resize handle inside the fragment */}
+                    <div className="sidebar-resizer" onMouseDown={handleMouseDown} />
+                </>
+            )}
         </div>
     );
 }

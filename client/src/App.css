@@ -100,12 +100,6 @@ button:hover {
   }
 
 
-  /* Allow the column to scroll sideways when the grid overflows */
-  .sequencer-column {
-    overflow-x: auto;
-    padding-bottom: 10px;
-  }
-
   /* Allow sample settings to wrap to a new line */
   .sample-control-strip {
     flex-wrap: wrap;

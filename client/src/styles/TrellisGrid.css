@@ -27,22 +27,22 @@
 }
 
 .pad.active {
-    background-color: #f5820a;
-    box-shadow: 0 0 8px rgba(245, 130, 10, 0.4);
-    border: 2px solid rgba(243, 195, 143, 0.6);
+    background-color: var(--pad-color);
+    box-shadow: 0 0 8px var(--pad-color);
+    border: 2px solid var(--pad-color);
 }
 
 .pad.playing {
-    border: 1px solid rgba(245, 130, 10, 0.35);
+    border: 1px solid var(--pad-color);
     filter: brightness(1.2);
     transform: scale(0.94);
     z-index: 2;
-    box-shadow: 0 0 2px rgba(241, 173, 54, 0.88);
+    box-shadow: 0 0 8px var(--pad-color);
 }
 
 .pad.active.playing {
-    background-color: #ffb366;
-    box-shadow: 0 0 12px #f5820a;
+    background-color: var(--pad-color);
+    box-shadow: 0 0 15px var(--pad-color);
 }
 
 .pad.hold-start::after,
@@ -116,10 +116,9 @@
     border-radius: 8px;
     background: var(--primary-light);
 
-    /* Holistic Sizing */
     height: 100%;
-    max-height: 50vh; /* Limits height to half the screen, allowing room for seq-header */
-    aspect-ratio: 1 / 1; /* Keeps grid square */
+    max-height: 75vh;
+    aspect-ratio: 1 / 1;
 
     display: flex;
     align-items: center;

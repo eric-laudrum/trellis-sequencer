@@ -15,12 +15,20 @@
     border: 1px solid #333;
     overflow: hidden;
 
+    position: absolute;
+    right: 15px;
+    bottom: 0;
+    top: auto;
+    z-index: 50;
+
 }
 
 .chat-panel.collapsed {
     height: fit-content;
-    align-self: flex-end;
-    cursor: pointer;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    pointer-events: none;
 }
 
 .chat-header{
@@ -35,6 +43,13 @@
     user-select: none;
 }
 
+
+.chat-panel.collapsed .chat-header {
+    background-color: var(--bg-darker);
+    border: 1px solid #333;
+    border-radius: 8px;
+    pointer-events: auto;
+}
 
 
 /* Style for the new +/- toggle button */

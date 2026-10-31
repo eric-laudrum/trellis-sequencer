@@ -71,6 +71,17 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
 
     const [showProfile, setShowProfile] = useState(false);
 
+
+    const PRESET_COLORS = [
+        '#a52421', '#fc3a2e', '#fb940b', '#fdc403',
+        '#fbaca5', '#ff7069', '#ffecb8', '#cdf9e8',
+        '#5f8dff', '#333bd1', '#90a321', '#46bc91',
+        '#8e72ba', '#4b257a', '#046345', '#fc622b'
+    ];
+    const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+    const pickerRef = useRef(null);
+
+
     const [userName, setUserName] = useState(() => {
         const storedUser = localStorage.getItem('trellis_user');
         if (storedUser) {
@@ -141,6 +152,15 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
     };
 
 
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (pickerRef.current && !pickerRef.current.contains(event.target)) {
+                setIsColorPickerOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
 
     // Auto-follow logic
@@ -346,16 +366,31 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                 </select>
                             </div>
 
-                            {/* New Pad Color Selector */}
-                            <div className="sample-setting choke-select">
-                                <span style={{fontSize: '10px', color: 'gray', marginRight: '5px'}}>COLOR</span>
-                                <input
-                                    type="color"
-                                    className="color-picker-mini"
-                                    style={{border: 'none', background: 'transparent', cursor: 'pointer'}}
-                                    value={currentSample.color || "#f5820a"}
-                                    onChange={(e) => setSampleColor(currentSample.id, e.target.value)}
+
+                            <div className="color-picker-container" ref={pickerRef}>
+                                <button
+                                    className="active-color-btn"
+                                    style={{backgroundColor: currentSample.color || '#f1ad36'}}
+                                    onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
+                                    title="Change color"
                                 />
+
+                                {isColorPickerOpen && (
+                                    <div className="color-picker-presets">
+                                        {PRESET_COLORS.map(color => (
+                                            <button
+                                                key={color}
+                                                className="preset-swatch"
+                                                style={{backgroundColor: color}}
+                                                onClick={() => {
+                                                    setSampleColor(currentSample.id, color);
+                                                    setIsColorPickerOpen(false);
+                                                }}
+                                                title={color}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="sample-setting choke-select">
@@ -402,6 +437,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                             return (
                                 <WaveformEditor
                                     buffer={currentSample.buffer}
+                                    color={currentSample.color || '#f1ad36'}
                                     startTime={currentSample.startTime || 0}
                                     endTime={currentSample.endTime || (currentSample.buffer ? currentSample.buffer.duration * 1000 : 1000)}
                                     sliceMarkers={siblingMarkers}
