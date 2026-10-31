@@ -73,8 +73,9 @@ export default function Lobby({socket, onJoin }){
                     className={'create-button'}
                     onClick={() => input && onJoin(input)}
                 >
-                    create
+                    CREATE
                 </button>
+
             </div>
 
             {/* List of Rooms */}
