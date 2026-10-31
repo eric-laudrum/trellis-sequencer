@@ -2,25 +2,36 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-top: 5rem;
+    justify-content: center;
 
     height: 100dvh;
 
 }
 
-.logo-container{
-    width: clamp(5rem, 30vw, 40rem);
-}
+.welcome-container{
 
+}
+.logo-container{
+    width: clamp(20rem, 30vw, 40rem);
+
+}
 
 .sub-header{
-    font-size: clamp(0.5rem, 1vw, 2rem);
+    font-size: clamp(1rem, 1vw, 2rem);
+}
+
+.lobby-message{
+    margin-top: 3em;
+    font-size: clamp(1rem, 1vw, 2rem);
 
 }
 
+.lobby-section{
+    height: 50dvh;
+    width: 100%;
+    align-content: center;
 
-.lobby-message{
-    font-size: clamp(0.5rem, 1vw, 2rem);
+
 }
 
 
@@ -29,6 +40,7 @@
     width: 5rem;
     height: 5rem;
     margin-top: 5rem;
+
     box-shadow:
         0 0 7px #fff,
         0 0 14px var(--primary),
