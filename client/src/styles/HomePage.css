@@ -1,13 +1,54 @@
 .home-page{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 5rem;
+
+    height: 100dvh;
 
 }
+
+.logo-container{
+    width: clamp(5rem, 30vw, 40rem);
+}
+
+
+.sub-header{
+    font-size: clamp(0.5rem, 1vw, 2rem);
+
+}
+
+
+.lobby-message{
+    font-size: clamp(0.5rem, 1vw, 2rem);
+}
+
+
 
 .lobby-button{
     width: 5rem;
     height: 5rem;
-    margin: 5px;
+    margin-top: 5rem;
+    box-shadow:
+        0 0 7px #fff,
+        0 0 14px var(--primary),
+        0 0 21px var(--primary),
+        0 0 42px var(--primary),
+        0 0 84px var(--primary),
+        0 0 160px var(--primary),
+        0 0 200px var(--primary),
+        0 0 250px var(--primary),
+        0 0 300px var(--primary),
+        0 0 460px var(--primary),
+        0 0 550px var(--primary),
+        0 0 550px var(--primary),
+        0 0 550px var(--primary),
+        0 0 550px var(--primary),
+        0 0 700px var(--primary);
+    transition: ease-in-out 0.7s;
 }
 .lobby-button:hover{
-    background-color: rgba(250, 200, 109, 0.5);
+    background-color: var(--primary);
     box-shadow: 1px 1px 5px 5px rgba(250, 200, 109, 0.2);
+    color: transparent;
 }

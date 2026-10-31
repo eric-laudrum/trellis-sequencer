@@ -47,7 +47,13 @@ export default function Lobby({socket, onJoin }){
 
     return(
         <div className="lobby">
-            <h1>TRELLIS STUDIO</h1>
+            <div className={'logo-container'}
+                style={{
+                    width: '20em',
+                    marginTop: '5rem',
+                }}>
+                <img src={'/src/assets/images/trellis.svg'}/>
+            </div>
             <h3>LOBBY</h3>
             <div className="create-section">
 

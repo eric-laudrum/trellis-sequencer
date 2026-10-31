@@ -4,10 +4,15 @@ export default function HomePage({ onEnterLobby }){
 
     return(
         <div className={'home-page'}>
-            <h3>Welcome to Trellis</h3>
+            <h3>Welcome to</h3>
 
-            <div className={'welcome-message'}>
-                <p>The Trellis Sequencer is a collaborative audio sampler</p>
+            <div className={'logo-container'}>
+                <img src={'/src/assets/images/trellis.svg'}/>
+            </div>
+
+
+            <div >
+                <p className={'sub-header'}>a collaborative audio sampler</p>
             </div>
 
             <div className={'lobby-section'}>
@@ -15,8 +20,10 @@ export default function HomePage({ onEnterLobby }){
                     className={'lobby-button'}
                     onClick={onEnterLobby}
                 >
-                    join lobby
+                    {/*join lobby*/}
                 </button>
+
+                <p className={'lobby-message'}>join the lobby</p>
             </div>
         </div>
     )
