@@ -713,4 +713,35 @@ h1.main-title {
     h1 .main-title{
         font-size: 1.5em;
     }
+
+    .bar-btn, .add-bar-btn, .bar-btn-wrapper {
+        flex-shrink: 0 !important;
+    }
+
+    .grid-and-controls-wrapper {
+        padding-bottom: 75px !important;
+    }
+
+    .play-controls {
+        align-self: center !important;
+    }
+
+    .sample-control-strip {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 12px;
+        gap: 10px;
+        justify-content: space-between;
+    }
+
+    .sample-setting {
+        flex: 1 1 45%;
+        margin: 0;
+        box-sizing: border-box;
+    }
+
+    .sample-setting:last-child {
+        flex: 1 1 100%;
+        justify-content: center;
+    }
 }

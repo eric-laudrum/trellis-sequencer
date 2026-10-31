@@ -133,7 +133,7 @@
 
 @media (max-width: 850px) {
     .sample-sidebar {
-        width: 100%;
+        width: 100% !important;
         height: auto;
         min-height: 100px;
         max-height: 250px;
@@ -157,30 +157,28 @@
     }
 
     .bar-controls-row {
-        width: 100%;
-        min-width: 100%;
-        display: flex;
-        justify-content: center;
+        width: 100% !important;
+        min-width: 100% !important;
+        display: block; /* Break out of flex constraint */
     }
 
     .bar-navigation {
         display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        width: 100%;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        width: 100% !important;
         justify-content: center;
         align-items: center;
-        gap: 6px;
-        overflow-x: auto;
-        padding-bottom: 4px;
+        gap: 10px !important;
+        padding: 10px 0;
     }
 
     .bar-navigation::before {
         display: none;
     }
 
-    .follow-btn, .bar-btn-wrapper, .add-bar-btn {
-        flex-shrink: 0;
-        margin: 0;
+    .follow-btn, .bar-btn-wrapper, .add-bar-btn, .bar-btn {
+        flex-shrink: 0 !important;
+        min-width: 35px;
     }
 }

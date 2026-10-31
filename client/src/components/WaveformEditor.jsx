@@ -163,7 +163,7 @@ const WaveformEditor = ({
         setZoomRange({ start: newStart, end: newEnd });
     };
 
-    const handleMouseDown = (e) => {
+    const handleMouseDown = (e, hitRadius = 15) => {
         const rect = containerRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
 
@@ -175,8 +175,8 @@ const WaveformEditor = ({
         const sPos = (getPos(startTime) / 100) * rect.width;
         const ePos = (getPos(endTime) / 100) * rect.width;
 
-        if (Math.abs(x - sPos) < 15) setIsDraggingStart(true);
-        else if (Math.abs(x - ePos) < 15) setIsDraggingEnd(true);
+        if (Math.abs(x - sPos) < hitRadius) setIsDraggingStart(true);
+        else if (Math.abs(x - ePos) < hitRadius) setIsDraggingEnd(true);
         else if (e.shiftKey) setSelection({ startX: x, currentX: x });
     };
 
@@ -211,7 +211,7 @@ const WaveformEditor = ({
     };
 
     const handleTouchStart = (e) => {
-        handleMouseDown({ clientX: e.touches[0].clientX, shiftKey: false });
+        handleMouseDown({ clientX: e.touches[0].clientX, shiftKey: false }, 40);
     };
 
     const handleTouchMove = (e) => {

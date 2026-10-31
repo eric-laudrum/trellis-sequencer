@@ -4,9 +4,11 @@ import "../styles/ChatPanel.css";
 export default function ChatPanel({ socket, roomName, userName, userColor }) {
 
     const [ messages, setMessages ] = useState([]);
-    const [ collapsed, setCollapsed] = useState(false);
+    const [ collapsed, setCollapsed ] = useState(window.innerWidth <= 850);
+
     const [ input, setInput ] = useState("");
     const scrollRef = useRef(null);
+
 
     // Listen for messages
     useEffect(() => {

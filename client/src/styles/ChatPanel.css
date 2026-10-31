@@ -159,3 +159,15 @@
     border-radius: 4px;
     cursor: pointer;
 }
+
+@media (max-width: 850px) {
+    .chat-panel {
+        width: 90%;
+        left: 5%;
+        right: auto;
+        bottom: 0;
+        top: auto;
+        border-radius: 10px 10px 0 0;
+        z-index: 100;
+    }
+}
