@@ -214,12 +214,13 @@ export const useSequencer = (
 
                     const stepDurationSeconds = 60 / currentBPM / 2;
 
-                    const requestedHoldSeconds = Math.max(0.01, (stepsHeld * stepDurationSeconds) - 0.05);
+                    const requestedHoldSeconds = Math.max(0.01, (stepsHeld * stepDurationSeconds) - 0.02);
 
-                    player.cancelScheduledValues(time);
+                    player.stop(time);
 
                     player.fadeOut = 0.01;
-                    player.restart(time, offset, requestedHoldSeconds);
+
+                    player.start(time, offset, requestedHoldSeconds);
 
                     console.log(`[AUDIO DEBUG] Holding ${stepsHeld} upward pads at ${currentBPM} BPM = ${requestedHoldSeconds.toFixed(2)}s`);
 
