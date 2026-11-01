@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import {useEffect} from "react";
 import * as Tone from "tone";
 
 export const useAudioEngine = (bpm, numBars, isPlaying, gridRef, triggerSample, setActiveStep, rows, cols, isLoopMode, loopRange) => {

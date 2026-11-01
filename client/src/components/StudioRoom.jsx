@@ -447,9 +447,9 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                     lastTriggerTime={lastTriggerTime}
                                     lastTriggerRef={lastTriggerRef}
                                     onSlice={(cutTime) => {
-
                                         duplicateSample(currentSample.id, cutTime);
                                     }}
+                                    onPreview={(clickTime) => playSampleSolo(currentSample.id, clickTime)}
                                 />
                             );
                         })()}

@@ -211,13 +211,15 @@ export const useSequencer = (
                     }
 
                     const currentBPM = bpmRef.current;
+
                     const stepDurationSeconds = 60 / currentBPM / 2;
-                    let requestedHoldSeconds = stepsHeld * stepDurationSeconds;
 
-                    requestedHoldSeconds = Math.max(0.01, requestedHoldSeconds - 0.02);
+                    const requestedHoldSeconds = Math.max(0.01, (stepsHeld * stepDurationSeconds) - 0.05);
 
-                    player.start(time, offset);
-                    player.stop(time + requestedHoldSeconds);
+                    player.cancelScheduledValues(time);
+
+                    player.fadeOut = 0.01;
+                    player.restart(time, offset, requestedHoldSeconds);
 
                     console.log(`[AUDIO DEBUG] Holding ${stepsHeld} upward pads at ${currentBPM} BPM = ${requestedHoldSeconds.toFixed(2)}s`);
 
@@ -533,12 +535,15 @@ export const useSequencer = (
         emitEvent('update-sample-volume', { roomId: roomName, sampleIds: ids, volume });
     };
 
-    const playSampleSolo = (id) => {
+    const playSampleSolo = (id, customTimeMs = null) => {
         const player = players.current[id];
         const sampleData = sampleRef.current.find(s => s.id === id);
         if (player?.loaded) {
+            player.stop(); // Prevent audio stacking if they spam click
+
             const now = Tone.now();
-            const offset = (sampleData.startTime || 0) / 1000;
+            // Uses the custom clicked time, or falls back to the saved start time
+            const offset = customTimeMs !== null ? (customTimeMs / 1000) : ((sampleData.startTime || 0) / 1000);
 
             player.start(now, offset);
             lastTriggerRef.current = { time: now, offset };

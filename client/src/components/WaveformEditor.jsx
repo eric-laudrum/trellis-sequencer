@@ -26,6 +26,11 @@ const WaveformEditor = ({
     const [selection, setSelection] = useState(null);
     const [hoverX, setHoverX] = useState(null); // Tracks mouse for scissors
 
+    const [isPanning, setIsPanning] = useState(false);
+    const [panStartX, setPanStartX] = useState(0);
+    const [lastPanX, setLastPanX] = useState(0);
+    const [panStartTime, setPanStartTime] = useState(0);
+
     // Waveform Drawing logic
     useEffect(() => {
         if (!buffer || !canvasRef.current) return;
@@ -165,7 +170,8 @@ const WaveformEditor = ({
 
     const handleMouseDown = (e, hitRadius = 15) => {
         const rect = containerRef.current.getBoundingClientRect();
-        const x = e.clientX - rect.left;
+        const clientX = e.clientX ?? e.touches?.[0].clientX;
+        const x = clientX - rect.left;
 
         if (editTool === 'scissors') {
             if (onSlice) onSlice(getTimeFromMouse(x));
@@ -178,23 +184,73 @@ const WaveformEditor = ({
         if (Math.abs(x - sPos) < hitRadius) setIsDraggingStart(true);
         else if (Math.abs(x - ePos) < hitRadius) setIsDraggingEnd(true);
         else if (e.shiftKey) setSelection({ startX: x, currentX: x });
+        else {
+            // Starts the tracking for a pan or a preview click
+            setIsPanning(true);
+            setPanStartX(clientX);
+            setLastPanX(clientX);
+            setPanStartTime(Date.now());
+        }
     };
 
+// 3. Update your Move Handler
     const handleMouseMove = (e) => {
         const rect = containerRef.current.getBoundingClientRect();
-        const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+        const clientX = e.clientX ?? e.touches?.[0].clientX;
+        const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
 
         if (editTool === 'scissors') {
             setHoverX(x);
             return;
         }
+
         const newTime = getTimeFromMouse(x);
+
         if (isDraggingStart) onUpdateStart(Math.min(newTime, endTime - 10));
         else if (isDraggingEnd) onUpdateEnd(Math.max(newTime, startTime + 10));
         else if (selection) setSelection(prev => ({ ...prev, currentX: x }));
+        else if (isPanning) {
+            const deltaX = clientX - lastPanX;
+            setLastPanX(clientX);
+
+            // Only slide the view if zoomed in
+            if (zoomRange.end - zoomRange.start < 1) {
+                const panPct = -(deltaX / rect.width) * (zoomRange.end - zoomRange.start);
+
+                setZoomRange(prev => {
+                    let newStart = prev.start + panPct;
+                    let newEnd = prev.end + panPct;
+
+                    // Stop at the edges
+                    if (newStart < 0) { newEnd -= newStart; newStart = 0; }
+                    if (newEnd > 1) { newStart -= (newEnd - 1); newEnd = 1; }
+
+                    return { start: Math.max(0, newStart), end: Math.min(1, newEnd) };
+                });
+            }
+        }
     };
 
-    const handleMouseUp = () => {
+// 4. Update your Up Handler
+    const handleMouseUp = (e) => {
+        // Safely pull coordinates from mouse or touch events
+        let clientX = lastPanX;
+        if (e?.clientX !== undefined) clientX = e.clientX;
+        else if (e?.changedTouches) clientX = e.changedTouches[0].clientX;
+
+        if (isPanning) {
+            const dragDist = Math.abs(clientX - panStartX);
+            const dragTime = Date.now() - panStartTime;
+
+            // If they barely moved the mouse/finger and let go quickly, it's a tap preview
+            if (dragDist < 5 && dragTime < 300 && onPreview) {
+                const rect = containerRef.current.getBoundingClientRect();
+                const clickX = clientX - rect.left;
+                onPreview(getTimeFromMouse(clickX));
+            }
+            setIsPanning(false);
+        }
+
         if (selection) {
             const rect = containerRef.current.getBoundingClientRect();
             const x1 = Math.min(selection.startX, selection.currentX) / rect.width;
@@ -206,6 +262,7 @@ const WaveformEditor = ({
             }
             setSelection(null);
         }
+
         setIsDraggingStart(false);
         setIsDraggingEnd(false);
     };
