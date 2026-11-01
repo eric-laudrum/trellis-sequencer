@@ -212,7 +212,9 @@ export const useSequencer = (
 
                     const currentBPM = bpmRef.current;
                     const stepDurationSeconds = 60 / currentBPM / 2;
-                    const requestedHoldSeconds = stepsHeld * stepDurationSeconds;
+                    let requestedHoldSeconds = stepsHeld * stepDurationSeconds;
+
+                    requestedHoldSeconds = Math.max(0.01, requestedHoldSeconds - 0.02);
 
                     player.start(time, offset);
                     player.stop(time + requestedHoldSeconds);

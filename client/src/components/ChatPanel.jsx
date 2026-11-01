@@ -52,10 +52,10 @@ export default function ChatPanel({ socket, roomName, userName, userColor }) {
 
             <div className="chat-header" onClick={() => setCollapsed(!collapsed)}>
                 <h2 className="chat-title">
-                    CHAT PANEL
+                    {collapsed ? "" : "CHAT PANEL"}
                 </h2>
                 <button className="collapse-toggle">
-                    {collapsed ? "+" : "−"}
+                    {collapsed ? "+" : "-"}
                 </button>
             </div>
 

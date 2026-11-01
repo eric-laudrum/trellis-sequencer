@@ -39,7 +39,14 @@
 .lobby-button{
     width: 5rem;
     height: 5rem;
-    margin-top: 5rem;
+    margin-top: 2rem;
+    justify-self: center;
+
+    display: flex;
+    align-items: flex-end;
+    padding: 0.5rem;
+    color: #a5a5a5;
+    font-size: 0.7rem;
 
     box-shadow:
         0 0 7px #fff,

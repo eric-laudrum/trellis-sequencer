@@ -140,6 +140,7 @@
     .grid-container {
         max-width: 90vw; /* Switches to width constraint on narrow screens */
         padding: 0.5em;
+
     }
     .grid-viewport {
         gap: 3px;

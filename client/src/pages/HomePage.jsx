@@ -22,10 +22,9 @@ export default function HomePage({ onEnterLobby }){
                     className={'lobby-button'}
                     onClick={onEnterLobby}
                 >
-                    {/*join lobby*/}
+                    JOIN
                 </button>
 
-                <p className={'lobby-message'}>join the lobby</p>
             </div>
         </div>
     )

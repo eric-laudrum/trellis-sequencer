@@ -25,10 +25,15 @@
 
 .chat-panel.collapsed {
     height: fit-content;
-    background-color: transparent;
+    background-color: rgba(0, 0, 0, 0.9);
     border: none;
     box-shadow: none;
     pointer-events: none;
+    width: fit-content;
+    transition: ease-in-out 2s;
+}
+.chat-panel.collapsed:hover {
+    background-color: black;
 }
 
 .chat-header{
@@ -169,5 +174,17 @@
         top: auto;
         border-radius: 10px 10px 0 0;
         z-index: 100;
+
+    }
+
+    .chat-panel.collapsed {
+        left: auto;
+        right:  10px;
+        bottom: 20px;
+        box-shadow:
+            0 0 2px rgba(255, 165, 0, 0.6),
+            0 0 8px rgba(255, 165, 0, 0.5);
+
+        transition: ease-in-out 2s;
     }
 }
