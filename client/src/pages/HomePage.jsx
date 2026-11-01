@@ -9,7 +9,7 @@ export default function HomePage({ onEnterLobby }){
                 <h3>Welcome to</h3>
 
                 <div className={'logo-container'}>
-                    <img src={'/src/assets/images/trellis.svg'}/>
+                    <img src={'/images/trellis.svg'}/>
                 </div>
 
                 <p className={'sub-header'}>a collaborative audio sampler</p>

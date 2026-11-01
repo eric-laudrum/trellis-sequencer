@@ -52,7 +52,7 @@ export default function Lobby({socket, onJoin }){
                     width: '20em',
                     marginTop: '5rem',
                 }}>
-                <img src={'/src/assets/images/trellis.svg'}/>
+                <img src={'/images/trellis.svg'}/>
             </div>
             <h3>LOBBY</h3>
             <div className="create-section">
