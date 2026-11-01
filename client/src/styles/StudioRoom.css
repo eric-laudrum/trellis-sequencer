@@ -84,6 +84,11 @@ h1.main-title {
     overflow: hidden;
     height: 100%;
     padding-right: 295px;
+    background-color: transparent;
+}
+
+.seq-main:has(.chat-panel.collapsed) .sequencer-column {
+    padding-right: 0;
 }
 
 .grid-and-controls-wrapper {
@@ -725,7 +730,9 @@ h1.main-title {
     .play-controls {
         align-self: center !important;
     }
-
+    .seq-main:has(.chat-panel.collapsed) .sequencer-column {
+        padding-right: 0;
+    }
     .sample-control-strip {
         flex-wrap: wrap;
         height: auto;

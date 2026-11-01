@@ -47,20 +47,27 @@ export default function Lobby({socket, onJoin }){
 
     return(
         <div className="lobby">
+
             <div className={'logo-container'}
                 style={{
                     width: '20em',
                     marginTop: '5rem',
                 }}>
+
                 <img src={'/images/trellis.svg'}/>
             </div>
-            <h3>LOBBY</h3>
-            <div className="create-section">
 
-                {/* Connection Message */}
-                <p style={{color: socket?.connected ? 'green' : 'red', fontSize: '10px'}}>
-                    {socket?.connected ? '● Server Connected' : '○ Connecting to Server...'}
-                </p>
+            <h3>LOBBY</h3>
+            {/* Connection Message */}
+            <p style={{
+                color: socket?.connected ? 'green' : 'red',
+                fontSize: '10px',
+
+
+            }}>
+                {socket?.connected ? '● Server Connected' : '○ Connecting to Server...'}
+            </p>
+            <div className="create-section">
 
                 {/* Create Room */}
                 <input

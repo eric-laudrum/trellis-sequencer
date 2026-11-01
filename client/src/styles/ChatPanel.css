@@ -45,7 +45,7 @@
 
 
 .chat-panel.collapsed .chat-header {
-    background-color: var(--bg-darker);
+
     border: 1px solid #333;
     border-radius: 8px;
     pointer-events: auto;
