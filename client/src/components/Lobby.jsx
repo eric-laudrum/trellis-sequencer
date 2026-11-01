@@ -81,7 +81,7 @@ export default function Lobby({socket, onJoin }){
             {/* List of Rooms */}
             <div className="room-list">
                 <h3>Rooms</h3>
-                {rooms.length === 0 && <p className="empty-msg">there are currently no active trellis boards</p>}
+                {rooms.length === 0 && <p className="empty-msg">there are currently no active rooms</p>}
 
                 {rooms.map(room => (
                     <div key={room.name} className="room-item">

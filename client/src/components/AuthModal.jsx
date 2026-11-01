@@ -77,7 +77,13 @@ const AuthModal = ({ onLoginSuccess, onClose, backendUrl }) => {
                     marginBottom: '15px', textAlign: 'center', fontSize: '14px'
                 }}>{error}</div>}
 
-                <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
+                <form onSubmit={handleSubmit}
+                      style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '15px',
+
+                }}>
                     <input
                         type="email"
                         placeholder="Email"
@@ -85,7 +91,14 @@ const AuthModal = ({ onLoginSuccess, onClose, backendUrl }) => {
                         onChange={(e) => setEmail(e.target.value)}
                         required
                         className="inline-input"
-                        style={{padding: '10px', width: '100%'}}
+                        style={{
+                            padding: '10px',
+                            width: '100%',
+                            boxSizing: 'border-box',
+
+
+
+                    }}
                     />
                     <input
                         type="password"
@@ -94,7 +107,12 @@ const AuthModal = ({ onLoginSuccess, onClose, backendUrl }) => {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         className="inline-input"
-                        style={{padding: '10px', width: '100%'}}
+                        style={{
+                            padding: '10px',
+                            width: '100%',
+                            boxSizing: 'border-box',
+
+                    }}
                     />
                     {!isLogin && (
                         <input
@@ -104,7 +122,12 @@ const AuthModal = ({ onLoginSuccess, onClose, backendUrl }) => {
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             required
                             className="inline-input"
-                            style={{padding: '10px', width: '100%'}}
+                            style={{
+                                padding: '10px',
+                                width: '100%',
+                                boxSizing: 'border-box',
+
+                            }}
                         />
                     )}
                     <button

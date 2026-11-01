@@ -57,7 +57,7 @@
         0 0 550px var(--primary),
         0 0 550px var(--primary),
         0 0 700px var(--primary);
-    transition: ease-in-out 0.7s;
+    transition: ease-in-out 0.4s;
 }
 .lobby-button:hover{
     background-color: var(--primary);
