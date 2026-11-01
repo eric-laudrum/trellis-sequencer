@@ -681,21 +681,40 @@ h1.main-title {
     }
 
     .sample-control-strip {
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(6, 1fr); /* Divides strip into 6 columns for precise sizing */
+        gap: 8px;
+        padding: 10px;
         height: auto;
-        padding: 12px;
-        gap: 10px;
-        justify-content: space-between;
     }
 
-    .sample-setting {
-        flex: 1 1 45%;
-        margin: 0;
-        box-sizing: border-box;
+    /* Row 1: Title (5/6 width) & Color (1/6 width) */
+    .value-display {
+        grid-column: span 5;
+        text-align: left;
+        border: none;
+        padding-left: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .color-picker-container {
+        grid-column: span 1;
+        justify-self: end;
+        align-self: center;
     }
 
-    .sample-setting:last-child {
-        flex: 1 1 100%;
-        justify-content: center;
-    }
+    /* Row 2: Start & End (Equal 3/6 width each) */
+    .sample-setting.setting-start { grid-column: span 3; margin: 0; }
+    .sample-setting.setting-end { grid-column: span 3; margin: 0; }
+
+    /* Row 3: Choke, Mode, Tool (Equal 2/6 width each) */
+    .sample-setting.setting-choke { grid-column: span 2; margin: 0; padding: 4px 6px; }
+    .sample-setting.setting-mode { grid-column: span 2; margin: 0; padding: 4px 6px; }
+    .sample-setting.setting-tool { grid-column: span 2; margin: 0; padding: 4px 6px; }
+
+    /* Compact internals for the bottom row */
+    .group-select { min-width: 40px; padding: 2px; }
+    .tool-toggle-group { gap: 2px; }
+    .tool-btn { padding: 2px 6px; }
 }

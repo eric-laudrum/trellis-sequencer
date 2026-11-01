@@ -329,44 +329,6 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                         <div className="sample-control-strip">
                             <span className="value-display">{currentSample.name}</span>
 
-                            {/* Start Time Input */}
-                            <div className="sample-setting">
-                                <span style={{fontSize: '10px', color: 'gray', marginRight: '5px'}}>START</span>
-                                <input
-                                    type="number"
-                                    className="inline-input"
-                                    value={Math.round(currentSample.startTime || 0)}
-                                    onChange={(e) => setSampleStart(currentSample.id, Number(e.target.value))}
-                                />
-                            </div>
-
-                            {/* End Time Input */}
-                            <div className="sample-setting">
-                                <span style={{fontSize: '10px', color: 'gray', marginRight: '5px'}}>END</span>
-                                <input
-                                    type="number"
-                                    className="inline-input"
-                                    value={Math.round(currentSample.endTime || (currentSample.buffer ? currentSample.buffer.duration * 1000 : 1000))}
-                                    onChange={(e) => setSampleEnd(currentSample.id, Number(e.target.value))}
-                                />
-                            </div>
-
-                            {/* Choke Group Selector */}
-                            <div className="sample-setting choke-select">
-                                <span style={{fontSize: '10px', color: 'gray', marginRight: '5px'}}>CHOKE</span>
-                                <select
-                                    className="group-select"
-                                    value={currentSample.chokeGroup || "none"}
-                                    onChange={(e) => setChokeGroup(currentSample.id, e.target.value)}
-                                >
-                                    <option value="none">-</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                </select>
-                            </div>
-
-
                             <div className="color-picker-container" ref={pickerRef}>
                                 <button
                                     className="active-color-btn"
@@ -393,7 +355,45 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                 )}
                             </div>
 
-                            <div className="sample-setting choke-select">
+                            {/* Start Time Input */}
+                            <div className="sample-setting setting-start">
+                                <span style={{fontSize: '10px', color: 'gray', marginRight: '5px'}}>START</span>
+                                <input
+                                    type="number"
+                                    className="inline-input"
+                                    value={Math.round(currentSample.startTime || 0)}
+                                    onChange={(e) => setSampleStart(currentSample.id, Number(e.target.value))}
+                                />
+                            </div>
+
+                            {/* End Time Input */}
+                            <div className="sample-setting setting-end">
+                                <span style={{fontSize: '10px', color: 'gray', marginRight: '5px'}}>END</span>
+                                <input
+                                    type="number"
+                                    className="inline-input"
+                                    value={Math.round(currentSample.endTime || (currentSample.buffer ? currentSample.buffer.duration * 1000 : 1000))}
+                                    onChange={(e) => setSampleEnd(currentSample.id, Number(e.target.value))}
+                                />
+                            </div>
+
+                            {/* Choke Group Selector */}
+                            <div className="sample-setting choke-select setting-choke">
+                                <span style={{fontSize: '10px', color: 'gray', marginRight: '5px'}}>CHOKE</span>
+                                <select
+                                    className="group-select"
+                                    value={currentSample.chokeGroup || "none"}
+                                    onChange={(e) => setChokeGroup(currentSample.id, e.target.value)}
+                                >
+                                    <option value="none">-</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </div>
+
+                            {/* Mode Selector */}
+                            <div className="sample-setting choke-select setting-mode">
                                 <span style={{fontSize: '10px', color: 'gray', marginRight: '5px'}}>MODE</span>
                                 <select
                                     className="group-select"
@@ -405,8 +405,8 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                 </select>
                             </div>
 
-                            {/* New Tool Toggle */}
-                            <div className="sample-setting choke-select" style={{marginLeft: 'auto'}}>
+                            {/* Tool Toggle */}
+                            <div className="sample-setting choke-select setting-tool">
                                 <span style={{fontSize: '10px', color: 'gray', marginRight: '5px'}}>TOOL</span>
                                 <div className="tool-toggle-group">
                                     <button
@@ -425,7 +425,6 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                                     </button>
                                 </div>
                             </div>
-
                         </div>
 
                         {(() => {
