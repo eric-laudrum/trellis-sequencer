@@ -763,6 +763,9 @@ export const useSequencer = (
             }]);
         } catch (err) {
             console.error(`[AUDIO] Failed to load ${sampleData.url}:`, err);
+
+            alert(`Audio Decode Error: ${err.message}`);
+
         }
     };
 
@@ -815,6 +818,7 @@ export const useSequencer = (
 
         } catch (err) {
             console.error("Upload error:", err);
+            alert(`Server Upload Error: ${err.message}`);
         } finally {
             setIsUploading(false); // STOP LOADING
         }

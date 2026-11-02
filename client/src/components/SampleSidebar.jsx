@@ -133,6 +133,7 @@ export default function SampleSidebar({
             // Fixed broken math here
             const durationMs = Math.max(50, endMs - startMs);
 
+
             clearTimeout(timersRef.current[sample.id]);
             timersRef.current[sample.id] = setTimeout(() => {
                 setPlayingIds(prev => ({ ...prev, [sample.id]: false }));
