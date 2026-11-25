@@ -7,6 +7,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { RoomStore } = require('./RoomStore');
 require('dotenv').config();
 
 const app = express();
@@ -64,8 +65,8 @@ app.post('/upload-sample', upload.single('file'), (req, res) => {
     });
 });
 
-// Data storage for rooms
-const rooms = {};
+// In-memory room state and access control
+const roomStore = new RoomStore();
 
 // Socket IO logic
 const io = new Server(server, {
@@ -75,158 +76,278 @@ const io = new Server(server, {
     }
 });
 
-const getRoomListData = () => {
-    const list = Object.keys(rooms).map(roomName => {
-        const activeSocketRoom = io.sockets.adapter.rooms.get(roomName);
-        return {
-            name: roomName,
-            count: activeSocketRoom ? activeSocketRoom.size : 0
-        };
-    });
-
-    console.log("[SOCKET] Broadcasting room list:", list);
-    return list;
+const broadcastRoomList = () => io.emit('room-list', roomStore.getListedRooms());
+const reply = (callback, payload) => {
+    if (typeof callback === 'function') callback(payload);
 };
+
+const sendRoomAccess = (room) => {
+    for (const memberId of room.members) {
+        io.to(memberId).emit('room-access-updated', {
+            room: roomStore.serializeRoom(room, memberId),
+        });
+    }
+};
+
+const sendPendingRequests = (room) => {
+    if (!room.hostId) return;
+    for (const request of room.pendingRequests.values()) {
+        io.to(room.hostId).emit('join-request', request);
+    }
+};
+
+const cancelPendingRequests = (socket, code) => {
+    for (const { room, request } of roomStore.cancelPending(socket.id, code)) {
+        if (room.hostId) {
+            io.to(room.hostId).emit('join-request-resolved', { requestId: request.id });
+        }
+    }
+};
+
+const leaveCurrentRoom = (socket) => {
+    if (!socket.currentRoom) return;
+    const result = roomStore.leave(socket.currentRoom, socket.id);
+    socket.leave(socket.currentRoom);
+    socket.currentRoom = null;
+
+    if (result) {
+        for (const request of result.deniedRequests) {
+            io.to(request.id).emit('join-denied', {
+                roomId: result.room.id,
+                message: 'The room host left before responding to your request.',
+            });
+        }
+        if (result.previousHostId !== result.newHostId) {
+            sendRoomAccess(result.room);
+            sendPendingRequests(result.room);
+        }
+        broadcastRoomList();
+    }
+};
+
+const enterRoom = (socket, room) => {
+    socket.join(room.id);
+    socket.currentRoom = room.id;
+};
+
+const isMemberOf = (socket, roomId) => (
+    socket.currentRoom === roomId && socket.rooms.has(roomId) && roomStore.getRoom(roomId)
+);
 
 io.on('connection', (socket) => {
     console.log('User connected: ' + socket.id);
 
-    socket.emit('room-list', getRoomListData());
+    socket.emit('room-list', roomStore.getListedRooms());
 
-    socket.on('get-rooms', () =>{
-        socket.emit('room-list', getRoomListData());
+    socket.on('get-rooms', () => {
+        socket.emit('room-list', roomStore.getListedRooms());
     });
 
-    socket.on('join-room', (roomName) => {
-        socket.join(roomName);
-        socket.currentRoom = roomName;
+    socket.on('create-room', (data, callback) => {
+        const result = roomStore.createRoom({
+            name: data?.name,
+            access: data?.access,
+            hostId: socket.id,
+        });
+        if (result.error) return reply(callback, { status: 'error', message: result.error });
 
-        if (!rooms[roomName]) {
-            rooms[roomName] = {
-                grid: Array.from({ length: 64 }, () => ({ isActive: false, sampleId: [] })),
-                bpm: 88,
-                samples: [],
-                numBars: 1,
-            };
+        cancelPendingRequests(socket);
+        leaveCurrentRoom(socket);
+        enterRoom(socket, result.room);
+        broadcastRoomList();
+        reply(callback, {
+            status: 'joined',
+            room: roomStore.serializeRoom(result.room, socket.id),
+        });
+    });
+
+    socket.on('join-room', (data, callback) => {
+        const code = typeof data === 'string' ? data : data?.code;
+        cancelPendingRequests(socket);
+        const result = roomStore.requestJoin(code, socket.id, data?.guestName);
+        if (result.error) return reply(callback, { status: 'error', message: result.error });
+
+        if (result.status === 'joined' && socket.currentRoom === result.room.id) {
+            return reply(callback, {
+                status: 'joined',
+                room: roomStore.serializeRoom(result.room, socket.id),
+            });
         }
 
-        socket.emit('initial-state', {
-            grid: rooms[roomName].grid,
-            bpm: rooms[roomName].bpm,
-            samples: rooms[roomName].samples,
-            numBars: rooms[roomName].numBars,
+        leaveCurrentRoom(socket);
+        if (result.status === 'pending') {
+            io.to(result.room.hostId).emit('join-request', result.request);
+            return reply(callback, {
+                status: 'pending',
+                room: roomStore.serializeRoom(result.room, socket.id),
+            });
+        }
+
+        enterRoom(socket, result.room);
+        broadcastRoomList();
+        reply(callback, {
+            status: 'joined',
+            room: roomStore.serializeRoom(result.room, socket.id),
         });
-
-        io.emit('room-list', getRoomListData());
     });
 
-    socket.on('leave-room', (roomName) => {
-        socket.leave(roomName);
-        socket.currentRoom = null;
+    socket.on('cancel-join', (code) => cancelPendingRequests(socket, code));
 
-        // Broadcast the updated list to everyone in the lobby
-        io.emit('room-list', getRoomListData());
+    socket.on('get-initial-state', (roomId) => {
+        const room = isMemberOf(socket, roomId);
+        if (!room) return;
+        socket.emit('initial-state', {
+            grid: room.grid,
+            bpm: room.bpm,
+            samples: room.samples,
+            numBars: room.numBars,
+        });
     });
+
+    socket.on('update-room-access', ({ roomId, access }, callback) => {
+        const result = roomStore.updateAccess(socket.id, roomId, access);
+        if (result.error) return reply(callback, { status: 'error', message: result.error });
+
+        for (const request of result.deniedRequests) {
+            socket.emit('join-request-resolved', { requestId: request.id });
+            io.to(request.id).emit('join-denied', {
+                roomId: roomId,
+                message: 'The host stopped accepting join requests.',
+            });
+        }
+        sendRoomAccess(result.room);
+        broadcastRoomList();
+        reply(callback, { status: 'updated', room: roomStore.serializeRoom(result.room, socket.id) });
+    });
+
+    socket.on('respond-to-join', ({ roomId, requestId, approved }, callback) => {
+        if (approved && !io.sockets.sockets.has(requestId)) {
+            roomStore.respondToJoin(socket.id, roomId, requestId, false);
+            socket.emit('join-request-resolved', { requestId });
+            return reply(callback, { status: 'error', message: 'This guest has disconnected.' });
+        }
+
+        const result = roomStore.respondToJoin(socket.id, roomId, requestId, approved);
+        if (result.error) return reply(callback, { status: 'error', message: result.error });
+
+        socket.emit('join-request-resolved', { requestId });
+        if (!approved) {
+            io.to(requestId).emit('join-denied', {
+                roomId,
+                message: 'The host denied your request to join this room.',
+            });
+            return reply(callback, { status: 'denied' });
+        }
+
+        const guestSocket = io.sockets.sockets.get(requestId);
+        enterRoom(guestSocket, result.room);
+        guestSocket.emit('join-approved', {
+            room: roomStore.serializeRoom(result.room, requestId),
+        });
+        broadcastRoomList();
+        reply(callback, { status: 'approved' });
+    });
+
+    socket.on('leave-room', () => leaveCurrentRoom(socket));
 
     socket.on('pad-toggle', ({ index, newState }) => {
-        const room = socket.currentRoom;
-        if (room && rooms[room]) {
-            rooms[room].grid[index] = newState;
-            socket.to(room).emit('update-state', { index, newState });
+        const roomId = socket.currentRoom;
+        const room = isMemberOf(socket, roomId);
+        if (room && Number.isInteger(index) && index >= 0 && index < room.grid.length) {
+            room.grid[index] = newState;
+            socket.to(roomId).emit('update-state', { index, newState });
         }
     });
 
     socket.on('delete-sample', (sampleId) => {
-        const room = socket.currentRoom;
-        if (room && rooms[room]) {
-            rooms[room].samples = rooms[room].samples.filter(s => s.id !== sampleId);
-            socket.to(room).emit('remove-sample', sampleId);
+        const roomId = socket.currentRoom;
+        const room = isMemberOf(socket, roomId);
+        if (room) {
+            room.samples = room.samples.filter(s => s.id !== sampleId);
+            socket.to(roomId).emit('remove-sample', sampleId);
         }
     });
 
     socket.on('transport-toggle', ({ isPlaying }) => {
-        if (socket.currentRoom) {
+        if (isMemberOf(socket, socket.currentRoom)) {
             socket.to(socket.currentRoom).emit('update-transport', { isPlaying });
         }
     });
 
     socket.on('bpm-change', (newBpm) => {
-        const room = socket.currentRoom;
-        if (room && rooms[room]) {
-            rooms[room].bpm = newBpm;
-            socket.to(room).emit('update-bpm', newBpm);
+        const roomId = socket.currentRoom;
+        const room = isMemberOf(socket, roomId);
+        if (room) {
+            room.bpm = newBpm;
+            socket.to(roomId).emit('update-bpm', newBpm);
         }
     });
 
     socket.on('share-sample', ({ roomId, sampleData }) => {
-        if (rooms[roomId]) {
-            rooms[roomId].samples.push(sampleData);
-        }
+        const room = isMemberOf(socket, roomId);
+        if (!room || !sampleData) return;
+        room.samples.push(sampleData);
         socket.to(roomId).emit('download-sample', sampleData);
     });
 
     socket.on('update-sample-bounds', (data) => {
         const { roomId, sampleId, startTime, endTime } = data;
+        const room = isMemberOf(socket, roomId);
+        if (!room) return;
 
-        if (rooms[roomId]) {
-            const sample = rooms[roomId].samples.find(s => s.id === sampleId);
-            if (sample) {
-                if (startTime !== undefined) sample.startTime = startTime;
-                if (endTime !== undefined) sample.endTime = endTime;
-            }
+        const sample = room.samples.find(s => s.id === sampleId);
+        if (sample) {
+            if (startTime !== undefined) sample.startTime = startTime;
+            if (endTime !== undefined) sample.endTime = endTime;
         }
-
         socket.to(roomId).emit('update-sample-bounds', data);
     });
 
     socket.on('update-sample-volume', (data) => {
         const { roomId, sampleIds, volume } = data;
+        const room = isMemberOf(socket, roomId);
+        if (!room || !Array.isArray(sampleIds)) return;
 
-        if (rooms[roomId]) {
-            sampleIds.forEach(id => {
-                const sample = rooms[roomId].samples.find(s => s.id === id);
-                if (sample) sample.volume = volume;
-            });
-        }
-
+        sampleIds.forEach(id => {
+            const sample = room.samples.find(s => s.id === id);
+            if (sample) sample.volume = volume;
+        });
         socket.to(roomId).emit('update-sample-volume', data);
     });
 
     socket.on('update-sample-color', (data) => {
         const { roomId, sampleId, color } = data;
+        const room = isMemberOf(socket, roomId);
+        if (!room) return;
 
-        if (rooms[roomId]) {
-            const sample = rooms[roomId].samples.find(s => s.id === sampleId);
-            if (sample) sample.color = color;
-        }
-
+        const sample = room.samples.find(s => s.id === sampleId);
+        if (sample) sample.color = color;
         socket.to(roomId).emit('update-sample-color', data);
     });
 
     socket.on('stop-all-audio', (data) => {
-        const room = data?.roomId;
-        if (room) {
-            io.to(room).emit('sync-stop');
-        }
+        const roomId = data?.roomId;
+        if (isMemberOf(socket, roomId)) io.to(roomId).emit('sync-stop');
     });
 
     socket.on('update-entire-grid', ({ roomId, grid, numBars }) => {
-        if (rooms[roomId]) {
-            rooms[roomId].grid = grid;
-            rooms[roomId].numBars = numBars;
+        const room = isMemberOf(socket, roomId);
+        if (room) {
+            room.grid = grid;
+            room.numBars = numBars;
             socket.to(roomId).emit('sync-entire-grid', { grid, numBars });
         }
     });
 
     socket.on('send-message', (data) => {
-        const room = socket.currentRoom;
-        if( room ){
-            socket.to(room).emit('chat-message', data);
-        }
+        const roomId = socket.currentRoom;
+        if (isMemberOf(socket, roomId)) socket.to(roomId).emit('chat-message', data);
     });
 
     socket.on('disconnect', () => {
-        io.emit('room-list', getRoomListData());
+        cancelPendingRequests(socket);
+        leaveCurrentRoom(socket);
+        broadcastRoomList();
     });
 });
 

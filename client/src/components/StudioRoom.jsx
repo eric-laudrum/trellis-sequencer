@@ -5,11 +5,11 @@ import SampleSidebar from "./SampleSidebar.jsx";
 import WaveformEditor from "./WaveformEditor.jsx";
 import { useSequencer } from "../hooks/useSequencer.js";
 import ChatPanel from "./ChatPanel.jsx";
-import AccountStatus from "./AccountStatus.jsx";
 
 import "../styles/StudioRoom.css";
 
-export default function StudioRoom({ roomName, socket, onLeave }) {
+export default function StudioRoom({ room, socket, onLeave }) {
+    const roomName = room.id;
 
     const [padCount, setPadCount] = useState(64); // 8x8
 
@@ -70,7 +70,58 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
     const audioChunksRef = useRef([]);
 
     const [showProfile, setShowProfile] = useState(false);
+    const [pendingRequests, setPendingRequests] = useState([]);
+    const [accessError, setAccessError] = useState('');
+    const [copyLabel, setCopyLabel] = useState('COPY');
 
+    useEffect(() => {
+        const onJoinRequest = (request) => {
+            setPendingRequests(current => [
+                ...current.filter(item => item.id !== request.id),
+                request,
+            ]);
+        };
+        const onRequestResolved = ({ requestId }) => {
+            setPendingRequests(current => current.filter(request => request.id !== requestId));
+        };
+
+        socket.on('join-request', onJoinRequest);
+        socket.on('join-request-resolved', onRequestResolved);
+        return () => {
+            socket.off('join-request', onJoinRequest);
+            socket.off('join-request-resolved', onRequestResolved);
+        };
+    }, [socket]);
+
+    const updateAccess = (access) => {
+        setAccessError('');
+        socket.emit('update-room-access', { roomId: room.id, access }, response => {
+            if (response?.status === 'error') setAccessError(response.message);
+        });
+    };
+
+    const respondToJoin = (requestId, approved) => {
+        setAccessError('');
+        socket.emit('respond-to-join', { roomId: room.id, requestId, approved }, response => {
+            if (response?.status === 'error') setAccessError(response.message);
+        });
+    };
+
+    const copyRoomCode = async () => {
+        try {
+            await navigator.clipboard.writeText(room.id);
+            setCopyLabel('COPIED');
+        } catch {
+            setCopyLabel('COPY FAILED');
+        }
+        window.setTimeout(() => setCopyLabel('COPY'), 1500);
+    };
+
+    const accessDescription = room.access === 'locked'
+        ? 'New guests need host approval.'
+        : room.access === 'invisible'
+            ? 'Unlisted. Share the room number with guests.'
+            : 'Listed in the lobby and open to everyone.';
 
     const PRESET_COLORS = [
         '#a52421', '#fc3a2e', '#fb940b', '#fdc403',
@@ -252,7 +303,7 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
     return (
         <div className='app-container'>
             <div className="room-header">
-                <h1 className='main-title'>STUDIO: {roomName}</h1>
+                <h1 className='main-title'>STUDIO: {room.name}</h1>
                 <div style={{display: 'flex', gap: '15px', alignItems: 'center'}}>
                     <button
                         className="settings-btn"
@@ -265,6 +316,39 @@ export default function StudioRoom({ roomName, socket, onLeave }) {
                     <button className="settings-btn" onClick={onLeave}>← EXIT</button>
                 </div>
             </div>
+
+            <section className="room-access-panel" aria-label="Room privacy">
+                <div className="room-number">
+                    ROOM # <strong>{room.id}</strong>
+                    <button type="button" className="copy-code-btn" onClick={copyRoomCode}>{copyLabel}</button>
+                </div>
+                {room.isHost ? (
+                    <label className="host-access-control">
+                        <span className="host-label">HOST</span>
+                        <select value={room.access} onChange={event => updateAccess(event.target.value)} aria-label="Room privacy setting">
+                            <option value="public">Public</option>
+                            <option value="locked">Locked</option>
+                            <option value="invisible">Invisible</option>
+                        </select>
+                    </label>
+                ) : (
+                    <span className="host-label">{room.access.toUpperCase()} ROOM</span>
+                )}
+                <span className="access-description">{accessDescription}</span>
+                {accessError && <p className="access-error" role="alert">{accessError}</p>}
+
+                {room.isHost && pendingRequests.length > 0 && (
+                    <div className="pending-requests" aria-label="Pending join requests">
+                        {pendingRequests.map(request => (
+                            <div className="pending-request" key={request.id}>
+                                <span><strong>{request.name}</strong> wants to join</span>
+                                <button type="button" className="approve-btn" onClick={() => respondToJoin(request.id, true)}>APPROVE</button>
+                                <button type="button" className="deny-btn" onClick={() => respondToJoin(request.id, false)}>DENY</button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </section>
 
             {/* -- Profile Pop Up Window -- */}
             {showProfile && (

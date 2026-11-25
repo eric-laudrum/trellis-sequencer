@@ -736,6 +736,12 @@ export const useSequencer = (
         };
     }, [socket, shouldIgnoreServer, setGridState, roomName ]);
 
+    // Request state only after this hook's listeners are mounted. Pending users
+    // cannot request it because the server verifies room membership first.
+    useEffect(() => {
+        if (socket && roomName) socket.emit('get-initial-state', roomName);
+    }, [socket, roomName]);
+
     const addNewPlayer = async (sampleData) => {
         if (players.current[sampleData.id]) return;
 

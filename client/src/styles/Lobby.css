@@ -1,143 +1,157 @@
-.lobby{
+.lobby {
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding-bottom: 3rem;
+    box-sizing: border-box;
 }
 
-.create-section{
+.lobby-logo {
+    width: min(20em, 80vw);
+    margin-top: 3rem;
+}
 
+.lobby-logo img { width: 100%; }
+.connection-status { color: #d65f5f; font-size: 10px; }
+.connection-status.connected { color: #61c48d; }
+
+.lobby-forms {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(260px, 1fr);
+    gap: 20px;
+    width: 90%;
+    align-items: stretch;
+}
+
+.create-section,
+.join-code-section {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    width: 60%;
-
+    align-items: stretch;
+    padding: 24px;
+    border: 1px solid #2d2d2d;
+    border-radius: 12px;
+    background: #111;
+    box-sizing: border-box;
+    text-align: left;
 }
 
-.room-name-input{
-    background-color: transparent;
-    min-width: 20rem;
-    max-width: 40rem;
+.create-section h3,
+.join-code-section h3 { margin: 0 0 18px; color: var(--primary); }
+.join-code-section p { color: #888; line-height: 1.5; font-size: 0.9rem; }
+.field-label, .privacy-options legend { color: #aaa; font-size: 0.8rem; margin-bottom: 8px; }
+
+.room-name-input,
+.room-code-input {
+    width: 100%;
+    box-sizing: border-box;
     border-radius: 8px;
-
-    border: 0.2px solid var(--primary);
-
-    padding: 1rem;
-
+    border: 1px solid #66430d;
+    background: #090909;
+    color: #eee;
+    padding: 0.9rem 1rem;
+    font: inherit;
 }
+
+.room-name-input:focus,
+.room-code-input:focus { outline: 1px solid var(--primary); }
+
+.privacy-options {
+    display: grid;
+    gap: 8px;
+    border: 0;
+    padding: 0;
+    margin: 20px 0;
+}
+
+.privacy-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.privacy-option.selected { border-color: var(--primary); background: rgba(255, 165, 0, 0.06); }
+.privacy-option input { accent-color: var(--primary); }
+.privacy-option span { display: flex; flex-direction: column; gap: 3px; }
+.privacy-option strong { font-size: 0.9rem; }
+.privacy-option small { color: #888; }
 
 .create-button {
-    width: 5rem;
-    height: 5rem;
-    margin-top: 2rem;
+    align-self: flex-start;
+    padding: 0.75rem 1.25rem;
+    color: #111;
+    background: var(--primary);
+    border-color: var(--primary);
+    font-weight: bold;
+}
+
+.create-button:hover { background: #ffc15e; }
+.join-code-controls { display: flex; gap: 10px; margin-top: auto; }
+.room-code-input { font-family: monospace; font-size: 1.4rem; letter-spacing: 0.2em; }
+.join-button { white-space: nowrap; color: var(--primary); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.join-status {
     display: flex;
-    align-items: flex-end;
-    padding: 0.5rem;
-    color: #a5a5a5;
-    font-size: 0.7rem;
-
-    box-shadow:
-            0 0 7px rgba(255, 255, 255, 0.5),
-            0 0 14px var(--primary),
-
-            0 0 42px var(--primary),
-
-            0 0 160px var(--primary),
-            0 0 200px var(--primary);
-    transition: ease-in-out 0.7s;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    width: 90%;
+    box-sizing: border-box;
+    margin: 8px 0 18px;
+    padding: 12px 16px;
+    border: 1px solid #4b411f;
+    border-radius: 8px;
+    background: #1d1a10;
+    font-size: 0.9rem;
 }
 
-.create-button:hover {
-    background-color: var(--primary);
-    box-shadow: 1px 1px 5px 5px rgba(250, 200, 109, 0.2);
-    color: transparent;
+.join-status.error, .join-status.denied { border-color: #713c3c; background: #251414; color: #ffaaaa; }
+.cancel-request-btn { padding: 5px 9px; font-size: 0.7rem; }
 
-}
-
-.room-list{
+.room-list {
     display: flex;
     flex-direction: column;
-    width: 80%;
-    align-items: center;
-
-    flex: 1;
-    min-height: 15rem;
-    margin-top: 1rem;
-
-
+    width: 90%;
+    min-height: 12rem;
+    margin-top: 1.5rem;
 }
 
-/* --- Lobby UI --- */
+.room-list h3 { margin-bottom: 4px; }
+.room-list-caption { margin-top: 0; color: #666; font-size: 0.8rem; }
+.empty-msg { color: #777; }
 .room-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-
+    gap: 16px;
     background: var(--bg-darker);
-
-    padding: 10px 20px;
+    padding: 14px 20px;
     margin-bottom: 10px;
+    border: 1px solid #242424;
     border-radius: 8px;
-
-    width: 80%;
-
-
-
+    text-align: left;
 }
 
-.room-info{
-    display: flex;
-    flex-direction: row;
+.room-info { min-width: 0; }
+.room-name { color: var(--primary); font-weight: bold; font-size: 1.1rem; overflow-wrap: anywhere; }
+.room-meta { display: flex; gap: 10px; margin-top: 6px; color: #777; font: 0.75rem monospace; }
+.room-privacy-badge { color: #d6b26b; }
+.room-actions { display: flex; align-items: center; gap: 12px; }
+.room-count { color: #777; font-size: 0.8rem; white-space: nowrap; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
-    max-width: 75%;
-
-
-    white-space: nowrap;
-
-}
-
-
-.room-name {
-    color: var(--primary);
-    font-weight: bold;
-    font-size: 1.1rem;
-
-    text-align: start;
-
-
-
-    white-space: nowrap;
-    text-overflow: ellipsis ;
-    overflow: hidden;
-
-
-
-
-
-
-}
-
-
-.room-actions{
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-}
-.room-count {
-    font-size: 0.8rem;
-    color: #777;
-    margin: 5px;
-}
-
-.join-btn {
-    background: var(--primary);
-    color: #000;
-    font-weight: bold;
-    border: none;
-    margin: 5px;
-}
-
-.join-btn:hover {
-    background: white;
+@media (max-width: 760px) {
+    .lobby-forms { grid-template-columns: 1fr; }
+    .room-item { align-items: flex-start; flex-direction: column; }
+    .room-actions { width: 100%; justify-content: space-between; }
+    .join-code-controls { flex-direction: column; }
 }

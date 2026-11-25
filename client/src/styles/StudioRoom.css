@@ -51,6 +51,36 @@ h1.main-title {
 
 }
 
+/* --- Room privacy and admission --- */
+.room-access-panel {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    margin: 0 1em 10px;
+    padding: 10px 14px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #151515;
+    flex-shrink: 0;
+    text-align: left;
+    font-size: 0.8rem;
+}
+
+.room-number { color: #999; }
+.room-number strong { color: var(--primary); font: bold 1rem monospace; letter-spacing: 0.12em; }
+.copy-code-btn { padding: 4px 7px; margin-left: 6px; font-size: 0.65rem; }
+.host-access-control { display: flex; align-items: center; gap: 8px; color: #aaa; }
+.host-access-control select { background: #222; color: #eee; border: 1px solid #555; border-radius: 5px; padding: 5px; }
+.access-description { color: #777; }
+.host-label { color: var(--primary); font-size: 0.7rem; font-weight: bold; }
+.access-error { width: 100%; margin: 0; color: #ff9999; }
+.pending-requests { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+.pending-request { display: flex; align-items: center; gap: 8px; padding: 7px 9px; background: #242016; border: 1px solid #5c4b25; border-radius: 6px; }
+.pending-request button { padding: 4px 8px; font-size: 0.7rem; }
+.approve-btn { color: #8fd6a9; }
+.deny-btn { color: #ff9999; }
+
 /* --- Studio/Sequencer Sections --- */
 .seq-header {
     display: flex;
